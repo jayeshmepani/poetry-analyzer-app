@@ -24,20 +24,16 @@ class StyleToneAnalyzer:
         }
         
         self.style_categories = {
-            "minimalist": lambda text: len(text.split()) / max(1, len(text.split('
-'))) < 5,
+            "minimalist": lambda text: len(text.split()) / max(1, len(text.split('\n'))) < 5,
             "ornate": lambda text: any(len(w) > 10 for w in text.split()),
-            "baroque": lambda text: text.count(',') > len(text.split('
-')) * 2,
-            "stream_of_consciousness": lambda text: text.count('.') < len(text.split('
-')) / 2
+            "baroque": lambda text: text.count(',') > len(text.split('\n')) * 2,
+            "stream_of_consciousness": lambda text: text.count('.') < len(text.split('\n')) / 2
         }
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Run complete style, tone, and register analysis"""
         words = text.lower().split()
-        lines = [l.strip() for l in text.split('
-') if l.strip()]
+        lines = [l.strip() for l in text.split('\n') if l.strip()]
         
         return {
             "voice_analysis": self._analyze_voice(text, lines),
@@ -53,7 +49,7 @@ class StyleToneAnalyzer:
         first_person = len(re.findall(r'\b(i|me|my|mine|we|us|our)\b', text.lower()))
         second_person = len(re.findall(r'\b(you|your|yours)\b', text.lower()))
         third_person = len(re.findall(r'\b(he|she|it|they|him|her|them|his|hers|their)\b', text.lower()))
-        
+
         total = first_person + second_person + third_person
         if total == 0:
             dominant = "third_person"  # Default
@@ -64,7 +60,7 @@ class StyleToneAnalyzer:
                 dominant = "second_person"
             else:
                 dominant = "third_person"
-                
+
         return {
             "dominant_voice": dominant,
             "counts": {"1st": first_person, "2nd": second_person, "3rd": third_person},
@@ -113,7 +109,7 @@ class StyleToneAnalyzer:
         # Look for plot markers
         has_intro = any(w in text.lower()[:100] for w in ["once", "when", "first", "in the"])
         has_climax = "!" in text or any(w in text.lower() for w in ["suddenly", "finally", "moment"])
-        
+
         return {
             "plot_architecture": "linear" if not "remembered" in text.lower() else "nonlinear",
             "pacing": "fast" if len(lines) > 20 else "slow",
