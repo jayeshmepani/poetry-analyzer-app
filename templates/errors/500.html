@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}500 - Internal Server Error{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center">
+    <div class="text-center">
+        <h1 class="text-9xl font-bold text-gray-200">500</h1>
+        <h2 class="text-4xl font-bold text-gray-800 -mt-8">Internal Server Error</h2>
+        <p class="text-gray-600 mt-4 text-lg">
+            Something went wrong on our end. Please try again later.
+        </p>
+        <div class="mt-8">
+            <a href="/admin" class="bg-primary text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700 transition">
+                <i class="fas fa-home mr-2"></i>Go Home
+            </a>
+            <button onclick="location.reload()" class="ml-4 bg-gray-200 text-gray-800 px-8 py-3 rounded-full font-bold hover:bg-gray-300 transition">
+                <i class="fas fa-redo mr-2"></i>Try Again
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

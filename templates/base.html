@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ultimate Literary Master System{% endblock %}</title>
+    
+    <!-- Tailwind CSS (CDN for development) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Chart.js for Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Toastr for Notifications -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+    
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#7c3aed',
+                        accent: '#0891b2'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom Styles */
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1e40af;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="gradient-bg shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="text-white text-2xl font-bold">
+                    <i class="fas fa-book-open mr-2"></i>
+                    Ultimate Literary Master
+                </a>
+                <div class="hidden md:flex space-x-6">
+                    <a href="/admin" class="text-white hover:text-gray-200 transition">
+                        <i class="fas fa-home mr-1"></i> Home
+                    </a>
+                    <a href="/admin/analyze" class="text-white hover:text-gray-200 transition">
+                        <i class="fas fa-search mr-1"></i> Analyze
+                    </a>
+                    <a href="/docs" target="_blank" class="text-white hover:text-gray-200 transition">
+                        <i class="fas fa-book mr-1"></i> API Docs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">
+                        <i class="fas fa-book-open mr-2"></i>
+                        Ultimate Literary Master
+                    </h3>
+                    <p class="text-gray-400">
+                        Comprehensive poetry and literary analysis powered by advanced NLP and literary theory.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Features</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Quantitative Metrics</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Prosody Analysis</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Literary Devices</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>11 Criticism Frameworks</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Languages</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="bg-gray-700 px-3 py-1 rounded-full text-sm">English</span>
+                        <span class="bg-gray-700 px-3 py-1 rounded-full text-sm">हिन्दी</span>
+                        <span class="bg-gray-700 px-3 py-1 rounded-full text-sm">ગુજરાતી</span>
+                        <span class="bg-gray-700 px-3 py-1 rounded-full text-sm">اردو</span>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 Ultimate Literary Master System. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-lg font-semibold">Analyzing your text...</p>
+            <p class="text-gray-600 text-sm mt-2">This may take a few moments</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

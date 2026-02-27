@@ -1,0 +1,125 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Literary Theory Dashboard - Poetry Analyzer{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-book-open text-primary mr-3"></i>
+            Literary Theory Analysis Dashboard
+        </h1>
+        <p class="text-gray-600">Analyze poetry through 11 critical frameworks</p>
+    </div>
+
+    <!-- Theory Selection -->
+    <div class="grid md:grid-cols-4 gap-4 mb-8">
+        <button onclick="selectTheory('new_criticism')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-primary">New Criticism</div>
+            <div class="text-xs text-gray-600">Close reading, internal tensions</div>
+        </button>
+        <button onclick="selectTheory('structuralism')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-secondary">Structuralism</div>
+            <div class="text-xs text-gray-600">Underlying patterns, binaries</div>
+        </button>
+        <button onclick="selectTheory('deconstruction')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-accent">Deconstruction</div>
+            <div class="text-xs text-gray-600">Hidden meanings, contradictions</div>
+        </button>
+        <button onclick="selectTheory('feminist')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-pink-600">Feminist</div>
+            <div class="text-xs text-gray-600">Gender roles, patriarchy</div>
+        </button>
+        <button onclick="selectTheory('marxist')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-red-600">Marxist</div>
+            <div class="text-xs text-gray-600">Class struggle, power</div>
+        </button>
+        <button onclick="selectTheory('psychoanalytic')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-purple-600">Psychoanalytic</div>
+            <div class="text-xs text-gray-600">Unconscious, desires</div>
+        </button>
+        <button onclick="selectTheory('reader_response')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-blue-600">Reader-Response</div>
+            <div class="text-xs text-gray-600">Reader experience</div>
+        </button>
+        <button onclick="selectTheory('ecocriticism')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-green-600">Ecocriticism</div>
+            <div class="text-xs text-gray-600">Nature, environment</div>
+        </button>
+        <button onclick="selectTheory('postcolonial')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-orange-600">Postcolonial</div>
+            <div class="text-xs text-gray-600">Colonial power, identity</div>
+        </button>
+        <button onclick="selectTheory('formalism')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-indigo-600">Formalism</div>
+            <div class="text-xs text-gray-600">Form, structure</div>
+        </button>
+        <button onclick="selectTheory('archetypal')" class="p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+            <div class="font-bold text-teal-600">Archetypal</div>
+            <div class="text-xs text-gray-600">Universal symbols</div>
+        </button>
+    </div>
+
+    <!-- Analysis Area -->
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+        <textarea id="poemText" rows="8" placeholder="Paste your poem here for theoretical analysis..." class="w-full px-4 py-3 border rounded-lg font-serif mb-6"></textarea>
+        
+        <button onclick="analyzeWithTheory()" class="w-full gradient-bg text-white py-4 rounded-lg font-bold text-lg">
+            <i class="fas fa-search mr-2"></i>Analyze Through Selected Theory
+        </button>
+
+        <div id="theoryResults" class="mt-8 hidden">
+            <h3 class="text-2xl font-bold mb-4">Analysis Results</h3>
+            <div id="resultsContent" class="prose max-w-none"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedTheory = null;
+
+function selectTheory(theory) {
+    selectedTheory = theory;
+    alert(`Selected: ${theory.replace('_', ' ').toUpperCase()} framework`);
+}
+
+async function analyzeWithTheory() {
+    if (!selectedTheory) {
+        alert('Please select a literary theory first!');
+        return;
+    }
+    
+    const poem = document.getElementById('poemText').value;
+    if (!poem) {
+        alert('Please enter a poem to analyze');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/analysis/theory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ poem: poem, theory: selectedTheory })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('resultsContent').innerHTML = `
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h4 class="font-bold text-lg mb-3">Key Insights:</h4>
+                    <ul class="list-disc pl-6 space-y-2">
+                        ${result.data.insights.map(i => `<li>${i}</li>`).join('')}
+                    </ul>
+                    <h4 class="font-bold text-lg mt-6 mb-3">Interpretation:</h4>
+                    <p>${result.data.interpretation}</p>
+                </div>
+            `;
+            document.getElementById('theoryResults').classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Analysis failed:', error);
+    }
+}
+</script>
+{% endblock %}

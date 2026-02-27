@@ -1,0 +1,120 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Competition Rubric Calculator{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-trophy text-yellow-500 mr-3"></i>
+            Competition Rubric Calculator
+        </h1>
+        <p class="text-gray-600">Score poetry using official competition rubrics</p>
+    </div>
+
+    <!-- Rubric Selection -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <h3 class="text-xl font-bold mb-4">Select Rubric</h3>
+        <div class="grid md:grid-cols-3 gap-4">
+            <button onclick="selectRubric('poetry_out_loud')" class="p-4 border-2 border-primary bg-blue-50 rounded-lg">
+                <div class="font-bold">Poetry Out Loud</div>
+                <div class="text-xs">25 points, 5 categories</div>
+            </button>
+            <button onclick="selectRubric('poetry_slam')" class="p-4 border-2 border-secondary bg-purple-50 rounded-lg">
+                <div class="font-bold">Poetry Slam</div>
+                <div class="text-xs">0-10 scale</div>
+            </button>
+            <button onclick="selectRubric('hundred_point')" class="p-4 border-2 border-accent bg-green-50 rounded-lg">
+                <div class="font-bold">100-Point System</div>
+                <div class="text-xs">10 categories × 10 pts</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scoring Form -->
+    <div id="scoringForm" class="bg-white rounded-2xl shadow-xl p-8 hidden">
+        <h3 class="text-2xl font-bold mb-6">Score Poem</h3>
+        <div id="criteriaContainer" class="space-y-4"></div>
+        
+        <button onclick="calculateScore()" class="w-full gradient-bg text-white py-4 rounded-lg font-bold text-lg mt-6">
+            <i class="fas fa-calculator mr-2"></i>Calculate Final Score
+        </button>
+
+        <div id="finalScore" class="mt-8 hidden">
+            <div class="text-center p-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl text-white">
+                <div class="text-6xl font-bold" id="scoreValue">0</div>
+                <div class="text-xl mt-2" id="scoreLabel">out of 0</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const rubrics = {
+    poetry_out_loud: [
+        { name: 'Physical Presence', max: 5 },
+        { name: 'Voice & Articulation', max: 5 },
+        { name: 'Dramatic Appropriateness', max: 5 },
+        { name: 'Evidence of Understanding', max: 5 },
+        { name: 'Overall Performance', max: 5 }
+    ],
+    poetry_slam: [
+        { name: 'Content/Theme', max: 10 },
+        { name: 'Originality', max: 10 },
+        { name: 'Language/Imagery', max: 10 },
+        { name: 'Performance Quality', max: 10 },
+        { name: 'Audience Engagement', max: 10 }
+    ],
+    hundred_point: [
+        { name: 'Originality', max: 10 },
+        { name: 'Imagery', max: 10 },
+        { name: 'Structure', max: 10 },
+        { name: 'Emotional Impact', max: 10 },
+        { name: 'Intellectual Depth', max: 10 },
+        { name: 'Word Choice', max: 10 },
+        { name: 'Rhythm/Flow', max: 10 },
+        { name: 'Theme Development', max: 10 },
+        { name: 'Technical Execution', max: 10 },
+        { name: 'Overall Impression', max: 10 }
+    ]
+};
+
+function selectRubric(rubric) {
+    const container = document.getElementById('criteriaContainer');
+    const rubricData = rubrics[rubric];
+    
+    container.innerHTML = rubricData.map((criteria, idx) => `
+        <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                ${criteria.name} (0-${criteria.max})
+            </label>
+            <input type="range" min="0" max="${criteria.max}" value="${criteria.max/2}" 
+                   class="w-full" id="criteria_${idx}" 
+                   oninput="document.getElementById('value_${idx}').textContent = this.value">
+            <div class="text-right text-primary font-bold"><span id="value_${idx}">${criteria.max/2}</span> / ${criteria.max}</div>
+        </div>
+    `).join('');
+    
+    document.getElementById('scoringForm').classList.remove('hidden');
+    document.getElementById('finalScore').classList.add('hidden');
+}
+
+function calculateScore() {
+    const rubric = document.querySelector('button[onclick*="selectRubric"]').getAttribute('onclick').match(/'([^']+)'/)[1];
+    const rubricData = rubrics[rubric];
+    
+    let total = 0;
+    let maxTotal = 0;
+    
+    rubricData.forEach((criteria, idx) => {
+        const value = parseInt(document.getElementById(`criteria_${idx}`).value);
+        total += value;
+        maxTotal += criteria.max;
+    });
+    
+    document.getElementById('scoreValue').textContent = total;
+    document.getElementById('scoreLabel').textContent = `out of ${maxTotal} (${(total/maxTotal*100).toFixed(1)}%)`;
+    document.getElementById('finalScore').classList.remove('hidden');
+}
+</script>
+{% endblock %}

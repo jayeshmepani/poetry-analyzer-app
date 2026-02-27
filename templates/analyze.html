@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze Text - Ultimate Literary Master System{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-search text-primary mr-3"></i>
+            Analyze Your Text
+        </h1>
+        <p class="text-gray-600">
+            Comprehensive literary analysis with quantitative metrics, prosody, linguistic analysis, and more
+        </p>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Analysis Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <form id="analysisForm" class="space-y-6">
+                    <!-- Title -->
+                    <div>
+                        <label for="title" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-heading mr-2 text-primary"></i>
+                            Title (Optional)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="title" 
+                            name="title"
+                            placeholder="Enter title of your work"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                        >
+                    </div>
+
+                    <!-- Language Selection -->
+                    <div>
+                        <label for="language" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-language mr-2 text-primary"></i>
+                            Language
+                        </label>
+                        <select 
+                            id="language" 
+                            name="language"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                        >
+                            <option value="en">English</option>
+                            <option value="hi">हिन्दी (Hindi)</option>
+                            <option value="gu">ગુજરાતી (Gujarati)</option>
+                            <option value="ur">اردو (Urdu)</option>
+                            <option value="mr">मराठी (Marathi)</option>
+                            <option value="bn">বাংলা (Bengali)</option>
+                        </select>
+                    </div>
+
+                    <!-- Form Selection -->
+                    <div>
+                        <label for="form" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-file-alt mr-2 text-primary"></i>
+                            Poetic Form (Optional)
+                        </label>
+                        <select 
+                            id="form" 
+                            name="form"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                        >
+                            <option value="">Auto-detect</option>
+                            <option value="free_verse">Free Verse</option>
+                            <option value="sonnet">Sonnet</option>
+                            <option value="ghazal">Ghazal</option>
+                            <option value="nazm">Nazm</option>
+                            <option value="haiku">Haiku</option>
+                            <option value="villanelle">Villanelle</option>
+                            <option value="doha">Doha (दोहा)</option>
+                            <option value="chaupai">Chaupai (चौपाई)</option>
+                            <option value="blank_verse">Blank Verse</option>
+                        </select>
+                    </div>
+
+                    <!-- Text Input -->
+                    <div>
+                        <label for="text" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-pen-fancy mr-2 text-primary"></i>
+                            Your Text *
+                        </label>
+                        <textarea 
+                            id="text" 
+                            name="text"
+                            rows="12"
+                            required
+                            placeholder="Paste your poem or literary text here...
+
+Example:
+Shall I compare thee to a summer's day?
+Thou art more lovely and more temperate..."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition font-serif text-lg"
+                        ></textarea>
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Minimum 10 characters, maximum 50,000 characters
+                        </p>
+                    </div>
+
+                    <!-- Strictness Level -->
+                    <div>
+                        <label for="strictness" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-sliders-h mr-2 text-primary"></i>
+                            Analysis Strictness: <span id="strictnessValue">7</span>/10
+                        </label>
+                        <input 
+                            type="range" 
+                            id="strictness" 
+                            name="strictness"
+                            min="1" 
+                            max="10" 
+                            value="7"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                        >
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Lenient</span>
+                            <span>Balanced</span>
+                            <span>Strict</span>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Options -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-cog mr-2"></i>
+                            Analysis Options
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-3">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" checked disabled class="rounded text-primary focus:ring-primary">
+                                <span class="text-sm text-gray-700">Quantitative Metrics</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" checked disabled class="rounded text-primary focus:ring-primary">
+                                <span class="text-sm text-gray-700">Prosody Analysis</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" checked disabled class="rounded text-primary focus:ring-primary">
+                                <span class="text-sm text-gray-700">Linguistic Analysis</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" checked disabled class="rounded text-primary focus:ring-primary">
+                                <span class="text-sm text-gray-700">Literary Devices</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" checked disabled class="rounded text-primary focus:ring-primary">
+                                <span class="text-sm text-gray-700">TP-CASTT Method</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" checked disabled class="rounded text-primary focus:ring-primary">
+                                <span class="text-sm text-gray-700">Literary Theory (11 frameworks)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit"
+                        class="w-full gradient-bg text-white py-4 rounded-lg font-bold text-lg hover:opacity-90 transition shadow-lg"
+                    >
+                        <i class="fas fa-search mr-2"></i>
+                        Start Comprehensive Analysis
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info Sidebar -->
+        <div class="space-y-6">
+            <!-- What You'll Get -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="font-bold text-lg mb-4">
+                    <i class="fas fa-gift text-secondary mr-2"></i>
+                    What You'll Get
+                </h3>
+                <ul class="space-y-3">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                        <span class="text-sm text-gray-700">
+                            <strong>15+ Quantitative Metrics</strong> (TTR, MTLD, Readability)
+                        </span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                        <span class="text-sm text-gray-700">
+                            <strong>Prosody Analysis</strong> (Meter, Rhyme, Scansion)
+                        </span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                        <span class="text-sm text-gray-700">
+                            <strong>Linguistic Analysis</strong> (Phonetics, Syntax, Semantics)
+                        </span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                        <span class="text-sm text-gray-700">
+                            <strong>30+ Literary Devices</strong> (Tropes, Schemes, Imagery)
+                        </span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                        <span class="text-sm text-gray-700">
+                            <strong>TP-CASTT Analysis</strong> (7-step method)
+                        </span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                        <span class="text-sm text-gray-700">
+                            <strong>11 Criticism Frameworks</strong> (New Criticism, Feminist, etc.)
+                        </span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                        <span class="text-sm text-gray-700">
+                            <strong>7-Category Rating</strong> (0-10 scale)
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Supported Forms -->
+            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6">
+                <h3 class="font-bold text-lg mb-4">
+                    <i class="fas fa-shapes text-accent mr-2"></i>
+                    Supported Forms
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    <span class="bg-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">Sonnet</span>
+                    <span class="bg-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">Ghazal</span>
+                    <span class="bg-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">Haiku</span>
+                    <span class="bg-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">Doha</span>
+                    <span class="bg-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">Chaupai</span>
+                    <span class="bg-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">Villanelle</span>
+                    <span class="bg-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">Free Verse</span>
+                </div>
+            </div>
+
+            <!-- Example -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="font-bold text-lg mb-4">
+                    <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                    Quick Example
+                </h3>
+                <div class="bg-gray-50 rounded-lg p-4 text-sm font-serif italic text-gray-700">
+                    "Shall I compare thee to a summer's day?<br>
+                    Thou art more lovely and more temperate..."
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    Try analyzing a Shakespeare sonnet or your own poetry!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results will be shown here after analysis -->
+<div id="resultsSection" class="hidden mt-12">
+    <!-- Results will be dynamically inserted here -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='/js/analysis.js') }}"></script>
+{% endblock %}
