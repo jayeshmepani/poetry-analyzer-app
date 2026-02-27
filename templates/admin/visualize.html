@@ -1,0 +1,156 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Visualize - Poetry Analyzer{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+        <i class="fas fa-chart-line text-primary mr-2"></i>
+        Visualizations
+    </h1>
+    <p class="text-gray-600">Advanced interactive visualization of poetry metrics.</p>
+</div>
+
+<!-- Interactive Chart UI here -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-bold mb-4">Select an Analysis to Visualize</h2>
+    <div class="flex space-x-4 mb-4">
+        <input type="text" id="analysisId" placeholder="Enter Analysis UUID..." class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+        <button onclick="loadVisualization()" class="px-6 py-2 bg-primary text-white font-bold rounded-lg hover:bg-blue-700 transition">
+            Load Data
+        </button>
+    </div>
+</div>
+
+<div id="vizContainer" class="hidden">
+    <!-- Lexical Diversity Radar -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="font-bold text-lg mb-4 text-center">Lexical Diversity Profile</h3>
+            <canvas id="lexicalChart"></canvas>
+        </div>
+        
+        <!-- Emotion Distribution Doughnut -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="font-bold text-lg mb-4 text-center">Emotional Distribution</h3>
+            <canvas id="emotionChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Rasa Distribution (if applicable) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-6" id="rasaContainer">
+            <h3 class="font-bold text-lg mb-4 text-center">Navarasa (Aesthetic Emotion)</h3>
+            <canvas id="rasaChart"></canvas>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="font-bold text-lg mb-4 text-center">Sentiment Arc (Line by Line)</h3>
+            <canvas id="sentimentArcChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let charts = {};
+
+async function loadVisualization() {
+    const uuid = document.getElementById('analysisId').value.trim();
+    if (!uuid) {
+        showToast('Please enter an analysis ID', 'warning');
+        return;
+    }
+
+    showLoading('Fetching visualization data...');
+    try {
+        const response = await axios.get(`/api/visualize/${uuid}`);
+        const data = response.data;
+        
+        document.getElementById('vizContainer').classList.remove('hidden');
+        renderCharts(data);
+        hideLoading();
+        showToast('Visualization loaded successfully', 'success');
+    } catch (e) {
+        hideLoading();
+        showToast('Failed to load visualization data. Check UUID.', 'error');
+        console.error(e);
+    }
+}
+
+function renderCharts(data) {
+    // Destroy previous
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+
+    // 1. Lexical Diversity
+    const lexData = data.lexical_diversity || {};
+    charts.lexical = new Chart(document.getElementById('lexicalChart'), {
+        type: 'radar',
+        data: {
+            labels: Object.keys(lexData),
+            datasets: [{
+                label: 'Lexical Diversity (Normalized)',
+                data: Object.values(lexData),
+                backgroundColor: 'rgba(30, 64, 175, 0.2)',
+                borderColor: '#1e40af',
+                pointBackgroundColor: '#1e40af'
+            }]
+        },
+        options: {
+            scales: { r: { min: 0, max: 1 } }
+        }
+    });
+
+    // 2. Emotion
+    const emoData = data.emotion_distribution || {};
+    charts.emotion = new Chart(document.getElementById('emotionChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(emoData),
+            datasets: [{
+                data: Object.values(emoData),
+                backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
+            }]
+        }
+    });
+
+    // 3. Rasa
+    const rasaData = data.rasa_distribution?.rasa_vector || {};
+    if (Object.keys(rasaData).length > 0) {
+        charts.rasa = new Chart(document.getElementById('rasaChart'), {
+            type: 'polarArea',
+            data: {
+                labels: Object.keys(rasaData),
+                datasets: [{
+                    label: 'Rasa Intensity',
+                    data: Object.values(rasaData),
+                    backgroundColor: 'rgba(236, 72, 153, 0.5)'
+                }]
+            }
+        });
+        document.getElementById('rasaContainer').style.display = 'block';
+    } else {
+        document.getElementById('rasaContainer').style.display = 'none';
+    }
+
+    // 4. Sentiment Arc
+    const arcData = data.sentiment_arc || [];
+    charts.arc = new Chart(document.getElementById('sentimentArcChart'), {
+        type: 'line',
+        data: {
+            labels: arcData.map((_, i) => `Line ${i+1}`),
+            datasets: [{
+                label: 'Valence',
+                data: arcData,
+                borderColor: '#8b5cf6',
+                tension: 0.4,
+                fill: true,
+                backgroundColor: 'rgba(139, 92, 246, 0.1)'
+            }]
+        }
+    });
+}
+</script>
+{% endblock %}

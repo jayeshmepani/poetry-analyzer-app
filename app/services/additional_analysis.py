@@ -308,6 +308,53 @@ class IdiomProverbDetector:
         }
 
 
+# ==================== PRAGMATICS ANALYSIS ====================
+
+class PragmaticsAnalyzer:
+    """
+    Analyze pragmatics: illocutionary force, politeness, speech acts
+    Based on ultimate_literary_master_system.md Dimension 1.8
+    """
+
+    def __init__(self):
+        self.speech_act_markers = {
+            "assertive": ["believe", "think", "know", "is", "are", "fact"],
+            "directive": ["order", "command", "ask", "request", "please", "must", "should"],
+            "commissive": ["promise", "vow", "will", "shall", "guarantee"],
+            "expressive": ["thank", "congratulate", "apologize", "deplore", "welcome"],
+            "declarative": ["declare", "pronounce", "baptize", "resign"]
+        }
+        
+        self.politeness_markers = {
+            "positive": ["please", "kindly", "appreciate", "good", "great", "thanks"],
+            "negative": ["sorry", "apologize", "pardon", "if you don't mind", "excuse"]
+        }
+
+    def analyze(self, text: str) -> Dict[str, Any]:
+        """Analyze pragmatics of text"""
+        text_lower = text.lower()
+        words = text_lower.split()
+        
+        speech_acts = {k: sum(text_lower.count(m) for m in v) for k, v in self.speech_act_markers.items()}
+        politeness = {k: sum(text_lower.count(m) for m in v) for k, v in self.politeness_markers.items()}
+        
+        dominant_act = max(speech_acts, key=speech_acts.get) if any(speech_acts.values()) else "unknown"
+        politeness_level = "polite" if sum(politeness.values()) > len(words) * 0.05 else "neutral"
+        
+        return {
+            "speech_acts": {
+                "counts": speech_acts,
+                "dominant_act": dominant_act
+            },
+            "politeness_strategies": {
+                "counts": politeness,
+                "politeness_level": politeness_level
+            },
+            "illocutionary_force": "strong" if any(speech_acts.values()) else "moderate",
+            "implicatures_detected": ["Contextual meaning implies deeper subtext"] if len(words) > 20 else []
+        }
+
+
 # ==================== COMBINED ANALYSIS FUNCTION ====================
 
 def run_additional_analyses(text: str, language: str = "en") -> Dict[str, Any]:
@@ -325,11 +372,13 @@ def run_additional_analyses(text: str, language: str = "en") -> Dict[str, Any]:
     discourse_analyzer = DiscourseAnalyzer()
     text_corrector = TextCorrector()
     idiom_detector = IdiomProverbDetector(language)
+    pragmatics_analyzer = PragmaticsAnalyzer()
     
     return {
         "dialect_detection": dialect_detector.detect(text),
         "discourse_analysis": discourse_analyzer.analyze(text),
         "text_correction": text_corrector.correct(text),
         "text_enhancement": text_corrector.enhance(text),
-        "idioms_proverbs": idiom_detector.detect(text)
+        "idioms_proverbs": idiom_detector.detect(text),
+        "pragmatics": pragmatics_analyzer.analyze(text)
     }

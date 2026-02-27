@@ -83,6 +83,13 @@ class AdminController(BaseController):
         """
         return self.view("admin/database.html", request)
 
+    async def visualize(self, request: Request):
+        """
+        Visualize Results Page
+        GET /admin/visualize
+        """
+        return self.view("admin/visualize.html", request)
+
     # ==================== API ENDPOINTS (AJAX) ====================
 
     async def analyze_post(self, request: Request):

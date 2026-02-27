@@ -128,6 +128,7 @@ def register_web_routes(app: FastAPI, templates: Jinja2Templates):
     route.get('/admin/batch', admin.batch, name='admin.batch')
     route.get('/admin/results', admin.results, name='admin.results')
     route.get('/admin/database', admin.database_status, name='admin.database')  # ⭐ NEW
+    route.get('/admin/visualize', admin.visualize, name='admin.visualize')
     route.get('/admin/forms', admin.forms, name='admin.forms')
     route.get('/admin/meters', admin.meters, name='admin.meters')
     route.get('/admin/rasas', admin.rasas, name='admin.rasas')

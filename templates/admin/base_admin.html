@@ -190,6 +190,11 @@
                     <span class="ml-2">Results</span>
                 </a>
 
+                <a href="/admin/visualize" class="nav-item block px-6 py-3 hover:bg-sidebarHover transition {% if 'visualize' in request.url.path %}active{% endif %}">
+                    <i class="fas fa-chart-line w-6"></i>
+                    <span class="ml-2">Visualizations</span>
+                </a>
+
                 <div class="border-t border-gray-700 my-4"></div>
 
                 <p class="px-6 py-2 text-xs text-gray-400 uppercase tracking-wider">References</p>
@@ -303,6 +308,8 @@
                 <a href="/admin/analyze" class="block px-6 py-3 hover:bg-sidebarHover transition">Analyze Text</a>
                 <a href="/admin/batch" class="block px-6 py-3 hover:bg-sidebarHover transition">Batch Analysis</a>
                 <a href="/admin/results" class="block px-6 py-3 hover:bg-sidebarHover transition">Results</a>
+                <a href="/admin/visualize" class="block px-6 py-3 hover:bg-sidebarHover transition">Visualizations</a>
+                <a href="/admin/database" class="block px-6 py-3 hover:bg-sidebarHover transition">Database</a>
                 <div class="border-t border-gray-700 my-4"></div>
                 <a href="/admin/forms" class="block px-6 py-3 hover:bg-sidebarHover transition">Poetic Forms</a>
                 <a href="/admin/meters" class="block px-6 py-3 hover:bg-sidebarHover transition">Meters</a>
