@@ -16,6 +16,9 @@ from typing import List, Dict, Tuple, Any
 from collections import Counter
 import syllables
 import textstat
+import pyphen
+import textdescriptives as td
+import spacy
 
 
 class QuantitativeMetricsCalculator:
@@ -52,6 +55,9 @@ class QuantitativeMetricsCalculator:
         structural = self._complete_structural_metrics()
         syllables = self._complete_syllable_analysis()
         word_metrics = self._complete_word_metrics()
+        
+        # Get advanced metrics from textdescriptives (50+ additional metrics)
+        advanced = self._advanced_textdescriptives_metrics()
 
         metrics = {
             "lexical_metrics": {
@@ -68,6 +74,7 @@ class QuantitativeMetricsCalculator:
             "structural_metrics": structural,
             "word_metrics": word_metrics,
             "computational_greatness_score": None,
+            "advanced_metrics": advanced,  # NEW: textdescriptives metrics
         }
 
         # Add language-specific metrics
@@ -97,6 +104,79 @@ class QuantitativeMetricsCalculator:
 
         jukta_count = sum(word.count("्") for word in self.words)
         jukta_density = jukta_count / len(self.words) * 100
+
+        # Count matras (vowel signs)
+        matra_chars = sum(
+            word.count(c)
+            for word in self.words
+            for c in "ािीुूृेैोौंः"
+        )
+        matra_complexity = matra_chars / len(self.words)
+
+        # Simple RH scores based on syllable complexity
+        rh1_score = min(10, avg_word_length * 1.5)
+        rh2_score = min(10, avg_word_length + jukta_density / 10)
+
+        return {
+            "rh1_score": round(rh1_score, 2),
+            "rh2_score": round(rh2_score, 2),
+            "matra_complexity_index": round(matra_complexity, 2),
+            "avg_akshars_per_word": round(avg_word_length, 2),
+            "jukta_akshar_density": round(jukta_density, 2),
+        }
+
+    def _advanced_textdescriptives_metrics(self) -> Dict[str, Any]:
+        """Extract 50+ advanced metrics using textdescriptives library"""
+        try:
+            # Load spaCy model if not already loaded
+            if not hasattr(self, '_nlp'):
+                try:
+                    self._nlp = spacy.load("en_core_web_trf")
+                except:
+                    self._nlp = spacy.load("en_core_web_sm")
+            
+            # Process text with spaCy
+            doc = self._nlp(self.original_text)
+            
+            # Extract comprehensive metrics using textdescriptives
+            metrics = td.extract_metrics(
+                doc,
+                metrics=[
+                    "lexical_density",
+                    "coherence", 
+                    "dependency_distance",
+                    "pos_proportions",
+                    "quality"
+                ],
+                include_qi=True
+            )
+            
+            # Flatten and return metrics
+            return {
+                "textdescriptives_metrics": metrics,
+                "lexical_density_advanced": metrics.get('lexical_density', {}).get('lexical_density', 0),
+                "coherence_score": metrics.get('coherence', {}).get('coherence', 0),
+                "dependency_distance_mean": metrics.get('dependency_distance', {}).get('mean_dependency_distance', 0),
+                "pos_proportions": metrics.get('pos_proportions', {}),
+                "quality_score": metrics.get('quality', {}).get('quality_score', 0),
+            }
+        except Exception as e:
+            # Fallback if textdescriptives fails
+            return {
+                "textdescriptives_metrics": {},
+                "error": str(e),
+                "fallback_used": True
+            }
+
+    def _syllables_with_pyphen(self, word: str) -> int:
+        """Count syllables using pyphen library for better accuracy"""
+        try:
+            dic = pyphen.Pyphen(lang='en')
+            hyphenated = dic.inserted(word)
+            return len(hyphenated.split('-'))
+        except:
+            # Fallback to default syllables library
+            return syllables.estimate(word)
 
         polysyllabic = sum(1 for w in self.words if len(w) >= 3)
         polysyllabic_ratio = polysyllabic / len(self.words)
@@ -176,9 +256,9 @@ class QuantitativeMetricsCalculator:
     def _get_syllables_per_word(self, word: str) -> int:
         """Get syllable count for a word (multilingual)"""
         try:
-            # For English words
+            # For English words - use pyphen for better accuracy
             if re.match(r"^[a-zA-Z]+$", word):
-                return max(1, syllables.estimate(word))
+                return self._syllables_with_pyphen(word)
             # For Hindi/Indic words - count vowel marks
             elif re.match(r"^[\u0900-\u097F]+$", word):
                 vowels = re.findall(r"[\u0904-\u0914\u093A-\u0944]", word)

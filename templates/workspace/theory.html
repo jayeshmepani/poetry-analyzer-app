@@ -1,0 +1,131 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block title %}Theoretical Vectors - PoetryMaster{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <!-- Page Header (Section 2.1) -->
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-4xl font-black text-slate-900 tracking-tight">Theoretical Deconstruction</h2>
+            <p class="text-slate-500 mt-1 font-medium italic">Apply 11 critical frameworks to reveal the deep structural meaning of literary data</p>
+        </div>
+    </div>
+
+    <!-- Theory Selection Grid (Bento Style - Section 14.1) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        ${[
+            ['new_criticism', 'New Criticism', 'text-blue-600'],
+            ['structuralism', 'Structuralism', 'text-emerald-600'],
+            ['deconstruction', 'Deconstruction', 'text-amber-600'],
+            ['feminist', 'Feminist', 'text-rose-600'],
+            ['marxist', 'Marxist', 'text-red-600'],
+            ['psychoanalytic', 'Psychoanalytic', 'text-purple-600'],
+            ['reader_response', 'Reader Response', 'text-cyan-600'],
+            ['ecocriticism', 'Ecocriticism', 'text-green-600'],
+            ['postcolonial', 'Postcolonial', 'text-orange-600'],
+            ['formalism', 'Formalism', 'text-indigo-600'],
+            ['archetypal', 'Archetypal', 'text-teal-600']
+        ].map(([id, name, color]) => `
+            <button onclick="selectTheory('${id}')" id="theory-${id}" class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
+                <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
+                <div class="text-sm font-black ${color} group-hover:text-primary transition-colors">${name}</div>
+            </button>
+        `).join('')}
+    </div>
+
+    <!-- Input Area -->
+    <div class="rounded-box">
+        <h3 class="kpi-label">Target Text Vector</h3>
+        <textarea id="poemText" rows="10" placeholder="Paste literary source code for deconstruction..." 
+            class="w-full mt-4 p-8 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-serif italic text-xl leading-relaxed focus:ring-4 focus:ring-blue-100 transition"></textarea>
+        
+        <div class="mt-8 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-black text-slate-400 uppercase">Active Theory:</span>
+                <span id="activeTheoryLabel" class="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest">None Selected</span>
+            </div>
+            <button onclick="analyzeWithTheory()" class="btn btn-primary px-12 py-4 rounded-2xl text-lg shadow-xl shadow-blue-500/20">
+                <i class="fas fa-microscope mr-2"></i> Execute Deconstruction
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Surface -->
+    <div id="theoryResults" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div class="rounded-box border-l-8 border-l-primary bg-blue-50/30">
+            <h3 class="text-2xl font-black text-slate-900 mb-6 flex items-center">
+                <i class="fas fa-brain text-primary mr-3"></i>
+                Critical Synthesis
+            </h3>
+            <div id="resultsContent" class="space-y-8">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedTheory = null;
+
+function selectTheory(theory) {
+    selectedTheory = theory;
+    document.querySelectorAll('.theory-card').forEach(c => c.classList.remove('border-primary', 'bg-blue-50'));
+    document.getElementById(`theory-${theory}`).classList.add('border-primary', 'bg-blue-50');
+    document.getElementById('activeTheoryLabel').textContent = theory.replace('_', ' ').toUpperCase();
+    showToast(`Theory Vector Locked: ${theory.replace('_', ' ').toUpperCase()}`, 'info');
+}
+
+async function analyzeWithTheory() {
+    if (!selectedTheory) {
+        showToast('System Protocol: Please lock a critical framework first', 'warning');
+        return;
+    }
+    
+    const poem = document.getElementById('poemText').value;
+    if (!poem) {
+        showToast('Source Vector Required', 'warning');
+        return;
+    }
+    
+    showLoading('Executing critical synthesis...');
+    try {
+        const response = await axios.post('/api/analysis/theory', { poem: poem, theory: selectedTheory });
+        const result = response.data.success ? response.data.data : response.data;
+        
+        document.getElementById('resultsContent').innerHTML = `
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="space-y-6">
+                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Primary Insights</h4>
+                    <ul class="space-y-4">
+                        ${result.insights.map(i => `
+                            <li class="flex items-start gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[10px] text-blue-600 font-black">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                                <span class="text-slate-700 font-medium">${i}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                <div class="space-y-6">
+                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Theoretical Interpretation</h4>
+                    <div class="p-8 bg-white rounded-[2rem] border border-slate-100 shadow-sm font-serif italic text-xl text-slate-800 leading-loose">
+                        "${result.interpretation}"
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('theoryResults').classList.remove('hidden');
+        showToast('Deconstruction successful', 'success');
+    } catch (error) {
+        console.error('Synthesis failure:', error);
+        showToast('Critical engine error', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+</script>
+{% endblock %}

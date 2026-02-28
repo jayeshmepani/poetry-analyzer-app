@@ -56,7 +56,7 @@ class EvaluationEngine:
         publishability = self._assess_publishability()
 
         # Performance assessment (for spoken word)
-        performance = self._assess_performance()
+        performance = self._assess_performance_detailed(self.text, self.metrics)
 
         # Generate corrected versions
         minimal_corrected = self._generate_minimal_corrected()
@@ -323,7 +323,28 @@ class EvaluationEngine:
                 "impact": "Creates musical rhythm and flow"
             })
 
-        return strengths[:5]
+        # Check Alankar (for Indic)
+        alankar = literary.get("sanskrit_alankar", {})
+        alankar_count = sum(len(v) for v in alankar.values())
+        if alankar_count > 2:
+            strengths.append({
+                "category": "Classical Devices",
+                "description": "Rich use of Sanskrit/Hindi Alankars (figures of speech)",
+                "evidence": f"{alankar_count} Alankars detected",
+                "impact": "Demonstrates mastery of classical poetic ornamentation"
+            })
+
+        # Check Rasa
+        rasa = literary.get("rasa_vector", {})
+        if rasa and rasa.get("dominant_rasa"):
+            strengths.append({
+                "category": "Emotional Essence",
+                "description": f"Strong presence of {rasa.get('dominant_rasa').capitalize()} Rasa",
+                "evidence": "Consistent emotional tone detected via Navarasa theory",
+                "impact": "Evokes a powerful aesthetic experience (rasanubhuti)"
+            })
+
+        return strengths[:6]
 
     def _identify_issues(self) -> List[Dict[str, Any]]:
         """Identify issues in the work"""
@@ -392,7 +413,16 @@ class EvaluationEngine:
                 "example": "Avoid clichés and seek unexpected comparisons"
             })
 
-        return suggestions[:5]
+        # Rasa suggestions
+        if ratings.get("emotional_impact", 5) < 6:
+            suggestions.append({
+                "priority": 2,
+                "category": "Emotional Resonance",
+                "description": "Deepen the dominant Rasa (emotional essence) using appropriate Bhavas",
+                "example": "Use Vibhavas (stimuli) and Anubhavas (reactions) to evoke specific emotions"
+            })
+
+        return suggestions[:6]
 
     def _assess_publishability(self) -> Dict[str, Any]:
         """Assess publishability"""
@@ -436,26 +466,42 @@ class EvaluationEngine:
                 "recommended_venues": ["Writing workshops", "Mentorship programs", "Practice and revision"]
             }
 
-    def _assess_performance(self) -> Dict[str, Any]:
-        """Assess suitability for spoken word/performance"""
-        lines = self.text.split('\n')
-        total_lines = len([l for l in lines if l.strip()])
-
-        # Check for performance-friendly features
-        has_refrain = any(lines.count(l) > 1 for l in lines if len(l.strip()) > 5)
-        has_rhyme = self.metrics.get("prosody", {}).get("rhyme", {}).get("rhyme_density", 0) > 0.5
-        has_strong_rhythm = self.metrics.get("prosody", {}).get("meter", {}).get("metrical_regularity", 0) > 0.5
-
-        suitable = has_refrain or has_rhyme or has_strong_rhythm or total_lines < 30
-
+    def _assess_performance_detailed(self, text: str, metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Detailed assessment for spoken word/performance based on real metrics
+        """
+        lines = [l for l in text.split('\n') if l.strip()]
+        prosody = metrics.get("prosody", {})
+        literary = metrics.get("literary_devices", {})
+        
+        # Calculate scores based on linguistic features
+        vocal_score = 5.0
+        if literary.get("schemes", {}).get("alliteration"): vocal_score += 2.0
+        if prosody.get("meter", {}).get("metrical_regularity", 0) > 0.6: vocal_score += 2.0
+        
+        breath_score = 7.0
+        avg_len = sum(len(l.split()) for l in lines) / len(lines) if lines else 0
+        if avg_len > 12: breath_score -= 2.0 # Challenging long lines
+        
+        dramatic_score = metrics.get("advanced", {}).get("sentiment", {}).get("valence", 0) * 5 + 5
+        
+        overall = (vocal_score + breath_score + dramatic_score) / 3
+        
         return {
-            "suitable_for_performance": suitable,
-            "physical_presence_notes": "Consider gestures that match emotional peaks",
-            "vocal_dynamics_notes": "Vary pace and volume to emphasize key images",
-            "breath_units": f"Average line length suggests {'comfortable' if total_lines < 20 else 'challenging'} breath control",
-            "dramatic_appropriateness": "Text contains natural pauses for dramatic effect",
-            "audience_engagement_potential": "High" if suitable else "Moderate",
-            "memorability_score": 7.5 if has_refrain else 6.0
+            "overall": round(overall, 1),
+            "vocal": round(min(10, vocal_score), 1),
+            "breath": round(min(10, breath_score), 1),
+            "dramatic": round(min(10, dramatic_score), 1),
+            "engagement": round(metrics.get("evaluation", {}).get("ratings", {}).get("emotional_impact", 5), 1),
+            "vocal_notes": "Rich sound patterns detected suggest dynamic delivery." if vocal_score > 7 else "Simple structure for clear delivery.",
+            "breath_notes": f"Average line length of {avg_len:.1f} words allows for natural breathing." if breath_score > 6 else "Long complex lines require advanced breath control.",
+            "dramatic_notes": "Significant emotional variance detected." if dramatic_score > 7 else "Steady emotional tone.",
+            "engagement_notes": "Strong imagery facilitates audience connection.",
+            "recommendations": [
+                "Vary tempo during highly alliterative passages",
+                "Use the natural line breaks for strategic pauses",
+                "Emphasize sensory imagery to anchor audience attention"
+            ]
         }
 
     def _generate_minimal_corrected(self) -> Optional[str]:

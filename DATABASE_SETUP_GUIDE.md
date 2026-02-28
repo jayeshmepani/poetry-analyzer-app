@@ -1,455 +1,355 @@
-# Database Setup Guide - PostgreSQL + SQLAlchemy + Alembic
+# Database Setup Guide
 
-## 📋 Overview
+Complete guide for setting up databases with Poetry Analyzer App.
 
-Complete MVC architecture with PostgreSQL database for persistent storage of all poetry analyses.
+## Quick Start
+
+### Option 1: SQLite (Easiest - Recommended for Development)
+
+SQLite is already configured by default. No setup required!
+
+```bash
+# Just run the initialization script
+python init_db.py
+
+# Start the application
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 9000
+```
+
+**Pros:**
+- ✅ No installation required
+- ✅ Zero configuration
+- ✅ Perfect for development/testing
+- ✅ Single file database
+
+**Cons:**
+- ❌ Not suitable for production
+- ❌ Limited concurrency
+- ❌ No client-server architecture
 
 ---
 
-## 🔧 Installation
+### Option 2: MySQL/MariaDB (Production-Ready)
 
-### 1. Install PostgreSQL
+#### Step 1: Install MySQL
 
-**Ubuntu/Debian:**
 ```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install mysql-server mysql-client
+
+# Start MySQL service
+sudo systemctl start mysql
+sudo systemctl enable mysql
+```
+
+#### Step 2: Run Setup Script
+
+```bash
+chmod +x setup_mysql.sh
+./setup_mysql.sh
+```
+
+#### Step 3: Update .env File
+
+Edit `.env` and change `DATABASE_URL`:
+
+```bash
+# Comment out SQLite
+# DATABASE_URL="sqlite:///./poetry_analyzer.db"
+
+# Enable MySQL
+DATABASE_URL="mysql+pymysql://poetry_user:poetry_password@localhost:3306/poetry_analyzer"
+```
+
+#### Step 4: Install MySQL Driver
+
+```bash
+pip install pymysql cryptography
+```
+
+#### Step 5: Initialize Database
+
+```bash
+python init_db.py
+```
+
+---
+
+### Option 3: PostgreSQL (Recommended for Production)
+
+#### Step 1: Install PostgreSQL
+
+```bash
+# Ubuntu/Debian
 sudo apt update
 sudo apt install postgresql postgresql-contrib
+
+# Start PostgreSQL service
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
 ```
 
-**macOS (Homebrew):**
+#### Step 2: Run Setup Script
+
 ```bash
-brew install postgresql@15
-brew services start postgresql@15
+chmod +x setup_postgresql.sh
+./setup_postgresql.sh
 ```
 
-**Windows:**
-Download from: https://www.postgresql.org/download/windows/
+#### Step 3: Update .env File
 
-### 2. Create Database
+Edit `.env` and change `DATABASE_URL`:
 
 ```bash
-# Login to PostgreSQL
-sudo -u postgres psql
+# Comment out SQLite
+# DATABASE_URL="sqlite:///./poetry_analyzer.db"
 
-# Create database and user
-CREATE DATABASE poetry_analyzer;
-CREATE USER poetry_user WITH PASSWORD 'poetry_password';
-GRANT ALL PRIVILEGES ON DATABASE poetry_analyzer TO poetry_user;
-\q
+# Enable PostgreSQL
+DATABASE_URL="postgresql://poetry_user:poetry_password@localhost:5432/poetry_analyzer"
 ```
 
-### 3. Configure Environment
-
-Create `.env` file:
-```bash
-DATABASE_URL=postgresql://poetry_user:poetry_password@localhost:5432/poetry_analyzer
-```
-
-### 4. Install Python Dependencies
+#### Step 4: Initialize Database
 
 ```bash
-cd poetry_analyzer_app
-source .env/bin/activate
-pip install sqlalchemy alembic 'psycopg[binary]'
+python init_db.py
 ```
 
 ---
 
-## 📁 Files Created
+## Database Configuration Reference
 
-### 1. `app/database.py`
-- Database connection setup
-- Session management
-- Engine configuration with pooling
-
-### 2. `app/models.py`
-- `AnalysisResult` model - stores all analysis data
-- `DatabaseStats` model - aggregated statistics
-- Full-text search indexes
-- JSON columns for flexible analysis storage
-
-### 3. `app/crud.py` (To be created)
-- Create, Read, Update, Delete operations
-- Query helpers
-- Statistics functions
-
-### 4. `alembic/` (To be created)
-- Database migrations
-- Version control for schema
-
----
-
-## 🗄️ Database Schema
-
-### AnalysisResult Table
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Integer | Primary key |
-| uuid | String(36) | Unique identifier (for API) |
-| title | String(255) | Poem/text title |
-| text | Text | Full text content |
-| language | String(10) | Language code (en, hi, gu, etc.) |
-| poetic_form | String(100) | Form (sonnet, haiku, etc.) |
-| overall_score | Float | Overall quality score (0-10) |
-| technical_craft_score | Float | Technical craft rating |
-| language_diction_score | Float | Language & diction rating |
-| imagery_voice_score | Float | Imagery & voice rating |
-| emotional_impact_score | Float | Emotional impact rating |
-| cultural_fidelity_score | Float | Cultural fidelity rating |
-| originality_score | Float | Originality rating |
-| quantitative_metrics | JSON | Full metrics data |
-| prosody_analysis | JSON | Meter/rhyme analysis |
-| literary_devices | JSON | Detected devices |
-| sentiment_analysis | JSON | Sentiment data |
-| evaluation | JSON | Complete evaluation |
-| executive_summary | Text | AI-generated summary |
-| word_count | Integer | Word count |
-| line_count | Integer | Line count |
-| created_at | DateTime | Creation timestamp |
-| updated_at | DateTime | Last update timestamp |
-
-**Indexes:**
-- `idx_language_created` - For filtering by language + date
-- `idx_overall_score` - For sorting by quality
-- `idx_form` - For filtering by poetic form
-- `uuid` - Unique index for API lookups
-
----
-
-## 🚀 Usage
-
-### Initialize Database
-
-```python
-from app.database import init_db
-init_db()
+### SQLite
+```env
+DATABASE_URL="sqlite:///./poetry_analyzer.db"
 ```
 
-### Create Analysis Result
-
-```python
-from app.database import SessionLocal
-from app.models import AnalysisResult
-
-db = SessionLocal()
-try:
-    result = AnalysisResult(
-        title="My Poem",
-        text="Roses are red...",
-        language="en",
-        overall_score=8.5,
-        quantitative_metrics={...},
-        # ... other fields
-    )
-    db.add(result)
-    db.commit()
-    db.refresh(result)
-    print(f"Created: {result.uuid}")
-finally:
-    db.close()
+### MySQL
+```env
+DATABASE_URL="mysql+pymysql://username:password@localhost:3306/database_name"
 ```
 
-### Query Results
-
-```python
-# Get all results
-results = db.query(AnalysisResult).all()
-
-# Filter by language
-english_results = db.query(AnalysisResult).filter(
-    AnalysisResult.language == 'en'
-).all()
-
-# Get recent high-scoring poems
-best_recent = db.query(AnalysisResult).filter(
-    AnalysisResult.overall_score >= 8.0
-).order_by(
-    AnalysisResult.created_at.desc()
-).limit(10).all()
-
-# Get by UUID
-result = db.query(AnalysisResult).filter(
-    AnalysisResult.uuid == '...'
-).first()
-```
-
-### Update Result
-
-```python
-result = db.query(AnalysisResult).filter(
-    AnalysisResult.uuid == uuid
-).first()
-
-if result:
-    result.overall_score = 9.0
-    db.commit()
-    db.refresh(result)
-```
-
-### Delete Result
-
-```python
-result = db.query(AnalysisResult).filter(
-    AnalysisResult.uuid == uuid
-).first()
-
-if result:
-    db.delete(result)
-    db.commit()
+### PostgreSQL
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
 ```
 
 ---
 
-## 📊 Statistics & Analytics
+## Migration Management (Alembic)
 
-### Get Database Stats
-
-```python
-from sqlalchemy import func
-
-# Total analyses
-total = db.query(func.count(AnalysisResult.id)).scalar()
-
-# By language
-by_language = db.query(
-    AnalysisResult.language,
-    func.count(AnalysisResult.id)
-).group_by(AnalysisResult.language).all()
-
-# Average score
-avg_score = db.query(
-    func.avg(AnalysisResult.overall_score)
-).scalar()
-
-# Recent activity (last 7 days)
-from datetime import datetime, timedelta
-week_ago = datetime.utcnow() - timedelta(days=7)
-recent = db.query(AnalysisResult).filter(
-    AnalysisResult.created_at >= week_ago
-).count()
-```
-
----
-
-## 🔌 Integration with FastAPI
-
-### Update API Endpoints
-
-```python
-from fastapi import Depends
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import AnalysisResult
-
-@app.post("/api/v1/analyze")
-async def analyze_text(
-    input: AnalysisInput,
-    db: Session = Depends(get_db)
-):
-    # Perform analysis
-    result = await analysis_service.analyze(input)
-    
-    # Save to database
-    db_result = AnalysisResult(
-        title=input.title,
-        text=input.text,
-        language=input.language,
-        overall_score=result['evaluation']['overall_score'],
-        quantitative_metrics=result['quantitative_metrics'],
-        # ... map all fields
-    )
-    db.add(db_result)
-    db.commit()
-    db.refresh(db_result)
-    
-    # Return with UUID
-    return {**result, 'id': db_result.uuid}
-
-@app.get("/api/v1/result/{result_id}")
-async def get_result(
-    result_id: str,
-    db: Session = Depends(get_db)
-):
-    result = db.query(AnalysisResult).filter(
-        AnalysisResult.uuid == result_id
-    ).first()
-    
-    if not result:
-        raise HTTPException(404, "Result not found")
-    
-    return result.to_full_dict()
-
-@app.get("/api/v1/results")
-async def list_results(
-    limit: int = 20,
-    offset: int = 0,
-    language: str = None,
-    db: Session = Depends(get_db)
-):
-    query = db.query(AnalysisResult)
-    
-    if language:
-        query = query.filter(AnalysisResult.language == language)
-    
-    results = query.order_by(
-        AnalysisResult.created_at.desc()
-    ).offset(offset).limit(limit).all()
-    
-    return [r.to_dict() for r in results]
-
-@app.delete("/api/v1/result/{result_id}")
-async def delete_result(
-    result_id: str,
-    db: Session = Depends(get_db)
-):
-    result = db.query(AnalysisResult).filter(
-        AnalysisResult.uuid == result_id
-    ).first()
-    
-    if not result:
-        raise HTTPException(404, "Result not found")
-    
-    db.delete(result)
-    db.commit()
-    
-    return {"message": "Deleted successfully"}
-```
-
----
-
-## 📦 Alembic Migrations
-
-### Initialize Alembic
+### Initialize Alembic (Already Done)
 
 ```bash
-cd poetry_analyzer_app
-alembic init alembic
+# The alembic configuration is already set up
+# alembic.ini - Configuration file
+# alembic/ - Migration scripts directory
 ```
 
-### Configure alembic.ini
-
-```ini
-[alembic]
-script_location = alembic
-sqlalchemy.url = postgresql://poetry_user:poetry_password@localhost:5432/poetry_analyzer
-
-[loggers]
-keys = root,sqlalchemy,alembic
-```
-
-### Update alembic/env.py
-
-```python
-from app.database import Base
-from app import models  # Import all models
-
-target_metadata = Base.metadata
-```
-
-### Create Migration
+### Create New Migration
 
 ```bash
-alembic revision --autogenerate -m "Initial migration - analysis_results table"
+# After making changes to models
+alembic revision --autogenerate -m "Description of changes"
 ```
 
-### Apply Migration
+### Apply Migrations
 
 ```bash
+# Apply all pending migrations
 alembic upgrade head
 ```
 
-### Rollback Migration
+### Check Migration Status
 
 ```bash
+# Show current revision and pending migrations
+alembic current
+alembic history
+```
+
+### Rollback Migrations
+
+```bash
+# Rollback one migration
 alembic downgrade -1
+
+# Rollback to specific revision
+alembic downgrade <revision_id>
 ```
 
 ---
 
-## 🎯 Benefits
+## Database Verification
 
-### Before (In-Memory)
-- ❌ Data lost on restart
-- ❌ No persistence
-- ❌ No querying/filtering
-- ❌ No analytics
-- ❌ No backup/restore
+### Test Connection
 
-### After (PostgreSQL)
-- ✅ Persistent storage
-- ✅ Data survives restarts
-- ✅ Complex queries (filter by language, score, date)
-- ✅ Analytics & statistics
-- ✅ Backup/restore support
-- ✅ Scalable (connection pooling)
-- ✅ ACID compliance
-- ✅ Full-text search capability
-
----
-
-## 📈 Performance
-
-### Connection Pooling
-```python
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=10,        # 10 concurrent connections
-    max_overflow=20,     # Allow up to 20 extra
-    pool_pre_ping=True   # Auto-reconnect
-)
-```
-
-### Indexes for Common Queries
-- Language + Date filtering
-- Score-based sorting
-- UUID lookups
-- Poetic form filtering
-
-### JSON Columns
-- Flexible schema for analysis data
-- No need to migrate on analysis format changes
-- PostgreSQL native JSON support
-
----
-
-## 🔒 Security
-
-### Environment Variables
 ```bash
-# .env (DO NOT COMMIT TO GIT)
-DATABASE_URL=postgresql://user:password@localhost/db
+python -c "from app.database import test_connection; print('✅ Success!' if test_connection() else '❌ Failed')"
 ```
 
-### Add to .gitignore
-```
-.env
-__pycache__/
-*.pyc
-.db
+### Check Database Info
+
+```python
+from app.database import get_database_info
+info = get_database_info()
+print(info)
 ```
 
-### SQL Injection Protection
-- SQLAlchemy ORM parameterizes all queries
-- No raw SQL in application code
+### View Database Stats
+
+```bash
+python init_db.py
+```
 
 ---
 
-## 📝 Next Steps
+## Troubleshooting
 
-1. **Create CRUD module** (`app/crud.py`)
-2. **Setup Alembic migrations**
-3. **Update API endpoints** to use database
-4. **Create database admin UI** for viewing results
-5. **Add backup script** for production
-6. **Setup connection pooling** monitoring
+### MySQL Connection Issues
+
+**Problem:** `Can't connect to MySQL server`
+
+**Solutions:**
+1. Check if MySQL is running:
+   ```bash
+   sudo systemctl status mysql
+   ```
+
+2. Verify credentials in `.env`
+
+3. Test connection manually:
+   ```bash
+   mysql -u poetry_user -p poetry_password -e "SELECT 1;"
+   ```
+
+4. Check MySQL bind address in `/etc/mysql/mysql.conf.d/mysqld.cnf`:
+   ```ini
+   bind-address = 127.0.0.1
+   ```
+
+### PostgreSQL Connection Issues
+
+**Problem:** `FATAL: password authentication failed`
+
+**Solutions:**
+1. Check `pg_hba.conf`:
+   ```bash
+   sudo nano /etc/postgresql/*/main/pg_hba.conf
+   ```
+   Ensure this line exists:
+   ```
+   local   all             all                                     md5
+   ```
+
+2. Restart PostgreSQL:
+   ```bash
+   sudo systemctl restart postgresql
+   ```
+
+3. Reset password:
+   ```bash
+   sudo -u postgres psql -c "ALTER USER poetry_user WITH PASSWORD 'poetry_password';"
+   ```
+
+### SQLite Issues
+
+**Problem:** `database is locked`
+
+**Solutions:**
+1. Close other applications using the database
+2. Delete the database file and reinitialize:
+   ```bash
+   rm poetry_analyzer.db
+   python init_db.py
+   ```
 
 ---
 
-**Status**: ✅ Database Layer Complete  
-**Version**: 3.0.0  
-**Database**: PostgreSQL 15+  
-**ORM**: SQLAlchemy 2.0  
-**Migrations**: Alembic 1.13
+## Performance Tuning
+
+### MySQL
+
+Add to `/etc/mysql/mysql.conf.d/mysqld.cnf`:
+```ini
+[mysqld]
+# Optimize for better performance
+innodb_buffer_pool_size = 128M
+innodb_log_file_size = 64M
+innodb_flush_log_at_trx_commit = 2
+```
+
+### PostgreSQL
+
+Add to `/etc/postgresql/*/main/postgresql.conf`:
+```conf
+# Optimize for better performance
+shared_buffers = 128MB
+effective_cache_size = 512MB
+work_mem = 10MB
+```
+
+---
+
+## Backup & Restore
+
+### MySQL Backup
+
+```bash
+# Backup
+mysqldump -u poetry_user -p poetry_password poetry_analyzer > backup.sql
+
+# Restore
+mysql -u poetry_user -p poetry_password poetry_analyzer < backup.sql
+```
+
+### PostgreSQL Backup
+
+```bash
+# Backup
+pg_dump -U poetry_user poetry_analyzer > backup.sql
+
+# Restore
+psql -U poetry_user poetry_analyzer < backup.sql
+```
+
+### SQLite Backup
+
+```bash
+# Backup
+cp poetry_analyzer.db poetry_analyzer.backup.db
+
+# Restore
+cp poetry_analyzer.backup.db poetry_analyzer.db
+```
+
+---
+
+## Security Best Practices
+
+1. **Use Strong Passwords**
+   - Change default password in setup scripts
+   - Use at least 16 characters with mixed case, numbers, and symbols
+
+2. **Restrict Database Access**
+   - Only allow localhost connections in production
+   - Use firewall rules to block external access
+
+3. **Environment Variables**
+   - Never commit `.env` file to version control
+   - Use secrets management in production
+
+4. **Regular Backups**
+   - Set up automated daily backups
+   - Test restore procedures regularly
+
+---
+
+## Support
+
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review application logs: `logs/app.log`
+3. Check database logs:
+   - MySQL: `/var/log/mysql/error.log`
+   - PostgreSQL: `/var/log/postgresql/postgresql-*.log`

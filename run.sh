@@ -1,53 +1,143 @@
 #!/bin/bash
-# Ultimate Literary & Linguistic Master System
-# Run script for Poetry Analyzer Application
+# Poetry Analyzer Application - Run Script
+# Supports both FastAPI and Flask
 
 set -e
 
-echo "========================================"
-echo "  Ultimate Literary Master System"
-echo "  Poetry & Literary Analysis Backend"
-echo "========================================"
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Default settings
+FRAMEWORK="${FRAMEWORK:-fastapi}"  # fastapi or flask
+HOST="${HOST:-0.0.0.0}"
+PORT="${PORT:-9000}"
+DEBUG="${DEBUG:-false}"
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --framework)
+            FRAMEWORK="$2"
+            shift 2
+            ;;
+        --host)
+            HOST="$2"
+            shift 2
+            ;;
+        --port)
+            PORT="$2"
+            shift 2
+            ;;
+        --debug)
+            DEBUG="true"
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --framework FRAMEWORK  Use FRAMEWORK (fastapi or flask, default: fastapi)"
+            echo "  --host HOST            Host to bind to (default: 0.0.0.0)"
+            echo "  --port PORT            Port to bind to (default: 9000)"
+            echo "  --debug                Enable debug mode"
+            echo "  -h, --help             Show this help message"
+            echo ""
+            echo "Environment Variables:"
+            echo "  FRAMEWORK              Set framework (fastapi or flask)"
+            echo "  HOST                   Set host"
+            echo "  PORT                   Set port"
+            echo "  DEBUG                  Enable debug mode"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            exit 1
+            ;;
+    esac
+done
+
+echo ""
+echo "=============================================================="
+echo "  Poetry Analyzer Application"
+echo "=============================================================="
+echo ""
+echo "Configuration:"
+echo "  Framework: ${FRAMEWORK}"
+echo "  Host: ${HOST}"
+echo "  Port: ${PORT}"
+echo "  Debug: ${DEBUG}"
 echo ""
 
 # Check if virtual environment exists
-if [ ! -d ".env" ]; then
-    echo "❌ Virtual environment not found!"
+if [ ! -d "venv" ]; then
+    echo -e "${YELLOW}⚠️  Virtual environment not found!${NC}"
     echo "Creating virtual environment..."
-    python3 -m venv .env
+    python3 -m venv venv
     echo "✅ Virtual environment created"
-    echo ""
-    echo "⚠️  Now installing dependencies..."
-    source .env/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt
-    python -m spacy download en_core_web_sm
-    echo ""
-    echo "✅ Installation complete!"
     echo ""
 fi
 
 # Activate virtual environment
-echo "✅ Using virtual environment: .env"
-source .env/bin/activate
+echo "✅ Activating virtual environment..."
+source venv/bin/activate
+
+# Check/install dependencies
+echo "📦 Checking dependencies..."
+if ! python -c "import flask" 2>/dev/null; then
+    echo "   Installing Flask..."
+    pip install flask flask-cors
+fi
+
+if ! python -c "import fastapi" 2>/dev/null; then
+    echo "   Installing FastAPI..."
+    pip install fastapi uvicorn
+fi
 
 # Initialize database if needed
+echo ""
 echo "📊 Checking database..."
-python -c "from app.database_verifier import init_database; init_database()" 2>/dev/null || true
+if [ ! -f "poetry_analyzer.db" ]; then
+    echo "   Initializing database..."
+    python init_db.py || true
+else
+    echo "   ✅ Database found"
+fi
 
-# Run the application
+# Start the application
 echo ""
-echo "========================================"
-echo "  Starting FastAPI Server..."
-echo "========================================"
-echo ""
-echo "🌐 Web Interface: http://localhost:8000/admin"
-echo "📖 API Documentation: http://localhost:8000/docs"
-echo "📄 Redoc: http://localhost:8000/redoc"
-echo "❤️  Health Check: http://localhost:8000/health"
-echo ""
-echo "Press Ctrl+C to stop"
+echo "=============================================================="
+echo "  Starting ${FRAMEWORK^} Server..."
+echo "=============================================================="
 echo ""
 
-# Start the server
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+if [ "${FRAMEWORK}" = "flask" ]; then
+    # Flask
+    echo "🌐 Web Interface: http://${HOST}:${PORT}/dashboard"
+    echo "❤️  Health Check: http://${HOST}:${PORT}/health"
+    echo ""
+    echo "Press Ctrl+C to stop"
+    echo ""
+    
+    export FLASK_APP=flask_app.py
+    export FLASK_ENV=${DEBUG:+development}${DEBUG:-production}
+    
+    python flask_app.py --host "${HOST}" --port "${PORT}" ${DEBUG:+--debug}
+else
+    # FastAPI
+    echo "🌐 Web Interface: http://${HOST}:${PORT}/dashboard"
+    echo "📖 API Documentation: http://${HOST}:${PORT}/docs"
+    echo "📄 Redoc: http://${HOST}:${PORT}/redoc"
+    echo "❤️  Health Check: http://${HOST}:${PORT}/health"
+    echo ""
+    echo "Press Ctrl+C to stop"
+    echo ""
+    
+    if [ "${DEBUG}" = "true" ]; then
+        uvicorn app.main:app --host "${HOST}" --port "${PORT}" --reload
+    else
+        uvicorn app.main:app --host "${HOST}" --port "${PORT}"
+    fi
+fi

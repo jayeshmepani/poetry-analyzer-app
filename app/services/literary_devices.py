@@ -25,7 +25,8 @@ class LiteraryDevicesAnalyzer:
         """Run complete literary devices analysis"""
         self.text = text
         self.lines = [l.strip() for l in text.split('\n') if l.strip()]
-        self.words = re.findall(r'\b[a-zA-Z]+\b', text.lower())
+        # Support for multilingual word extraction (including Devanagari)
+        self.words = re.findall(r'[\w]+', text.lower(), re.UNICODE)
 
         result = {
             "tropes": self._analyze_tropes(),
@@ -984,7 +985,11 @@ class LiteraryDevicesAnalyzer:
             r'\bas\s+\w+\s+as\b',
             r'\bजैसा\b',
             r'\bसा\b',
-            r'\bसमान\b'
+            r'\bसमान\b',
+            r'\bतुल्य\b',
+            r'\bइव\b',
+            r'\bयथा\b',
+            r'\bसदृश\b'
         ]
 
         for i, line in enumerate(self.lines):
@@ -1021,41 +1026,21 @@ class LiteraryDevicesAnalyzer:
 
         text_lower = self.text.lower()
 
-        # Shringara (Love/Beauty)
-        shringara_words = ["love", "beautiful", "beloved", "desire", "passion", "romance", "kiss", "embrace", "charm", "grace", "delight", "joy", "pleasure"]
-        rasa_scores["shringara"] = self._calculate_rasa_score(text_lower, shringara_words)
+        # Keywords for each Rasa (English + Sanskrit/Hindi)
+        rasa_keywords = {
+            "shringara": ["love", "beautiful", "beloved", "passion", "romance", "kiss", "embrace", "charm", "delight", "pleasure", "श्रृंगार", "प्रेम", "सुंदर", "प्रिया", "कान्त", "रति"],
+            "hasya": ["laugh", "funny", "joke", "humor", "comic", "ridiculous", "absurd", "merry", "giggle", "हास्य", "हंसी", "मजाक", "प्रहसन", "हास्यम", "अट्टहास"],
+            "karuna": ["sad", "sorrow", "tear", "weep", "cry", "grief", "pain", "suffer", "mourn", "tragic", "compassion", "करुण", "शोक", "दुख", "रुदन", "आँसू", "वियोग", "दया"],
+            "raudra": ["anger", "fury", "rage", "wrath", "hate", "destroy", "kill", "violent", "cruel", "fierce", "terrible", "रौद्र", "क्रोध", "क्रुद्ध", "कोप", "प्रतिशोध", "विध्वंस"],
+            "veera": ["hero", "brave", "courage", "valor", "victory", "triumph", "glory", "honor", "noble", "warrior", "strength", "वीर", "उत्साह", "साहस", "पराक्रम", "शौर्य", "विजय"],
+            "bhayanaka": ["fear", "terror", "horror", "dread", "fright", "panic", "tremble", "nightmare", "danger", "भयानक", "भय", "डर", "भीति", "त्रास", "कांपना"],
+            "bibhatsa": ["disgust", "revolting", "foul", "vile", "nasty", "repulsive", "loathsome", "ugly", "dirty", "बीभत्स", "जुगुप्सा", "घृणा", "घिनौना", "अशुचि"],
+            "adbhuta": ["wonder", "amazing", "marvel", "miracle", "awe", "magnificent", "splendid", "glorious", "divine", "अद्भुत", "विस्मय", "आश्चर्य", "अनोखा", "अलौकिक", "दिव्य"],
+            "shanta": ["peace", "calm", "quiet", "serene", "tranquil", "still", "silence", "bliss", "content", "harmony", "शांत", "शम", "शांति", "निर्वेद", "मोक्ष", "मुक्ति", "परमपद"]
+        }
 
-        # Hasya (Laughter/Comedy)
-        hasya_words = ["laugh", "funny", "joke", "humor", "comic", "ridiculous", "absurd", "amusing", "merry", "giggle", "chuckle"]
-        rasa_scores["hasya"] = self._calculate_rasa_score(text_lower, hasya_words)
-
-        # Karuna (Compassion/Sorrow)
-        karuna_words = ["sad", "sorrow", "tear", "weep", "cry", "grief", "pain", "suffer", "mourn", "lament", "tragic", "pitiful", "compassion"]
-        rasa_scores["karuna"] = self._calculate_rasa_score(text_lower, karuna_words)
-
-        # Raudra (Fury/Anger)
-        raudra_words = ["anger", "fury", "rage", "wrath", "hate", "destroy", "kill", "violent", "cruel", "fierce", "terrible", "vengeance"]
-        rasa_scores["raudra"] = self._calculate_rasa_score(text_lower, raudra_words)
-
-        # Veera (Heroism/Courage)
-        veera_words = ["hero", "brave", "courage", "valor", "victory", "triumph", "glory", "honor", "noble", "warrior", "strength", "power", "bold"]
-        rasa_scores["veera"] = self._calculate_rasa_score(text_lower, veera_words)
-
-        # Bhayanaka (Terror/Fear)
-        bhayanaka_words = ["fear", "terror", "horror", "dread", "fright", "panic", "tremble", "nightmare", "darkness", "death", "danger", "threat"]
-        rasa_scores["bhayanaka"] = self._calculate_rasa_score(text_lower, bhayanaka_words)
-
-        # Bibhatsa (Disgust)
-        bibhatsa_words = ["disgust", "revolting", "foul", "vile", "nasty", "repulsive", "loathsome", "ugly", "dirty", "filthy", "abhor"]
-        rasa_scores["bibhatsa"] = self._calculate_rasa_score(text_lower, bibhatsa_words)
-
-        # Adbhuta (Wonder/Awe)
-        adbhuta_words = ["wonder", "amazing", "marvel", "miracle", "awe", "magnificent", "splendid", "glorious", "divine", "mysterious", "extraordinary"]
-        rasa_scores["adbhuta"] = self._calculate_rasa_score(text_lower, adbhuta_words)
-
-        # Shanta (Peace/Serenity)
-        shanta_words = ["peace", "calm", "quiet", "serene", "tranquil", "still", "silence", "meditation", "bliss", "content", "harmony", "balance"]
-        rasa_scores["shanta"] = self._calculate_rasa_score(text_lower, shanta_words)
+        for rasa, keywords in rasa_keywords.items():
+            rasa_scores[rasa] = self._calculate_rasa_score(text_lower, keywords)
 
         # Find dominant rasa
         dominant_rasa = max(rasa_scores, key=rasa_scores.get) if any(v > 0 for v in rasa_scores.values()) else None

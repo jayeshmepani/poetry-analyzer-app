@@ -3,165 +3,139 @@
 {% block title %}Home - Ultimate Literary Master System{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<div class="gradient-bg rounded-3xl shadow-2xl p-12 mb-12 text-white">
-    <div class="text-center max-w-4xl mx-auto">
-        <h1 class="text-5xl font-bold mb-6">
-            <i class="fas fa-book-open mb-4 block"></i>
-            Ultimate Literary Master System
-        </h1>
-        <p class="text-xl mb-8 text-blue-100">
-            Comprehensive poetry and literary analysis powered by advanced NLP, 
-            literary theory, and computational linguistics
+<section class="hero-shell gradient-bg mb-10 text-white">
+    <div class="relative z-10 mx-auto max-w-5xl text-center">
+        <p class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-white/80">
+            <i class="fas fa-wave-square text-cyan-200"></i>
+            Literary Intelligence Platform
         </p>
-        <div class="flex justify-center gap-4">
-            <a href="/admin/analyze" class="bg-white text-primary px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition shadow-lg">
-                <i class="fas fa-search mr-2"></i>Start Analysis
+        <h1 class="mx-auto max-w-4xl font-serif text-4xl font-bold leading-tight sm:text-6xl">
+            Deep poetry analysis without losing the texture of the poem.
+        </h1>
+        <p class="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-100 sm:text-xl">
+            Move from raw text to metrics, prosody, comparative theory, and multilingual interpretation in one coherent workflow.
+        </p>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+            <a href="/analyze" class="btn btn-primary !bg-white !text-slate-900 hover:!bg-slate-100">
+                <i class="fas fa-search"></i>
+                Start Analysis
             </a>
-            <a href="/docs" target="_blank" class="bg-transparent border-2 border-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-primary transition">
-                <i class="fas fa-book mr-2"></i>API Documentation
+            <a href="/dashboard" class="btn btn-secondary !bg-white/10 !text-white hover:!bg-white/20">
+                <i class="fas fa-chart-line"></i>
+                Open Dashboard
             </a>
         </div>
+        <div class="mt-10 flex flex-wrap justify-center gap-3 text-sm font-semibold text-slate-100">
+            <span class="info-pill !bg-white/10 !text-white !border-white/10"><i class="fas fa-check text-emerald-300"></i>15+ metrics</span>
+            <span class="info-pill !bg-white/10 !text-white !border-white/10"><i class="fas fa-check text-emerald-300"></i>11 theory lenses</span>
+            <span class="info-pill !bg-white/10 !text-white !border-white/10"><i class="fas fa-check text-emerald-300"></i>6+ languages</span>
+        </div>
     </div>
-</div>
+</section>
 
-<!-- Features Grid -->
-<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-    <!-- Feature 1 -->
-    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
-        <div class="text-primary text-4xl mb-4">
+<section class="mb-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+    <article class="feature-card card-hover">
+        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-blue-50 text-2xl text-primary">
             <i class="fas fa-chart-bar"></i>
         </div>
-        <h3 class="text-xl font-bold mb-2">Quantitative Metrics</h3>
-        <p class="text-gray-600">
-            TTR, MTLD, MATTR, readability scores, and 15+ computational metrics
-        </p>
-    </div>
-
-    <!-- Feature 2 -->
-    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
-        <div class="text-secondary text-4xl mb-4">
+        <h2 class="mb-3 text-xl">Quantitative Metrics</h2>
+        <p class="text-sm leading-7">TTR, MTLD, MATTR, readability, lexical density, and supporting diagnostics presented with readable summaries.</p>
+    </article>
+    <article class="feature-card card-hover">
+        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-teal-50 text-2xl text-secondary">
             <i class="fas fa-music"></i>
         </div>
-        <h3 class="text-xl font-bold mb-2">Prosody Analysis</h3>
-        <p class="text-gray-600">
-            Meter detection, rhyme schemes, scansion for English, Hindi, Urdu, Gujarati
-        </p>
-    </div>
-
-    <!-- Feature 3 -->
-    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
-        <div class="text-accent text-4xl mb-4">
+        <h2 class="mb-3 text-xl">Prosody Analysis</h2>
+        <p class="text-sm leading-7">Meter, rhyme patterning, and scansion support for English, Hindi, Urdu, Gujarati, and adjacent forms.</p>
+    </article>
+    <article class="feature-card card-hover">
+        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-orange-50 text-2xl text-accent">
             <i class="fas fa-language"></i>
         </div>
-        <h3 class="text-xl font-bold mb-2">Linguistic Analysis</h3>
-        <p class="text-gray-600">
-            Phonetics, morphology, syntax, semantics with spaCy & Stanza
-        </p>
-    </div>
-
-    <!-- Feature 4 -->
-    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
-        <div class="text-purple-600 text-4xl mb-4">
+        <h2 class="mb-3 text-xl">Linguistic Layers</h2>
+        <p class="text-sm leading-7">Phonetics, morphology, syntax, and semantic signals built for both close reading and quick triage.</p>
+    </article>
+    <article class="feature-card card-hover">
+        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100 text-2xl text-slate-800">
             <i class="fas fa-feather-alt"></i>
         </div>
-        <h3 class="text-xl font-bold mb-2">Literary Devices</h3>
-        <p class="text-gray-600">
-            Tropes, schemes, imagery, Sanskrit Alankar, Navarasa theory
-        </p>
-    </div>
-</div>
+        <h2 class="mb-3 text-xl">Literary Devices</h2>
+        <p class="text-sm leading-7">Tropes, imagery, Navarasa, Sanskrit Alankar, and style cues tied back to the original text.</p>
+    </article>
+</section>
 
-<!-- Analysis Methods -->
-<div class="bg-white rounded-2xl shadow-xl p-8 mb-12">
-    <h2 class="text-3xl font-bold mb-8 text-center">
-        <i class="fas fa-microscope text-primary mr-2"></i>
-        Analysis Methods
-    </h2>
-    <div class="grid md:grid-cols-3 gap-6">
-        <div class="border-l-4 border-primary pl-4">
-            <h3 class="font-bold text-lg mb-2">TP-CASTT Method</h3>
-            <p class="text-gray-600 text-sm">
-                Title, Paraphrase, Connotation, Attitude, Shifts, Title, Theme
-            </p>
+<section class="section-shell mb-10">
+    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-slate-500">Method Stack</p>
+            <h2 class="text-3xl sm:text-4xl">Designed for both interpretation and validation</h2>
         </div>
-        <div class="border-l-4 border-secondary pl-4">
-            <h3 class="font-bold text-lg mb-2">Touchstone Method</h3>
-            <p class="text-gray-600 text-sm">
-                Comparison against canonical passages (Milton, Shakespeare, Homer, Dante)
-            </p>
+        <p class="max-w-2xl text-sm leading-7 text-slate-600">The platform uses structured models instead of a single opaque score, so you can see which framework is driving a conclusion.</p>
+    </div>
+    <div class="grid gap-5 md:grid-cols-3">
+        <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
+            <h3 class="mb-3 text-lg"><i class="fas fa-layer-group mr-2 text-primary"></i>TP-CASTT</h3>
+            <p class="text-sm leading-7">A line-by-line interpretive scaffold for title, paraphrase, connotation, attitude, shifts, and theme.</p>
         </div>
-        <div class="border-l-4 border-accent pl-4">
-            <h3 class="font-bold text-lg mb-2">11 Literary Theories</h3>
-            <p class="text-gray-600 text-sm">
-                New Criticism, Structuralism, Deconstruction, Feminist, Marxist, and more
-            </p>
+        <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
+            <h3 class="mb-3 text-lg"><i class="fas fa-landmark mr-2 text-secondary"></i>Touchstone</h3>
+            <p class="text-sm leading-7">Compare against canonical passages to surface tonal, rhetorical, and structural differences.</p>
+        </div>
+        <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
+            <h3 class="mb-3 text-lg"><i class="fas fa-brain mr-2 text-accent"></i>11 Theory Lenses</h3>
+            <p class="text-sm leading-7">Move between New Criticism, structuralism, feminist, Marxist, and other frameworks without rebuilding the input.</p>
         </div>
     </div>
-</div>
+</section>
 
-<!-- Languages Supported -->
-<div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 mb-12">
-    <h2 class="text-3xl font-bold mb-6 text-center">
-        <i class="fas fa-globe text-primary mr-2"></i>
-        Multilingual Support
-    </h2>
-    <div class="flex flex-wrap justify-center gap-4">
-        <div class="bg-white px-6 py-3 rounded-full shadow-md">
-            <i class="fas fa-flag-usa text-blue-600 mr-2"></i>
-            <span class="font-semibold">English</span>
-        </div>
-        <div class="bg-white px-6 py-3 rounded-full shadow-md">
-            <i class="fas fa-om text-orange-600 mr-2"></i>
-            <span class="font-semibold">हिन्दी</span>
-        </div>
-        <div class="bg-white px-6 py-3 rounded-full shadow-md">
-            <i class="fas fa-book text-green-600 mr-2"></i>
-            <span class="font-semibold">ગુજરાતી</span>
-        </div>
-        <div class="bg-white px-6 py-3 rounded-full shadow-md">
-            <i class="fas fa-star text-green-700 mr-2"></i>
-            <span class="font-semibold">اردو</span>
-        </div>
-        <div class="bg-white px-6 py-3 rounded-full shadow-md">
-            <i class="fas fa-pen-fancy text-blue-800 mr-2"></i>
-            <span class="font-semibold">मराठी</span>
-        </div>
-        <div class="bg-white px-6 py-3 rounded-full shadow-md">
-            <i class="fas fa-water text-cyan-600 mr-2"></i>
-            <span class="font-semibold">বাংলা</span>
+<section class="mb-10 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+    <div class="section-shell gradient-bg text-white">
+        <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-white/70">Coverage</p>
+        <h2 class="mb-4 text-3xl text-white sm:text-4xl">Multilingual by design, not as an afterthought.</h2>
+        <p class="mb-6 max-w-2xl text-sm leading-7 text-slate-100">Language support is built directly into the analysis path, so form detection, prosody, and summaries stay grounded in the poem’s context.</p>
+        <div class="flex flex-wrap gap-3 text-sm font-semibold">
+            <span class="info-pill"><i class="fas fa-flag-usa text-blue-600"></i>English</span>
+            <span class="info-pill"><i class="fas fa-om text-orange-600"></i>हिन्दी</span>
+            <span class="info-pill"><i class="fas fa-book text-emerald-600"></i>ગુજરાતી</span>
+            <span class="info-pill"><i class="fas fa-star text-sky-600"></i>اردو</span>
+            <span class="info-pill"><i class="fas fa-pen-fancy text-amber-700"></i>मराठी</span>
+            <span class="info-pill"><i class="fas fa-water text-cyan-600"></i>বাংলা</span>
         </div>
     </div>
-</div>
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
+        <div class="metric-card text-center">
+            <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Features</p>
+            <div class="mt-3 text-5xl font-black text-primary">129</div>
+            <p class="mt-2 text-sm text-slate-600">Integrated frontend and backend capabilities</p>
+        </div>
+        <div class="metric-card text-center">
+            <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Libraries</p>
+            <div class="mt-3 text-5xl font-black text-secondary">42</div>
+            <p class="mt-2 text-sm text-slate-600">Analysis, visualization, and NLP dependencies</p>
+        </div>
+        <div class="metric-card text-center">
+            <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Frameworks</p>
+            <div class="mt-3 text-5xl font-black text-accent">11</div>
+            <p class="mt-2 text-sm text-slate-600">Critical and interpretive models</p>
+        </div>
+    </div>
+</section>
 
-<!-- Statistics -->
-<div class="grid md:grid-cols-4 gap-6 mb-12">
-    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
-        <div class="text-4xl font-bold text-primary mb-2">129</div>
-        <div class="text-gray-600">Features Implemented</div>
+<section class="hero-shell gradient-bg text-center text-white">
+    <div class="relative z-10 mx-auto max-w-3xl">
+        <p class="mb-3 text-xs font-black uppercase tracking-[0.24em] text-white/70">Ready When You Are</p>
+        <h2 class="text-3xl text-white sm:text-5xl">Run a full analysis on your next poem in minutes.</h2>
+        <p class="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-100">Use the public flow for focused submissions or jump into the main workspace for historical and comparative views.</p>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+            <a href="/analyze" class="btn btn-primary !bg-white !text-slate-900 hover:!bg-slate-100">
+                <i class="fas fa-search"></i>
+                Analyze Your Text
+            </a>
+            <a href="/docs" target="_blank" rel="noopener noreferrer" class="btn btn-secondary !bg-white/10 !text-white hover:!bg-white/20">
+                <i class="fas fa-book"></i>
+                Read API Docs
+            </a>
+        </div>
     </div>
-    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
-        <div class="text-4xl font-bold text-secondary mb-2">42</div>
-        <div class="text-gray-600">Libraries Used</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
-        <div class="text-4xl font-bold text-accent mb-2">11</div>
-        <div class="text-gray-600">Criticism Frameworks</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
-        <div class="text-4xl font-bold text-purple-600 mb-2">6</div>
-        <div class="text-gray-600">Languages Supported</div>
-    </div>
-</div>
-
-<!-- CTA Section -->
-<div class="gradient-bg rounded-3xl shadow-2xl p-12 text-center text-white">
-    <h2 class="text-4xl font-bold mb-6">Ready to Analyze Your Poetry?</h2>
-    <p class="text-xl mb-8 text-blue-100">
-        Get comprehensive literary analysis with 100% feature-complete backend
-    </p>
-    <a href="/admin/analyze" class="inline-block bg-white text-primary px-12 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition shadow-lg">
-        <i class="fas fa-search mr-2"></i>Analyze Your Text Now
-    </a>
-</div>
+</section>
 {% endblock %}

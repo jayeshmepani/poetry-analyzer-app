@@ -5,10 +5,75 @@ Based on ultimate_literary_master_system.md
 """
 
 import re
+import logging
 from typing import Dict, List, Any, Optional, Tuple
+from transformers import pipeline
 
+logger = logging.getLogger(__name__)
 
-# ==================== DIALECT DETECTION ====================
+# ==================== SENTIMENT & EMOTION (Transformers) ====================
+
+class TransformerAnalyzer:
+    """
+    Advanced sentiment and emotion analysis using BERT/Transformer models
+    """
+
+    def __init__(self, language: str = "en"):
+        self.language = language
+        self._sentiment_pipe = None
+        self._emotion_pipe = None
+        self._initialize_pipelines()
+
+    def _initialize_models(self):
+        # Alias for _initialize_pipelines to maintain consistency if needed
+        self._initialize_pipelines()
+
+    def _initialize_pipelines(self):
+        """Initialize transformer pipelines only for English (YAGNI)"""
+        if self.language == "en":
+            try:
+                # Use a lightweight but powerful model
+                self._sentiment_pipe = pipeline(
+                    "sentiment-analysis", 
+                    model="distilbert-base-uncased-finetuned-sst-2-english",
+                    device=-1 # CPU
+                )
+                self._emotion_pipe = pipeline(
+                    "text-classification", 
+                    model="j-hartmann/emotion-english-distilbert-base-uncased", 
+                    return_all_scores=True,
+                    device=-1
+                )
+                logger.info("Transformer pipelines initialized")
+            except Exception as e:
+                logger.warning(f"Transformer initialization failed: {e}")
+
+    def analyze(self, text: str) -> Dict[str, Any]:
+        """Perform sentiment and emotion analysis"""
+        if self.language != "en" or not self._sentiment_pipe:
+            return {"status": "unsupported_or_failed", "sentiment": {}, "emotions": {}}
+
+        try:
+            # Truncate text if too long for transformer (512 tokens approx)
+            truncated_text = text[:1000] 
+            
+            sentiment_res = self._sentiment_pipe(truncated_text)[0]
+            emotion_res = self._emotion_pipe(truncated_text)[0]
+            
+            # Convert emotion scores to dict
+            emotions = {item['label']: round(item['score'], 4) for item in emotion_res}
+            
+            return {
+                "sentiment": {
+                    "label": sentiment_res['label'],
+                    "score": round(sentiment_res['score'], 4)
+                },
+                "emotions": emotions,
+                "dominant_emotion": max(emotions, key=emotions.get)
+            }
+        except Exception as e:
+            logger.error(f"Transformer analysis failed: {e}")
+            return {"error": str(e)}
 
 class DialectDetector:
     """Detect Hindi/Indic dialects and language varieties"""
@@ -373,6 +438,7 @@ def run_additional_analyses(text: str, language: str = "en") -> Dict[str, Any]:
     text_corrector = TextCorrector()
     idiom_detector = IdiomProverbDetector(language)
     pragmatics_analyzer = PragmaticsAnalyzer()
+    transformer_analyzer = TransformerAnalyzer(language)
     
     return {
         "dialect_detection": dialect_detector.detect(text),
@@ -380,5 +446,6 @@ def run_additional_analyses(text: str, language: str = "en") -> Dict[str, Any]:
         "text_correction": text_corrector.correct(text),
         "text_enhancement": text_corrector.enhance(text),
         "idioms_proverbs": idiom_detector.detect(text),
-        "pragmatics": pragmatics_analyzer.analyze(text)
+        "pragmatics": pragmatics_analyzer.analyze(text),
+        "transformer_analysis": transformer_analyzer.analyze(text)
     }

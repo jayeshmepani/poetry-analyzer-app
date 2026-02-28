@@ -258,13 +258,10 @@ pip install -r requirements.txt
 
 ### spaCy Models (REQUIRED)
 ```bash
-# English transformer model (best quality)
+# English transformer model (best quality - PRIMARY MODEL)
 python -m spacy download en_core_web_trf
 
-# English small model (faster, good for basic tasks)
-python -m spacy download en_core_web_sm
-
-# Multi-language model (for non-English poetry)
+# Multi-language model (for Hindi, Gujarati, Urdu, etc.)
 python -m spacy download xx_sent_ud_sm
 ```
 

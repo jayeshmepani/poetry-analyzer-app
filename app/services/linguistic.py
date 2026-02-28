@@ -60,19 +60,31 @@ class LinguisticAnalyzer:
 
     def _initialize_models(self):
         """Initialize spaCy and Stanza models"""
-        # spaCy initialization
-        if self.use_spacy and self.language == "en":
+        # spaCy initialization - use installed models only
+        if self.use_spacy:
             import spacy
+            from app.config import Settings
 
-            try:
-                self.nlp = spacy.load("en_core_web_trf")
-                logger.info("Loaded spaCy transformer model for English")
-            except OSError:
+            settings = Settings()
+
+            if self.language == "en":
+                # Use transformer model for English
                 try:
-                    self.nlp = spacy.load("en_core_web_sm")
-                    logger.info("Loaded spaCy small model for English")
+                    self.nlp = spacy.load(settings.spacy.english_model)
+                    logger.info(f"Loaded spaCy model: {settings.spacy.english_model}")
                 except OSError as e:
-                    logger.warning(f"spaCy model not found: {e}")
+                    logger.warning(f"English spaCy model not found: {e}")
+                    self.nlp = None
+            else:
+                # Use multilingual model for non-English languages
+                try:
+                    self.nlp = spacy.load(settings.spacy.multilingual_model)
+                    logger.info(
+                        f"Loaded spaCy multilingual model: {settings.spacy.multilingual_model} "
+                        f"for language '{self.language}'"
+                    )
+                except OSError as e:
+                    logger.warning(f"Multilingual spaCy model not found: {e}")
                     self.nlp = None
 
         # Stanza initialization for multilingual
@@ -112,7 +124,8 @@ class LinguisticAnalyzer:
         self.text = text
         self._preprocess()
 
-        if self.nlp and self.language == "en":
+        # Use spaCy if available (en_core_web_trf for English, xx_sent_ud_sm for others)
+        if self.nlp:
             return self._analyze_with_spacy()
         elif self.stanza_nlp:
             return self._analyze_with_stanza()
@@ -121,21 +134,153 @@ class LinguisticAnalyzer:
 
     def _preprocess(self):
         """Preprocess text into words, lines, sentences"""
+        # Apply Indic Normalization if applicable
+        if self.language in ["hi", "gu", "mr", "bn", "sa", "ur"]:
+            try:
+                factory = IndicNormalizerFactory()
+                normalizer = factory.get_normalizer(self.language)
+                self.text = normalizer.normalize(self.text)
+            except Exception as e:
+                logger.warning(f"Indic normalization failed: {e}")
+
         self.lines = [line.strip() for line in self.text.split("\n") if line.strip()]
 
         if self.language in ["hi", "gu", "mr", "bn", "sa"]:
-            self.words = re.findall(
-                r"[\u0900-\u097F\u0A80-\u0AFF\u0D00-\u0D7F]+", self.text
-            )
+            # Use Indic Tokenizer
+            try:
+                self.words = indic_tokenize.trivial_tokenize(self.text, self.language)
+            except:
+                self.words = re.findall(
+                    r"[\u0900-\u097F\u0A80-\u0AFF\u0D00-\u0D7F]+", self.text
+                )
         else:
             self.words = re.findall(r"\b[a-zA-Z]+\b", self.text.lower())
 
-        self.sentences = re.split(r"[.!?।]+", self.text)
-        self.sentences = [s.strip() for s in self.sentences if s.strip()]
+        # Use spaCy for sentence segmentation if available (xx_sent_ud_sm or en_core_web_trf)
+        if self.nlp:
+            doc = self.nlp(self.text)
+            self.sentences = [
+                sent.text.strip() for sent in doc.sents if sent.text.strip()
+            ]
+        else:
+            self.sentences = re.split(r"[.!?।]+", self.text)
+            self.sentences = [s.strip() for s in self.sentences if s.strip()]
 
     def _analyze_with_spacy(self) -> Dict[str, Any]:
-        """Analyze using spaCy"""
+        """Analyze using spaCy with full potential - leveraging all installed libraries"""
         doc = self.nlp(self.text)
+
+        # === SPACY: NER (Named Entity Recognition) ===
+        entities = []
+        for ent in doc.ents:
+            entities.append(
+                {
+                    "text": ent.text,
+                    "label": ent.label_,
+                    "start_char": ent.start_char,
+                    "end_char": ent.end_char,
+                }
+            )
+
+        # === SPACY: Lemmas with POS ===
+        lemmas_with_pos = []
+        for token in doc:
+            if token.is_alpha and not token.is_stop:
+                lemmas_with_pos.append(
+                    {
+                        "lemma": token.lemma_,
+                        "pos": token.pos_,
+                        "tag": token.tag_,
+                        "dep": token.dep_,
+                    }
+                )
+
+        # === SPACY: Word Vectors for Similarity ===
+        word_vectors = {}
+        if doc.has_vector:
+            word_vectors = {
+                "has_vectors": True,
+                "vector_dim": doc.vector.shape[0]
+                if hasattr(doc.vector, "shape")
+                else 0,
+                "vector_norm": float(doc.vector_norm)
+                if hasattr(doc, "vector_norm")
+                else 0,
+            }
+
+        # === SPACY: Noun Chunks with details ===
+        noun_chunks = []
+        for chunk in doc.noun_chunks:
+            noun_chunks.append(
+                {
+                    "text": chunk.text,
+                    "root": chunk.root.text,
+                    "root_dep": chunk.root.dep_,
+                }
+            )
+
+        # === SPACY: Dependency Tree Analysis ===
+        dep_tree = []
+        for token in doc:
+            dep_tree.append(
+                {
+                    "text": token.text,
+                    "dep": token.dep_,
+                    "head": token.head.text,
+                    "lefts": [t.text for t in token.lefts],
+                    "rights": [t.text for t in token.rights],
+                }
+            )
+
+        # === TextDescriptives: Comprehensive Text Metrics ===
+        try:
+            from textdescriptives import descriptives
+
+            td = descriptives(self.text)
+            text_metrics = {
+                "descriptive_stats": {
+                    "word_count": int(td.word_count),
+                    "sentence_count": int(td.sentence_count),
+                    "syllable_count": int(td.syllable_count),
+                    "avg_word_length": float(td.avg_word_length),
+                    "avg_sentence_length": float(td.avg_sentence_length),
+                },
+                "readability": {
+                    "flesch_reading_ease": float(td.flesch_reading_ease),
+                    "flesch_kincaid_grade": float(td.flesch_kincaid_grade),
+                    "gunning_fog": float(td.gunning_fog),
+                    "smog_index": float(td.smog_index),
+                },
+            }
+        except ImportError:
+            text_metrics = {"error": "textdescriptives not available"}
+        except Exception as e:
+            text_metrics = {"error": str(e)}
+
+        # === VADER Sentiment Analysis ===
+        try:
+            from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+            vader = SentimentIntensityAnalyzer()
+            sentiment = vader.polarity_scores(self.text)
+            sentiment_analysis = {
+                "vader": {
+                    "compound": sentiment["compound"],
+                    "positive": sentiment["pos"],
+                    "negative": sentiment["neg"],
+                    "neutral": sentiment["neu"],
+                    "sentiment_label": "positive"
+                    if sentiment["compound"] >= 0.05
+                    else "negative"
+                    if sentiment["compound"] <= -0.05
+                    else "neutral",
+                }
+            }
+        except ImportError:
+            sentiment_analysis = {"error": "vaderSentiment not available"}
+        except Exception as e:
+            sentiment_analysis = {"error": str(e)}
+
         return {
             "phonetics": self._analyze_phonetics_basic(),
             "morphology": self._analyze_morphology_spacy(doc),
@@ -143,6 +288,15 @@ class LinguisticAnalyzer:
             "semantics": self._analyze_semantics_spacy(doc),
             "lexical_relations": self._analyze_lexical_relations(),
             "pos_distribution": self._analyze_pos_spacy(doc),
+            # New spaCy features
+            "named_entities": entities,
+            "lemmas_with_pos": lemmas_with_pos[:50],
+            "word_vectors": word_vectors,
+            "noun_chunks": noun_chunks[:20],
+            "dependency_tree": dep_tree[:30],
+            # Library integrations
+            "text_metrics": text_metrics,
+            "sentiment": sentiment_analysis,
         }
 
     def _analyze_with_stanza(self) -> Dict[str, Any]:
@@ -387,30 +541,33 @@ class LinguisticAnalyzer:
         total_letters = sum(1 for c in text if c.isalpha())
         return round(fricative_count / total_letters, 4) if total_letters > 0 else 0
 
-    # ==================== MORPHOLOGY ====================
     def _analyze_morphology_spacy(self, doc) -> Dict[str, Any]:
-        """Morphological analysis using spaCy"""
-        length_dist = Counter(len(token.text) for token in doc if token.is_alpha)
+        """Detailed morphological analysis using Token.morph"""
+        # Extract grammatical features
+        morph_features = []
+        for token in doc:
+            if token.is_alpha and token.morph:
+                morph_features.append(str(token.morph))
+
+        feature_counts = Counter(morph_features)
+
         return {
-            "word_length_distribution": dict(length_dist),
             "avg_word_length": round(
                 sum(len(t.text) for t in doc if t.is_alpha)
                 / max(1, len([t for t in doc if t.is_alpha])),
                 2,
             ),
-            "prefixes": self._detect_prefixes(),
-            "suffixes": self._detect_suffixes(),
-            "compound_words": self._detect_compounds(),
+            "grammatical_features": dict(feature_counts.most_common(10)),
             "prefix_count": sum(
                 1
                 for t in doc
-                if any(t.text.startswith(p) for p in ["un", "re", "pre", "dis", "mis"])
+                if any(t.text.lower().startswith(p) for p in ["un", "re", "pre", "dis"])
             ),
             "suffix_count": sum(
                 1
                 for t in doc
                 if any(
-                    t.text.endswith(s) for s in ["ing", "tion", "ment", "ness", "able"]
+                    t.text.lower().endswith(s) for s in ["ing", "tion", "ment", "ness"]
                 )
             ),
         }
@@ -555,32 +712,25 @@ class LinguisticAnalyzer:
             )
         ]
 
-    # ==================== SYNTAX ====================
     def _analyze_syntax_spacy(self, doc) -> Dict[str, Any]:
-        """Syntactic analysis using spaCy"""
+        """Deep syntactic analysis using spaCy dependency parser"""
         sentence_lengths = [len(sent) for sent in doc.sents]
-        subordinating = [
-            "because",
-            "although",
-            "while",
-            "when",
-            "if",
-            "unless",
-            "since",
-            "though",
-        ]
-        coordinating = ["and", "but", "or", "nor", "for", "yet", "so"]
 
-        sub_count = sum(
-            1
-            for token in doc
-            if token.dep_ in ["mark", "advmod"] and token.text.lower() in subordinating
-        )
-        coord_count = sum(
-            1
-            for token in doc
-            if token.dep_ == "cc" and token.text.lower() in coordinating
-        )
+        # Dependency Map for first few sentences (to avoid massive JSON)
+        dep_map = []
+        for sent in list(doc.sents)[:3]:
+            sent_deps = []
+            for token in sent:
+                sent_deps.append(
+                    {
+                        "text": token.text,
+                        "dep": token.dep_,
+                        "head": token.head.text,
+                        "pos": token.pos_,
+                    }
+                )
+            dep_map.append(sent_deps)
+
         avg_deps = sum(len(list(token.children)) for token in doc) / max(1, len(doc))
 
         return {
@@ -589,10 +739,9 @@ class LinguisticAnalyzer:
                 sum(sentence_lengths) / max(1, len(sentence_lengths)), 2
             ),
             "sentence_length_distribution": dict(Counter(sentence_lengths)),
+            "dependency_map": dep_map,
             "clauses": {
-                "subordinate_clauses_count": sub_count,
-                "coordinating_clauses_count": coord_count,
-                "has_complex_sentences": sub_count + coord_count > 0,
+                "has_complex_sentences": any(t.dep_ in ["mark", "cc"] for t in doc),
             },
             "sentence_types": self._identify_sentence_types(),
             "syntactic_complexity": round(avg_deps, 2),
@@ -697,23 +846,31 @@ class LinguisticAnalyzer:
                 types["declarative"] += 1
         return types
 
-    # ==================== SEMANTICS ====================
     def _analyze_semantics_spacy(self, doc) -> Dict[str, Any]:
-        """Semantic analysis using spaCy"""
+        """Semantic analysis using spaCy including robust NER"""
         word_freq = Counter(token.text.lower() for token in doc if token.is_alpha)
-        semantic_density = len(word_freq) / max(1, len(doc))
         concrete_words = self._get_concrete_words()
         concrete_count = sum(1 for token in doc if token.text.lower() in concrete_words)
-        entities = [(ent.text, ent.label_) for ent in doc.ents]
+
+        # Robust Entity Extraction
+        entities = []
+        for ent in doc.ents:
+            entities.append(
+                {
+                    "text": ent.text,
+                    "label": ent.label_,
+                    "description": spacy.explain(ent.label_),
+                }
+            )
 
         return {
             "unique_words": len(word_freq),
             "total_words": len([t for t in doc if t.is_alpha]),
-            "semantic_density": round(semantic_density, 2),
+            "semantic_density": round(len(word_freq) / max(1, len(doc)), 2),
             "top_20_words": [w for w, c in word_freq.most_common(20)],
             "concrete_word_count": concrete_count,
             "abstract_word_count": len([t for t in doc if t.is_alpha]) - concrete_count,
-            "named_entities": entities[:20],
+            "entities": entities[:20],
         }
 
     def _analyze_semantics_basic(self) -> Dict[str, Any]:

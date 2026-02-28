@@ -90,14 +90,11 @@ pip install -r requirements.txt
 
 #### **4. Download NLP Models**
 ```bash
-# spaCy English transformer
+# spaCy English transformer (Primary model for English)
 python -m spacy download en_core_web_trf
 
-# spaCy English small
-python -m spacy download en_core_web_sm
-
-# Stanza multilingual (optional)
-python -c "import stanza; stanza.download('en')"
+# spaCy Multilingual small (For other languages)
+python -m spacy download xx_sent_ud_sm
 ```
 
 #### **5. Run the Application**

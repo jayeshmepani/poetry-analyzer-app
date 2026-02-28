@@ -614,14 +614,16 @@ class LiteraryTheoryAnalyzer:
         return [w for w in ambiguous_words if w in self.text.lower()]
 
     def _analyze_unity(self) -> float:
-        """Analyze textual unity (0-1 scale)"""
-        # Simplified: check for repeated themes/words
+        """Analyze textual unity based on thematic recurrence (0-1 scale)"""
         word_freq = {}
         for word in self.words:
-            word_freq[word] = word_freq.get(word, 0) + 1
+            if len(word) > 3: # Ignore common short words
+                word_freq[word] = word_freq.get(word, 0) + 1
         
+        # Recurrence ratio
         repeated = sum(1 for count in word_freq.values() if count > 1)
-        return min(1.0, repeated / max(1, len(word_freq)) * 5)
+        score = repeated / max(1, len(word_freq)) * 2 # Scale up
+        return min(1.0, round(score, 2))
 
     def _analyze_imagery_coherence(self) -> float:
         """Analyze imagery coherence (0-1 scale)"""
@@ -686,9 +688,11 @@ class LiteraryTheoryAnalyzer:
         return ["Meanings suppressed through silence"]
 
     def _analyze_language_instability(self) -> float:
-        """Analyze language instability"""
-        # Look for words with multiple meanings
-        return 0.5  # Simplified
+        """Analyze language instability based on ambiguous word density"""
+        ambiguous = self._detect_ambiguities()
+        if not self.words: return 0.0
+        score = len(ambiguous) / len(self.words) * 10
+        return min(1.0, round(score, 2))
 
     def _analyze_interpretive_gaps(self) -> List[str]:
         """Analyze gaps for reader interpretation"""

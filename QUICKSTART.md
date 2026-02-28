@@ -46,16 +46,11 @@ pip install -r requirements.txt
 
 ### **3. Download NLP Models**
 ```bash
-# Required - English spaCy model
-python -m spacy download en_core_web_sm
-
-# Optional - Better English model
+# Required - English transformer model (Primary)
 python -m spacy download en_core_web_trf
 
-# Optional - Multilingual support
-python -c "import stanza; stanza.download('en')"
-python -c "import stanza; stanza.download('hi')"
-python -c "import stanza; stanza.download('gu')"
+# Required - Multilingual model (Hindi, Gujarati, Urdu, etc.)
+python -m spacy download xx_sent_ud_sm
 ```
 
 ### **4. Initialize Database**

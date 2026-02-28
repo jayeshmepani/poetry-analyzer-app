@@ -1,0 +1,433 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block title %}Analysis Results - PoetryMaster{% endblock %}
+
+{% block content %}
+<!-- Page Hero -->
+<section class="page-hero rounded-[2rem] border border-white/80 bg-white/75 px-6 py-7 shadow-soft-xl backdrop-blur sm:px-8 mb-8">
+    <div class="flex items-start gap-4">
+        <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-100 text-3xl text-primary-600">
+            <i class="fas fa-file-alt"></i>
+        </div>
+        <div class="flex-1">
+            <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-slate-500">Analysis History</p>
+            <h1 class="mb-3 text-3xl font-black text-slate-900">Analysis Results</h1>
+            <p class="max-w-3xl text-sm leading-7 text-slate-600">View, compare, and manage all your poetry analyses with detailed metrics and insights</p>
+        </div>
+    </div>
+</section>
+
+<!-- Results Container -->
+<div class="card overflow-hidden">
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-200">
+        <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-2xl text-primary-600">
+                <i class="fas fa-database"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">Saved Analyses</h2>
+                <p class="text-sm text-slate-600"><span id="totalCount" class="font-black text-primary-600">0</span> analyses in database</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="loadResults()" class="btn btn-secondary">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Refresh
+            </button>
+            <button onclick="clearAllResults()" class="btn btn-danger">
+                <i class="fas fa-trash mr-2"></i>
+                Clear All
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="text-left">Title</th>
+                    <th class="text-left">Language</th>
+                    <th class="text-left">Form</th>
+                    <th class="text-left">Score</th>
+                    <th class="text-left">Stats</th>
+                    <th class="text-left">Date</th>
+                    <th class="text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="resultsTable">
+                <tr>
+                    <td colspan="7" class="text-center py-12">
+                        <i class="fas fa-circle-notch fa-spin text-5xl text-slate-300 mb-4"></i>
+                        <p class="text-slate-500">Loading results from database...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty State (hidden by default) -->
+    <div id="emptyState" class="hidden text-center py-16">
+        <div class="flex h-24 w-24 mx-auto mb-6 items-center justify-center rounded-full bg-slate-100 text-5xl text-slate-400">
+            <i class="fas fa-inbox"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-slate-900 mb-2">No analyses yet</h3>
+        <p class="text-slate-600 mb-6 max-w-md mx-auto">Start by analyzing your first poem or literary text. Get comprehensive insights with 70+ metrics.</p>
+        <a href="{{ route('analyze') }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-search mr-2"></i>
+            Start Your First Analysis
+        </a>
+    </div>
+</div>
+
+<!-- View Result Modal -->
+<div id="viewModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col m-4">
+        <!-- Modal Header -->
+        <div class="sticky top-0 bg-white border-b border-slate-200 px-8 py-6 flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Analysis Details</h2>
+                <p class="text-sm text-slate-600 mt-1">Comprehensive metrics and insights</p>
+            </div>
+            <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition text-slate-600">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div id="modalContent" class="flex-1 overflow-y-auto p-8">
+            <!-- Content loaded dynamically -->
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-8 py-4 flex justify-end gap-3">
+            <button onclick="closeModal()" class="btn btn-secondary">Close</button>
+            <button onclick="exportResult()" class="btn btn-primary">
+                <i class="fas fa-download mr-2"></i>
+                Export
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load results on page load
+document.addEventListener('DOMContentLoaded', loadResults);
+
+async function loadResults() {
+    showLoading('Loading results from database...');
+
+    try {
+        const response = await axios.get('/api/results?limit=50');
+        const data = response.data;
+
+        const tbody = document.getElementById('resultsTable');
+        const totalCount = document.getElementById('totalCount');
+        const emptyState = document.getElementById('emptyState');
+
+        // Handle different API response formats
+        let results = [];
+        let total = 0;
+
+        if (data && data.success && data.data) {
+            results = data.data.results || [];
+            total = data.data.total || 0;
+        } else if (data && data.results) {
+            results = data.results;
+            total = data.total || results.length;
+        }
+
+        totalCount.textContent = total;
+
+        if (!results || results.length === 0) {
+            tbody.parentElement.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+        } else {
+            tbody.parentElement.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            tbody.innerHTML = results.map(r => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="py-4 px-4">
+                        <div class="font-bold text-slate-900">${r.title || 'Untitled'}</div>
+                        <div class="text-xs text-slate-500 mt-1 line-clamp-1">${r.text ? r.text.substring(0, 60) + '...' : ''}</div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="badge badge-primary">${getLanguageName(r.language || 'en')}</span>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="text-sm text-slate-700">${r.poetic_form || 'Free Verse'}</span>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div class="h-full ${getScoreColor(r.overall_score)} rounded-full" style="width: ${r.overall_score || 0}%"></div>
+                            </div>
+                            <span class="font-bold ${getScoreColor(r.overall_score)}">${r.overall_score ? r.overall_score.toFixed(1) : '-'}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="text-sm text-slate-700">
+                            <span class="font-bold">${r.word_count || 0}</span> words / 
+                            <span class="font-bold">${r.line_count || 0}</span> lines
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="text-sm text-slate-600">${formatDate(r.created_at)}</div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="flex gap-2">
+                            <button onclick="viewResultDetail('${r.uuid}')" class="btn btn-sm btn-secondary" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="deleteResult('${r.uuid}')" class="btn btn-sm btn-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        hideLoading();
+
+        // Handle auto-open if view param is in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewId = urlParams.get('view');
+        if (viewId) {
+            viewResultDetail(viewId);
+        }
+
+    } catch (error) {
+        console.error('Error loading results:', error);
+        hideLoading();
+        showToast('Failed to load results. Please try again.', 'error');
+        
+        const tbody = document.getElementById('resultsTable');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-12">
+                    <div class="flex h-20 w-20 mx-auto mb-4 items-center justify-center rounded-full bg-error-100 text-4xl text-error-600">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">Failed to Load Results</h3>
+                    <p class="text-slate-600 mb-4">Unable to connect to the database. Please ensure the backend is running.</p>
+                    <button onclick="loadResults()" class="btn btn-primary">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Try Again
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+async function viewResultDetail(uuid) {
+    showLoading('Loading analysis details...');
+
+    try {
+        const response = await axios.get(`/api/result/${uuid}`);
+        const result = response.data.success ? response.data.data : response.data;
+
+        const modalContent = document.getElementById('modalContent');
+        modalContent.innerHTML = `
+            <div class="space-y-8">
+                <!-- Header -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gradient-to-br from-primary-50 to-secondary-50 rounded-2xl">
+                    <div>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-2">${result.title || 'Untitled'}</h3>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <span class="badge badge-primary">${getLanguageName(result.language || 'en')}</span>
+                            <span class="badge badge-secondary">${result.poetic_form || 'Free Verse'}</span>
+                            <span class="badge badge-accent">ID: ${result.uuid?.substring(0, 8)}...</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-5xl font-black ${getScoreColor(result.overall_score)} mb-2">${result.overall_score ? result.overall_score.toFixed(1) : '-'}</div>
+                        <div class="text-sm text-slate-600">Overall Score</div>
+                    </div>
+                </div>
+
+                <!-- Text -->
+                <div class="card">
+                    <h4 class="text-lg font-bold text-slate-900 mb-4">
+                        <i class="fas fa-quote-left text-primary-500 mr-2"></i>
+                        Original Text
+                    </h4>
+                    <div class="bg-slate-50 p-6 rounded-xl font-serif text-lg leading-relaxed text-slate-800 whitespace-pre-line border border-slate-200">
+                        ${result.text || ''}
+                    </div>
+                </div>
+
+                <!-- Quality Scores -->
+                <div>
+                    <h4 class="text-lg font-bold text-slate-900 mb-4">
+                        <i class="fas fa-star text-warning-500 mr-2"></i>
+                        Quality Scores
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        ${renderScoreCard('Overall', result.overall_score)}
+                        ${renderScoreCard('Technical', result.technical_craft_score)}
+                        ${renderScoreCard('Language', result.language_diction_score)}
+                        ${renderScoreCard('Imagery', result.imagery_voice_score)}
+                        ${renderScoreCard('Emotional', result.emotional_impact_score)}
+                        ${renderScoreCard('Cultural', result.cultural_fidelity_score)}
+                        ${renderScoreCard('Originality', result.originality_score)}
+                    </div>
+                </div>
+
+                <!-- Executive Summary -->
+                ${result.executive_summary ? `
+                <div class="card bg-gradient-to-br from-primary-50 to-secondary-50">
+                    <h4 class="text-lg font-bold text-slate-900 mb-4">
+                        <i class="fas fa-file-alt text-primary-500 mr-2"></i>
+                        Executive Summary
+                    </h4>
+                    <p class="text-slate-700 leading-relaxed">${result.executive_summary}</p>
+                </div>
+                ` : ''}
+
+                <!-- Statistics -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="card text-center p-4">
+                        <div class="text-3xl font-black text-primary-600 mb-1">${result.word_count || 0}</div>
+                        <div class="text-sm text-slate-600">Words</div>
+                    </div>
+                    <div class="card text-center p-4">
+                        <div class="text-3xl font-black text-secondary-600 mb-1">${result.line_count || 0}</div>
+                        <div class="text-sm text-slate-600">Lines</div>
+                    </div>
+                    <div class="card text-center p-4">
+                        <div class="text-3xl font-black text-accent-600 mb-1">${result.strictness_level || 7}</div>
+                        <div class="text-sm text-slate-600">Strictness</div>
+                    </div>
+                    <div class="card text-center p-4">
+                        <div class="text-3xl font-black text-slate-600 mb-1">${formatDate(result.created_at, true)}</div>
+                        <div class="text-sm text-slate-600">Analyzed</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        hideLoading();
+        document.getElementById('viewModal').classList.remove('hidden');
+        document.getElementById('viewModal').classList.add('flex');
+
+    } catch (error) {
+        console.error('Error loading result:', error);
+        hideLoading();
+        showToast('Failed to load analysis details', 'error');
+    }
+}
+
+function renderScoreCard(name, score) {
+    const colorClass = getScoreColorClass(score);
+    return `
+        <div class="card text-center p-4 hover:shadow-lg transition">
+            <div class="text-sm text-slate-600 mb-2">${name}</div>
+            <div class="text-4xl font-black ${colorClass}">${score ? score.toFixed(1) : '-'}</div>
+            <div class="w-full h-2 bg-slate-200 rounded-full mt-3 overflow-hidden">
+                <div class="h-full ${colorClass} rounded-full" style="width: ${score || 0}%"></div>
+            </div>
+        </div>
+    `;
+}
+
+function getScoreColor(score) {
+    if (!score) return 'text-slate-400';
+    if (score >= 8) return 'text-success-600';
+    if (score >= 6) return 'text-warning-600';
+    return 'text-error-600';
+}
+
+function getScoreColorClass(score) {
+    if (!score) return 'text-slate-400';
+    if (score >= 8) return 'text-success-600';
+    if (score >= 6) return 'text-warning-600';
+    return 'text-error-600';
+}
+
+function getLanguageName(code) {
+    const languages = {
+        'en': 'English',
+        'hi': 'Hindi',
+        'gu': 'Gujarati',
+        'ur': 'Urdu',
+        'mr': 'Marathi',
+        'bn': 'Bengali',
+        'sa': 'Sanskrit'
+    };
+    return languages[code] || code;
+}
+
+function formatDate(dateString, short = false) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    if (short) {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+async function deleteResult(uuid) {
+    if (!confirm('Are you sure you want to delete this analysis? This cannot be undone.')) return;
+
+    showLoading('Deleting analysis...');
+
+    try {
+        await axios.delete(`/api/result/${uuid}`);
+        hideLoading();
+        showToast('Analysis deleted successfully', 'success');
+        loadResults();
+    } catch (error) {
+        hideLoading();
+        showToast('Failed to delete analysis', 'error');
+    }
+}
+
+async function clearAllResults() {
+    if (!confirm('⚠️ WARNING: This will delete ALL analyses permanently. Are you absolutely sure?')) return;
+    if (!confirm('This action CANNOT be undone. All data will be lost forever. Confirm?')) return;
+
+    showLoading('Clearing all analyses...');
+
+    try {
+        const response = await axios.post('/api/clear-results');
+        hideLoading();
+        showToast(`Successfully cleared ${response.data.data?.count || response.data.data?.deleted || 0} analyses`, 'success');
+        loadResults();
+    } catch (error) {
+        hideLoading();
+        showToast('Failed to clear analyses', 'error');
+    }
+}
+
+function closeModal() {
+    document.getElementById('viewModal').classList.add('hidden');
+    document.getElementById('viewModal').classList.remove('flex');
+}
+
+function exportResult() {
+    showToast('Export feature coming soon', 'info');
+}
+
+// Close modal on outside click
+document.getElementById('viewModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+</script>
+{% endblock %}

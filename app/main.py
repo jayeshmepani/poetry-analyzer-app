@@ -7,7 +7,7 @@ Directory Structure:
 │   └── web.py       - Web routes (like routes/web.php)
 ├── controllers/     - Request handlers (like Laravel App/Http/Controllers/)
 │   ├── BaseController.php
-│   ├── AdminController.py
+│   ├── WorkspaceController.py
 │   └── WebController.py
 ├── middleware/      - HTTP middleware (like Laravel app/Http/Middleware/)
 ├── config/          - Configuration files (like Laravel config/)
@@ -28,6 +28,8 @@ from pathlib import Path
 import logging
 
 from app.config import settings
+from app.database import init_db
+from app.route_registry import route_url, WEB_ROUTE_PATHS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +56,8 @@ app.add_middleware(
 # Setup templates and static files
 BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+templates.env.globals["route"] = route_url
+templates.env.globals["app_routes"] = WEB_ROUTE_PATHS
 
 # Mount static files
 static_path = BASE_DIR / "static"
@@ -69,6 +73,9 @@ from routes.web import register_web_routes
 # Register all web routes
 route_manager = register_web_routes(app, templates)
 
+# Ensure the database schema matches the current models on startup/import.
+init_db()
+
 logger.info(f"✅ Registered {len(route_manager.all())} web routes")
 
 # ==================== ERROR HANDLERS ====================
@@ -77,7 +84,7 @@ logger.info(f"✅ Registered {len(route_manager.all())} web routes")
 async def not_found_handler(request: Request, exc):
     """Handle 404 errors"""
     return templates.TemplateResponse(
-        "errors/404.html" if (BASE_DIR / "templates" / "errors" / "404.html").exists() else "admin/dashboard.html",
+        "errors/404.html" if (BASE_DIR / "templates" / "errors" / "404.html").exists() else "workspace/dashboard.html",
         {"request": request},
         status_code=404
     )
@@ -87,7 +94,7 @@ async def not_found_handler(request: Request, exc):
 async def internal_error_handler(request: Request, exc):
     """Handle 500 errors"""
     return templates.TemplateResponse(
-        "errors/500.html" if (BASE_DIR / "templates" / "errors" / "500.html").exists() else "admin/dashboard.html",
+        "errors/500.html" if (BASE_DIR / "templates" / "errors" / "500.html").exists() else "workspace/dashboard.html",
         {"request": request},
         status_code=500
     )

@@ -1,0 +1,232 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block title %}Database Status - Poetry Analyzer{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+        <i class="fas fa-database text-primary mr-2"></i>
+        Database Status
+    </h1>
+    <p class="text-gray-600">Monitor database connection, tables, and stored data</p>
+</div>
+
+<!-- Connection Status -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">
+        <i class="fas fa-plug text-green-600 mr-2"></i>
+        Connection Status
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600">Status</p>
+            <p class="text-2xl font-bold" id="connStatus">
+                <i class="fas fa-spinner fa-spin"></i> Checking...
+            </p>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600">Database</p>
+            <p class="text-lg font-semibold" id="dbName">-</p>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600">Host</p>
+            <p class="text-lg" id="dbHost">-</p>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600">Driver</p>
+            <p class="text-lg" id="dbDriver">-</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tables Status -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">
+        <i class="fas fa-table text-blue-600 mr-2"></i>
+        Tables
+    </h2>
+    <div id="tablesList" class="space-y-2">
+        <p class="text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading tables...</p>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-6">
+        <p class="text-blue-100 text-sm">Total Analyses</p>
+        <p class="text-4xl font-bold" id="totalAnalyses">-</p>
+    </div>
+    <div class="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl shadow-lg p-6">
+        <p class="text-green-100 text-sm">Average Score</p>
+        <p class="text-4xl font-bold" id="avgScore">-</p>
+    </div>
+    <div class="bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl shadow-lg p-6">
+        <p class="text-teal-100 text-sm">Recent (24h)</p>
+        <p class="text-4xl font-bold" id="recentCount">-</p>
+    </div>
+    <div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl shadow-lg p-6">
+        <p class="text-orange-100 text-sm">Storage</p>
+        <p class="text-2xl font-bold" id="storageSize">-</p>
+    </div>
+</div>
+
+<!-- Recent Analyses -->
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">
+        <i class="fas fa-clock text-primary mr-2"></i>
+        Recent Analyses
+    </h2>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Title</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Language</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Score</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Words</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Date</th>
+                </tr>
+            </thead>
+            <tbody id="recentTable">
+                <tr>
+                    <td colspan="5" class="text-center py-8 text-gray-500">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="mt-6 flex gap-4">
+    <button onclick="loadDatabaseStatus()" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition">
+        <i class="fas fa-sync-alt mr-2"></i>Refresh Status
+    </button>
+    <button onclick="initializeDatabase()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+        <i class="fas fa-database mr-2"></i>Initialize Database
+    </button>
+    <button onclick="clearAllData()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+        <i class="fas fa-trash mr-2"></i>Clear All Data
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load database status on page load
+document.addEventListener('DOMContentLoaded', loadDatabaseStatus);
+
+async function loadDatabaseStatus() {
+    showLoading('Loading database status...');
+    
+    try {
+        const response = await axios.get('/api/database/status');
+        const data = response.data.data || response.data;
+        
+        // Update connection status
+        const conn = data.connection;
+        const connEl = document.getElementById('connStatus');
+        if (conn.status.includes('connected')) {
+            connEl.innerHTML = '<i class="fas fa-check-circle text-green-500"></i> Connected';
+            connEl.className = 'text-2xl font-bold text-green-600';
+        } else {
+            connEl.innerHTML = '<i class="fas fa-times-circle text-red-500"></i> Disconnected';
+            connEl.className = 'text-2xl font-bold text-red-600';
+        }
+        
+        document.getElementById('dbName').textContent = conn.database || '-';
+        document.getElementById('dbHost').textContent = `${conn.host || '-'}:${conn.port || '-'}`;
+        document.getElementById('dbDriver').textContent = conn.driver || '-';
+        
+        // Update tables
+        const tables = data.tables;
+        const tablesEl = document.getElementById('tablesList');
+        if (tables.tables && tables.tables.length > 0) {
+            tablesEl.innerHTML = tables.tables.map(t => 
+                `<div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <span><i class="fas fa-table text-blue-500 mr-2"></i>${t}</span>
+                    <span class="text-green-600 text-sm"><i class="fas fa-check"></i> Exists</span>
+                </div>`
+            ).join('');
+        } else {
+            tablesEl.innerHTML = '<p class="text-yellow-600"><i class="fas fa-exclamation-triangle mr-2"></i>No tables found. Click "Initialize Database" to create them.</p>';
+        }
+        
+        // Update statistics
+        const stats = data.statistics;
+        if (stats.status === '✅ ok') {
+            document.getElementById('totalAnalyses').textContent = stats.total_analyses || 0;
+            document.getElementById('avgScore').textContent = stats.average_score || '0.0';
+            document.getElementById('recentCount').textContent = stats.recent_24h || 0;
+            document.getElementById('storageSize').textContent = `${stats.storage_mb || 0} MB`;
+        }
+        
+        // Update recent analyses table
+        const recentEl = document.getElementById('recentTable');
+        if (data.recent && data.recent.length > 0) {
+            recentEl.innerHTML = data.recent.map(r => `
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="py-3 px-4">${r.title}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">${r.language}</span></td>
+                    <td class="py-3 px-4 font-bold ${getScoreColor(r.score)}">${r.score || '-'}</td>
+                    <td class="py-3 px-4">${r.words || 0}</td>
+                    <td class="py-3 px-4 text-gray-600">${new Date(r.created).toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        } else {
+            recentEl.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">No analyses yet</td></tr>';
+        }
+        
+        hideLoading();
+        showToast('Database status loaded', 'success');
+        
+    } catch (error) {
+        console.error('Error loading status:', error);
+        hideLoading();
+        showToast('Failed to load database status', 'error');
+    }
+}
+
+async function initializeDatabase() {
+    if (!confirm('Initialize database? This will create all tables.')) return;
+    
+    showLoading('Initializing database...');
+    
+    try {
+        const response = await axios.post('/api/database/initialize');
+        hideLoading();
+        const responseData = response.data.data || response.data;
+        showToast(responseData.message || 'Database initialized', 'success');
+        loadDatabaseStatus();
+    } catch (error) {
+        hideLoading();
+        showToast(error.response?.data?.error || 'Initialization failed', 'error');
+    }
+}
+
+async function clearAllData() {
+    if (!confirm('WARNING: This will delete ALL analysis data! This cannot be undone.')) return;
+    if (!confirm('Are you REALLY sure? All data will be lost.')) return;
+    
+    showLoading('Clearing all data...');
+    
+    try {
+        await axios.post('/api/clear-results');
+        hideLoading();
+        showToast('All data cleared', 'success');
+        loadDatabaseStatus();
+    } catch (error) {
+        hideLoading();
+        showToast('Failed to clear data', 'error');
+    }
+}
+
+function getScoreColor(score) {
+    if (!score) return 'text-gray-400';
+    if (score >= 8) return 'text-green-600';
+    if (score >= 6) return 'text-yellow-600';
+    return 'text-red-600';
+}
+</script>
+{% endblock %}

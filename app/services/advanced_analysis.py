@@ -8,6 +8,19 @@ import re
 from typing import Dict, List, Any, Optional
 from collections import Counter
 
+# Use VADER for robust sentiment analysis (handles negation, intensity, punctuation)
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+# Lazy-load VADER analyzer
+_vader_analyzer = None
+
+
+def get_vader_analyzer():
+    global _vader_analyzer
+    if _vader_analyzer is None:
+        _vader_analyzer = SentimentIntensityAnalyzer()
+    return _vader_analyzer
+
 
 class AdvancedAnalysisEngine:
     """
@@ -24,8 +37,8 @@ class AdvancedAnalysisEngine:
     def analyze(self, text: str, methods: List[str] = None) -> Dict[str, Any]:
         """Run advanced analysis with specified methods"""
         self.text = text
-        self.lines = [l.strip() for l in text.split('\n') if l.strip()]
-        self.words = re.findall(r'\b[a-zA-Z]+\b', text.lower())
+        self.lines = [l.strip() for l in text.split("\n") if l.strip()]
+        self.words = re.findall(r"\b[a-zA-Z]+\b", text.lower())
 
         if methods is None:
             methods = ["tp_castt", "swift", "sentiment"]
@@ -34,19 +47,19 @@ class AdvancedAnalysisEngine:
 
         if "tp_castt" in methods:
             result["tp_castt"] = self._analyze_tp_castt()
-        
+
         if "swift" in methods:
             result["swift"] = self._analyze_swift()
-            
+
         if "t_swift" in methods:
             result["t_swift"] = self._analyze_t_swift()
-            
+
         if "sift" in methods:
             result["sift"] = self._analyze_sift()
-        
+
         if "touchstone" in methods:
             result["touchstone"] = self._analyze_touchstone()
-        
+
         if "sentiment" in methods:
             result["sentiment"] = self._analyze_sentiment()
 
@@ -66,7 +79,7 @@ class AdvancedAnalysisEngine:
             "attitude": self._tp_attitude(),
             "shifts": self._tp_shifts(),
             "title_revisited": self._tp_title_revisited(),
-            "theme": self._tp_theme()
+            "theme": self._tp_theme(),
         }
 
     def _tp_title_prediction(self) -> str:
@@ -91,7 +104,7 @@ class AdvancedAnalysisEngine:
             "similes": [],
             "personification": [],
             "symbols": [],
-            "imagery": []
+            "imagery": [],
         }
 
         text_lower = self.text.lower()
@@ -107,7 +120,9 @@ class AdvancedAnalysisEngine:
         # Detect personification
         human_verbs = ["whisper", "sing", "dance", "cry", "laugh", "smile"]
         if any(v in text_lower for v in human_verbs):
-            connotation["personification"].append("Human attributes given to non-human entities")
+            connotation["personification"].append(
+                "Human attributes given to non-human entities"
+            )
 
         # Detect symbols
         symbols = ["rose", "dove", "eagle", "sun", "moon", "star", "ocean", "mountain"]
@@ -127,16 +142,28 @@ class AdvancedAnalysisEngine:
 
     def _tp_attitude(self) -> str:
         """Determine speaker's attitude/tone"""
-        positive_words = ["love", "joy", "beautiful", "wonderful", "happy", "bright", "hope"]
+        positive_words = [
+            "love",
+            "joy",
+            "beautiful",
+            "wonderful",
+            "happy",
+            "bright",
+            "hope",
+        ]
         negative_words = ["hate", "sad", "ugly", "terrible", "dark", "despair", "death"]
 
         pos_count = sum(self.text.lower().count(w) for w in positive_words)
         neg_count = sum(self.text.lower().count(w) for w in negative_words)
 
         if pos_count > neg_count * 1.5:
-            return "Positive/Optimistic - The speaker expresses hope, joy, or appreciation"
+            return (
+                "Positive/Optimistic - The speaker expresses hope, joy, or appreciation"
+            )
         elif neg_count > pos_count * 1.5:
-            return "Negative/Pessimistic - The speaker expresses sorrow, anger, or despair"
+            return (
+                "Negative/Pessimistic - The speaker expresses sorrow, anger, or despair"
+            )
         else:
             return "Neutral/Contemplative - The speaker maintains a balanced or reflective tone"
 
@@ -145,28 +172,41 @@ class AdvancedAnalysisEngine:
         shifts = []
 
         # Look for shift markers
-        shift_markers = ["but", "yet", "however", "although", "suddenly", "then", "now", "once"]
-        
+        shift_markers = [
+            "but",
+            "yet",
+            "however",
+            "although",
+            "suddenly",
+            "then",
+            "now",
+            "once",
+        ]
+
         for i, line in enumerate(self.lines):
             line_lower = line.lower()
             for marker in shift_markers:
                 if marker in line_lower:
-                    shifts.append({
-                        "line_number": i + 1,
-                        "marker": marker,
-                        "type": "logical_shift",
-                        "description": f"Shift indicated by '{marker}'"
-                    })
+                    shifts.append(
+                        {
+                            "line_number": i + 1,
+                            "marker": marker,
+                            "type": "logical_shift",
+                            "description": f"Shift indicated by '{marker}'",
+                        }
+                    )
 
         # Check for stanza breaks
         if len(self.lines) > 4:
             mid_point = len(self.lines) // 2
-            shifts.append({
-                "line_number": mid_point,
-                "marker": "structural",
-                "type": "structural_shift",
-                "description": "Potential volta/turn at poem's midpoint"
-            })
+            shifts.append(
+                {
+                    "line_number": mid_point,
+                    "marker": "structural",
+                    "type": "structural_shift",
+                    "description": "Potential volta/turn at poem's midpoint",
+                }
+            )
 
         return shifts[:5]
 
@@ -185,7 +225,7 @@ class AdvancedAnalysisEngine:
             "nature": ["nature", "tree", "flower", "bird", "river", "mountain"],
             "time": ["time", "clock", "hour", "moment", "eternal"],
             "hope": ["hope", "dream", "wish", "faith", "believe"],
-            "loss": ["loss", "gone", "missing", "farewell", "parting"]
+            "loss": ["loss", "gone", "missing", "farewell", "parting"],
         }
 
         text_lower = self.text.lower()
@@ -194,7 +234,11 @@ class AdvancedAnalysisEngine:
             for theme, words in theme_words.items()
         }
 
-        dominant_theme = max(theme_scores, key=theme_scores.get) if any(v > 0 for v in theme_scores.values()) else "universal human experience"
+        dominant_theme = (
+            max(theme_scores, key=theme_scores.get)
+            if any(v > 0 for v in theme_scores.values())
+            else "universal human experience"
+        )
 
         return f"The poem explores the theme of {dominant_theme}, examining its complexities through imagery and figurative language."
 
@@ -209,7 +253,7 @@ class AdvancedAnalysisEngine:
             "word_choice": self._swift_word_choice(),
             "imagery": self._swift_imagery(),
             "figurative_language": self._swift_figurative(),
-            "theme": self._swift_theme()
+            "theme": self._swift_theme(),
         }
 
     def _analyze_t_swift(self) -> Dict[str, Any]:
@@ -218,7 +262,9 @@ class AdvancedAnalysisEngine:
         """
         base_swift = self._analyze_swift()
         base_swift["title"] = self._tp_title_prediction()
-        base_swift["speaker"] = "A contemplative observer" # Basic fallback, usually requires deep persona analysis
+        base_swift["speaker"] = (
+            "A contemplative observer"  # Basic fallback, usually requires deep persona analysis
+        )
         return base_swift
 
     def _analyze_sift(self) -> Dict[str, Any]:
@@ -230,16 +276,20 @@ class AdvancedAnalysisEngine:
             "images": self._swift_imagery(),
             "figurative_language": self._swift_figurative(),
             "tone": self._tp_attitude(),
-            "theme": self._swift_theme()
+            "theme": self._swift_theme(),
         }
 
     def _swift_structure(self) -> Dict[str, Any]:
         """Analyze structure (form, stanza, line breaks)"""
         return {
             "total_lines": len(self.lines),
-            "form": "free_verse" if not any(len(line.split()) == 5 for line in self.lines[:3]) else "structured",
-            "line_variation": "varied" if len(set(len(l) for l in self.lines)) > 3 else "uniform",
-            "stanza_pattern": "continuous" if "\n\n" not in self.text else "stanzac"
+            "form": "free_verse"
+            if not any(len(line.split()) == 5 for line in self.lines[:3])
+            else "structured",
+            "line_variation": "varied"
+            if len(set(len(l) for l in self.lines)) > 3
+            else "uniform",
+            "stanza_pattern": "continuous" if "\n\n" not in self.text else "stanzac",
         }
 
     def _swift_word_choice(self) -> Dict[str, Any]:
@@ -251,12 +301,18 @@ class AdvancedAnalysisEngine:
             "vocabulary_level": "advanced" if avg_word_length > 5 else "accessible",
             "unique_words": len(word_freq),
             "repeated_words": [w for w, c in word_freq.most_common(5)],
-            "diction_type": "formal" if avg_word_length > 5.5 else "conversational"
+            "diction_type": "formal" if avg_word_length > 5.5 else "conversational",
         }
 
     def _swift_imagery(self) -> Dict[str, int]:
         """Analyze sensory imagery"""
-        imagery_counts = {"visual": 0, "auditory": 0, "tactile": 0, "gustatory": 0, "olfactory": 0}
+        imagery_counts = {
+            "visual": 0,
+            "auditory": 0,
+            "tactile": 0,
+            "gustatory": 0,
+            "olfactory": 0,
+        }
 
         text_lower = self.text.lower()
         visual_words = ["see", "look", "bright", "dark", "color", "shine"]
@@ -300,23 +356,23 @@ class AdvancedAnalysisEngine:
             {
                 "author": "Milton",
                 "passage": "And courage never to submit or yield",
-                "quality": "high_seriousness"
+                "quality": "high_seriousness",
             },
             {
                 "author": "Shakespeare",
                 "passage": "Shall I compare thee to a summer's day",
-                "quality": "beauty_and_truth"
+                "quality": "beauty_and_truth",
             },
             {
                 "author": "Homer",
                 "passage": "Sing goddess the anger of Peleus son Achilles",
-                "quality": "epic_grandeur"
+                "quality": "epic_grandeur",
             },
             {
                 "author": "Dante",
                 "passage": "In the middle of the journey of our life",
-                "quality": "spiritual_depth"
-            }
+                "quality": "spiritual_depth",
+            },
         ]
 
         # Simple comparison based on word overlap and sentiment
@@ -330,23 +386,29 @@ class AdvancedAnalysisEngine:
             text_words = set(text_lower.split())
             overlap = len(touchstone_words & text_words) / max(1, len(touchstone_words))
 
-            comparisons.append({
-                "author": touchstone["author"],
-                "quality": touchstone["quality"],
-                "similarity": round(overlap, 3),
-                "assessment": "strong" if overlap > 0.3 else "moderate" if overlap > 0.1 else "minimal"
-            })
+            comparisons.append(
+                {
+                    "author": touchstone["author"],
+                    "quality": touchstone["quality"],
+                    "similarity": round(overlap, 3),
+                    "assessment": "strong"
+                    if overlap > 0.3
+                    else "moderate"
+                    if overlap > 0.1
+                    else "minimal",
+                }
+            )
 
         return {
             "method": "Matthew Arnold's Touchstone Method",
             "comparisons": comparisons,
-            "overall_assessment": self._touchstone_overall(comparisons)
+            "overall_assessment": self._touchstone_overall(comparisons),
         }
 
     def _touchstone_overall(self, comparisons: List[Dict]) -> str:
         """Overall touchstone assessment"""
         strong_count = sum(1 for c in comparisons if c["assessment"] == "strong")
-        
+
         if strong_count >= 2:
             return "The work demonstrates qualities comparable to canonical masters, showing high seriousness and artistic merit."
         elif strong_count == 1:
@@ -358,19 +420,157 @@ class AdvancedAnalysisEngine:
 
     def _analyze_sentiment(self) -> Dict[str, Any]:
         """
-        Sentiment analysis with VAD (Valence, Arousal, Dominance)
+        Sentiment analysis using VADER (handles negation, intensity, punctuation)
+        Falls back to manual for non-English or if VADER unavailable
         """
-        # Simple lexicon-based sentiment
+        # Use VADER for English (robust, handles "not happy", "very happy!!!", etc.)
+        if self.language == "en":
+            try:
+                analyzer = get_vader_analyzer()
+                scores = analyzer.polarity_scores(self.text)
+
+                # VAD mapping from VADER scores
+                valence = scores["compound"]  # -1 to 1
+                arousal = min(
+                    1.0,
+                    (self.text.count("!") * 0.1 + scores["pos"] + scores["neg"]) / 1.5,
+                )
+
+                # Dominance from active vs passive language
+                active_words = [
+                    "will",
+                    "shall",
+                    "must",
+                    "can",
+                    "do",
+                    "make",
+                    "create",
+                    "power",
+                    "control",
+                ]
+                passive_words = [
+                    "was",
+                    "were",
+                    "been",
+                    "might",
+                    "could",
+                    "would",
+                    "helpless",
+                    "weak",
+                ]
+                text_lower = self.text.lower()
+                words = text_lower.split()
+                dominance = (
+                    (
+                        sum(1 for w in words if w in active_words)
+                        - sum(1 for w in words if w in passive_words)
+                    )
+                    / max(1, len(words))
+                    * 3
+                )
+                dominance = max(-1, min(1, dominance))
+
+                # Determine dominant emotion
+                if valence > 0.3:
+                    dominant_emotion = "joy/love" if valence > 0.6 else "contentment"
+                elif valence < -0.3:
+                    dominant_emotion = "sorrow/fear" if valence < -0.6 else "melancholy"
+                else:
+                    dominant_emotion = "neutral/contemplative"
+
+                # Line-by-line sentiment arc using VADER
+                sentiment_arc = []
+                for line in self.lines[:20]:  # First 20 lines
+                    line_scores = analyzer.polarity_scores(line)
+                    sentiment_arc.append(round(line_scores["compound"], 3))
+
+                return {
+                    "valence": round(valence, 3),
+                    "arousal": round(arousal, 3),
+                    "dominance": round(dominance, 3),
+                    "sentiment_arc": sentiment_arc,
+                    "dominant_emotion": dominant_emotion,
+                    "emotion_distribution": self._calculate_emotion_distribution_vader(
+                        text_lower, analyzer
+                    ),
+                    "vader_scores": scores,  # Raw VADER output for reference
+                }
+            except Exception as e:
+                # Fall back to manual if VADER fails
+                pass
+
+        # Manual fallback for non-English or VADER failure
+        return self._analyze_sentiment_manual()
+
+    def _analyze_sentiment_manual(self) -> Dict[str, Any]:
+        """Manual sentiment as fallback for non-English"""
         positive_words = {
-            "love": 0.8, "joy": 0.9, "happy": 0.8, "beautiful": 0.7, "wonderful": 0.8,
-            "hope": 0.6, "bright": 0.5, "peace": 0.7, "gentle": 0.5, "sweet": 0.6,
-            "delight": 0.8, "pleasure": 0.7, "bliss": 0.9, "grace": 0.6, "glory": 0.7
+            "love": 0.8,
+            "joy": 0.9,
+            "happy": 0.8,
+            "beautiful": 0.7,
+            "wonderful": 0.8,
+            "hope": 0.6,
+            "bright": 0.5,
+            "peace": 0.7,
+            "gentle": 0.5,
+            "sweet": 0.6,
+        }
+        negative_words = {
+            "hate": -0.8,
+            "sad": -0.7,
+            "death": -0.6,
+            "pain": -0.8,
+            "sorrow": -0.8,
+            "fear": -0.7,
+            "anger": -0.7,
+            "dark": -0.4,
+            "despair": -0.9,
+        }
+
+        text_lower = self.text.lower()
+        words = text_lower.split()
+        valence_score = sum(
+            positive_words.get(w, 0) + negative_words.get(w, 0) for w in words
+        )
+        valence = max(-1, min(1, valence_score / max(1, len(words)) * 5))
+
+        return {
+            "valence": round(valence, 3),
+            "arousal": 0.5,
+            "dominance": 0.0,
+            "sentiment_arc": [],
+            "dominant_emotion": "unknown",
+            "emotion_distribution": {},
+        }
+
+    def _calculate_emotion_distribution_vader(
+        self, text: str, analyzer
+    ) -> Dict[str, float]:
+        """Calculate emotion distribution using VADER's pos/neg/neu scores"""
+        scores = analyzer.polarity_scores(text)
+        return {
+            "positive": round(scores["pos"] * 100, 2),
+            "negative": round(scores["neg"] * 100, 2),
+            "neutral": round(scores["neu"] * 100, 2),
         }
 
         negative_words = {
-            "hate": -0.8, "sad": -0.7, "death": -0.6, "pain": -0.8, "sorrow": -0.8,
-            "fear": -0.7, "anger": -0.7, "dark": -0.4, "despair": -0.9, "grief": -0.8,
-            "tear": -0.6, "mourn": -0.8, "suffer": -0.8, "agony": -0.9, "torment": -0.9
+            "hate": -0.8,
+            "sad": -0.7,
+            "death": -0.6,
+            "pain": -0.8,
+            "sorrow": -0.8,
+            "fear": -0.7,
+            "anger": -0.7,
+            "dark": -0.4,
+            "despair": -0.9,
+            "grief": -0.8,
+            "tear": -0.6,
+            "mourn": -0.8,
+            "suffer": -0.8,
+            "agony": -0.9,
+            "torment": -0.9,
         }
 
         text_lower = self.text.lower()
@@ -391,13 +591,34 @@ class AdvancedAnalysisEngine:
         valence = max(-1, min(1, valence))
 
         # Arousal (intensity) - based on exclamation marks and intense words
-        intense_words = ["very", "extremely", "absolutely", "totally", "completely", "never", "always"]
-        arousal = min(1, (text_lower.count("!") * 0.2 + sum(1 for w in words if w in intense_words) / max(1, total_words) * 5))
+        intense_words = [
+            "very",
+            "extremely",
+            "absolutely",
+            "totally",
+            "completely",
+            "never",
+            "always",
+        ]
+        arousal = min(
+            1,
+            (
+                text_lower.count("!") * 0.2
+                + sum(1 for w in words if w in intense_words) / max(1, total_words) * 5
+            ),
+        )
 
         # Dominance (control) - based on active vs passive voice indicators
         active_words = ["will", "shall", "must", "can", "do", "make", "create"]
         passive_words = ["was", "were", "been", "might", "could", "would"]
-        dominance = (sum(1 for w in words if w in active_words) - sum(1 for w in words if w in passive_words)) / max(1, total_words) * 2
+        dominance = (
+            (
+                sum(1 for w in words if w in active_words)
+                - sum(1 for w in words if w in passive_words)
+            )
+            / max(1, total_words)
+            * 2
+        )
         dominance = max(-1, min(1, dominance))
 
         # Determine dominant emotion
@@ -422,7 +643,7 @@ class AdvancedAnalysisEngine:
             "dominance": round(dominance, 3),
             "sentiment_arc": sentiment_arc[:20],  # First 20 lines
             "dominant_emotion": dominant_emotion,
-            "emotion_distribution": self._calculate_emotion_distribution(text_lower)
+            "emotion_distribution": self._calculate_emotion_distribution(text_lower),
         }
 
     def _calculate_emotion_distribution(self, text: str) -> Dict[str, float]:
@@ -433,7 +654,7 @@ class AdvancedAnalysisEngine:
             "anger": ["anger", "rage", "fury", "hate", "wrath", "fierce"],
             "fear": ["fear", "terror", "dread", "fright", "panic", "tremble"],
             "love": ["love", "beloved", "passion", "romance", "heart", "adore"],
-            "surprise": ["surprise", "wonder", "amazement", "shock", "astonish"]
+            "surprise": ["surprise", "wonder", "amazement", "shock", "astonish"],
         }
 
         distribution = {}
@@ -451,4 +672,6 @@ def analyze_with_multiple_methods(text: str, language: str = "en") -> Dict[str, 
     Convenience function to run all advanced analysis methods
     """
     engine = AdvancedAnalysisEngine(language)
-    return engine.analyze(text, methods=["tp_castt", "swift", "touchstone", "sentiment"])
+    return engine.analyze(
+        text, methods=["tp_castt", "swift", "touchstone", "sentiment"]
+    )

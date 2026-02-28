@@ -1,0 +1,207 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block title %}Oulipo Vectors - PoetryMaster{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+    <!-- Page Header -->
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-4xl font-black text-slate-900 tracking-tight">Oulipo Constraint Engine</h2>
+            <p class="text-slate-500 mt-1 font-medium italic">Execute structural transformations based on the Ouvroir de Littérature Potentielle</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <!-- Control Panel -->
+        <div class="lg:col-span-1 space-y-8">
+            <div class="rounded-box">
+                <h3 class="kpi-label">Transformation Logic</h3>
+                <div class="space-y-3 mt-6">
+                    ${[
+                        ['n_plus_7', 'N + 7', 'Noun Substitution'],
+                        ['lipogram', 'Lipogram', 'Letter Exclusion'],
+                        ['snowball', 'Snowball', 'Incremental Expansion'],
+                        ['pilish', 'Pilish', 'Pi-based Meter'],
+                        ['univocalism', 'Univocalism', 'Vowel Restriction'],
+                        ['sestina', 'Sestina', 'Rotating End-Words']
+                    ].map(([id, name, desc]) => `
+                        <button onclick="selectConstraint('${id}')" id="btn-${id}" 
+                            class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
+                            <div class="font-black text-slate-900 group-hover:text-primary capitalize">${name}</div>
+                            <div class="text-[10px] text-slate-400 uppercase tracking-wider">${desc}</div>
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="rounded-box bg-slate-900 text-white border-0 shadow-2xl relative overflow-hidden">
+                <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 relative z-10">Logic Parameters</h3>
+                <div id="constraintParams" class="space-y-6 relative z-10">
+                    <p class="text-sm text-slate-400 italic">Select a transformation vector to configure logic parameters.</p>
+                </div>
+                <!-- Decorative element -->
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl"></div>
+            </div>
+        </div>
+
+        <!-- Execution Area -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="rounded-box">
+                <label class="kpi-label">Source Linguistic Vector</label>
+                <textarea id="sourceText" rows="10" class="w-full mt-4 p-8 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-serif italic text-xl leading-relaxed focus:ring-4 focus:ring-blue-100 transition" placeholder="Paste literary source text for transformation..."></textarea>
+                
+                <div class="mt-8 flex justify-end">
+                    <button onclick="applyConstraint()" class="btn btn-primary px-12 py-4 rounded-2xl text-lg shadow-xl shadow-blue-500/20">
+                        <i class="fas fa-microchip mr-2"></i> Execute Transformation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Surface -->
+            <div id="outputContainer" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="rounded-box border-l-8 border-l-emerald-500 bg-emerald-50/20">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-black text-slate-900 flex items-center">
+                            <i class="fas fa-random text-emerald-500 mr-3"></i>
+                            Transformed Vector
+                        </h3>
+                        <div id="complianceBadge" class="hidden px-4 py-1 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"></div>
+                    </div>
+                    
+                    <div id="transformedText" class="p-8 bg-white rounded-[2rem] border border-emerald-100 shadow-sm font-serif text-2xl leading-relaxed italic text-slate-800"></div>
+                    
+                    <div class="mt-8 flex justify-between items-center">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest" id="transformationMeta"></span>
+                        <div class="flex gap-3">
+                            <button onclick="copyOutput()" class="btn bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">
+                                <i class="fas fa-copy mr-2"></i> Copy
+                            </button>
+                            <button onclick="downloadOutput()" class="btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
+                                <i class="fas fa-download mr-2"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let activeConstraint = null;
+
+function selectConstraint(type) {
+    activeConstraint = type;
+    document.querySelectorAll('.constraint-btn').forEach(b => b.classList.remove('border-primary', 'bg-blue-50'));
+    document.getElementById(`btn-${type}`).classList.add('border-primary', 'bg-blue-50');
+    
+    const params = document.getElementById('constraintParams');
+    
+    // Configurable Parameter Vectors
+    if (type === 'n_plus_7') {
+        params.innerHTML = `
+            <div>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Substitution Offset (N)</label>
+                <input type="number" id="param_n" value="7" min="1" max="20" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+            </div>
+            <div>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">POS Target</label>
+                <select id="param_pos" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white outline-none focus:ring-2 focus:ring-blue-500 font-bold appearance-none">
+                    <option value="noun">Nouns (Classic N+7)</option>
+                    <option value="verb">Verbs (Action V+7)</option>
+                    <option value="adj">Adjectives (Color A+7)</option>
+                </select>
+            </div>
+        `;
+    } else if (type === 'lipogram') {
+        params.innerHTML = `
+            <div>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Excluded Character</label>
+                <input type="text" id="param_char" value="e" maxlength="1" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white outline-none focus:ring-2 focus:ring-blue-500 font-black text-center text-3xl uppercase">
+            </div>
+        `;
+    } else if (type === 'univocalism') {
+        params.innerHTML = `
+            <div>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Vowel Constraint</label>
+                <div class="flex gap-2">
+                    ${['a','e','i','o','u'].map(v => `
+                        <button onclick="setVowel('${v}')" class="vowel-btn flex-1 h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-600 transition font-black uppercase">${v}</button>
+                    `).join('')}
+                </div>
+                <input type="hidden" id="param_vowel" value="e">
+            </div>
+        `;
+    } else {
+        params.innerHTML = `<p class="text-xs text-slate-400 italic">This vector uses standard Oulipo logic with no variable parameters.</p>`;
+    }
+    
+    showToast(`Logic Vector Locked: ${type.toUpperCase()}`, 'info');
+}
+
+function setVowel(v) {
+    document.getElementById('param_vowel').value = v;
+    showToast(`Vowel Constraint: ${v.toUpperCase()}`, 'info');
+}
+
+async function applyConstraint() {
+    const text = document.getElementById('sourceText').value;
+    if (!text || !activeConstraint) {
+        showToast('System Protocol: Source and Logic required', 'warning');
+        return;
+    }
+
+    showLoading('Executing linguistic transformation...');
+    try {
+        const payload = {
+            text: text,
+            constraint_type: activeConstraint,
+            params: activeConstraint === 'n_plus_7' ? {n: parseInt(document.getElementById('param_n').value), pos: document.getElementById('param_pos').value} : 
+                   activeConstraint === 'lipogram' ? {letter: document.getElementById('param_char').value} :
+                   activeConstraint === 'univocalism' ? {vowel: document.getElementById('param_vowel').value} : {}
+        };
+
+        const response = await axios.post('/api/constraints/apply', payload);
+        const result = response.data.success ? response.data.data : response.data;
+
+        const outText = result.transformed_text || result.result || result.text;
+        document.getElementById('transformedText').textContent = outText;
+        document.getElementById('transformationMeta').textContent = `Vector: ${activeConstraint} | Tokens: ${outText.split(/\s+/).length} | Logic: DTCG-2026`;
+        
+        if (result.compliance_score !== undefined) {
+            const badge = document.getElementById('complianceBadge');
+            badge.textContent = `Compliance: ${(result.compliance_score * 100).toFixed(0)}%`;
+            badge.classList.remove('hidden');
+        }
+
+        document.getElementById('outputContainer').classList.remove('hidden');
+        showToast('Transformation sequence complete', 'success');
+    } catch (e) {
+        console.error(e);
+        showToast('Logic execution failure', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function copyOutput() {
+    const text = document.getElementById('transformedText').textContent;
+    navigator.clipboard.writeText(text);
+    showToast('Vector copied to clipboard', 'success');
+}
+
+function downloadOutput() {
+    const text = document.getElementById('transformedText').textContent;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transformed-${activeConstraint}.txt`;
+    a.click();
+    showToast('Download initiated', 'info');
+}
+</script>
+{% endblock %}

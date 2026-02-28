@@ -109,8 +109,8 @@ Write-Success "Python dependencies installed"
 
 # Download spaCy models
 Write-Info "Downloading spaCy models..."
-python -m spacy download en_core_web_trf
-python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_trf  # English transformer
+python -m spacy download xx_sent_ud_sm    # Multilingual
 Write-Success "spaCy models downloaded"
 
 # Create test script

@@ -138,8 +138,8 @@ print_success "Python dependencies installed"
 
 # Download spaCy models
 print_info "Downloading spaCy models..."
-python -m spacy download en_core_web_trf
-python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_trf  # English transformer
+python -m spacy download xx_sent_ud_sm    # Multilingual
 print_success "spaCy models downloaded"
 
 # Create test script

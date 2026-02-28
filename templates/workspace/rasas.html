@@ -1,0 +1,223 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block title %}Navarasa Reference - Ultimate Literary Master System{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+        <i class="fas fa-spa text-pink-600 mr-2"></i>
+        Navarasa - Indian Aesthetics
+    </h1>
+    <p class="text-gray-600">The Nine Aesthetic Emotions (नवरस) from Bharata's Natyashastra</p>
+</div>
+
+<!-- Rasa Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Shringara (Love/Beauty) -->
+    <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-pink-800">श्रृंगार</h2>
+                <span class="w-12 h-12 rounded-full bg-pink-300 flex items-center justify-center">
+                    <i class="fas fa-heart text-pink-700 text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-pink-700">Shringara</h3>
+            <p class="text-sm text-gray-600 mt-2">Love / Beauty / Romance</p>
+            <div class="mt-4 p-3 bg-white rounded-lg">
+                <p class="text-xs text-gray-500"><strong>Emotion:</strong> प्रेम (Love)</p>
+                <p class="text-xs text-gray-500"><strong>Color:</strong> 🟢 Light Green</p>
+                <p class="text-xs text-gray-500"><strong>Deity:</strong> Vishnu</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hasya (Comedy) -->
+    <div class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">हास्य</h2>
+                <span class="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
+                    <i class="fas fa-laugh text-gray-700 text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700">Hasya</h3>
+            <p class="text-sm text-gray-600 mt-2">Laughter / Comedy / Humor</p>
+            <div class="mt-4 p-3 bg-white rounded-lg">
+                <p class="text-xs text-gray-500"><strong>Emotion:</strong> हास (Laughter)</p>
+                <p class="text-xs text-gray-500"><strong>Color:</strong> ⚪ White</p>
+                <p class="text-xs text-gray-500"><strong>Deity:</strong> Shiva</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Karuna (Sorrow) -->
+    <div class="bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-700">करुण</h2>
+                <span class="w-12 h-12 rounded-full bg-gray-400 flex items-center justify-center">
+                    <i class="fas fa-sad-tear text-gray-600 text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-600">Karuna</h3>
+            <p class="text-sm text-gray-600 mt-2">Compassion / Sorrow / Pathos</p>
+            <div class="mt-4 p-3 bg-white rounded-lg">
+                <p class="text-xs text-gray-500"><strong>Emotion:</strong> शोक (Sorrow)</p>
+                <p class="text-xs text-gray-500"><strong>Color:</strong> ⚫ Grey</p>
+                <p class="text-xs text-gray-500"><strong>Deity:</strong> Yama</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Raudra (Anger) -->
+    <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-red-800">रौद्र</h2>
+                <span class="w-12 h-12 rounded-full bg-red-300 flex items-center justify-center">
+                    <i class="fas fa-fire text-red-700 text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-red-700">Raudra</h3>
+            <p class="text-sm text-gray-600 mt-2">Fury / Anger / Rage</p>
+            <div class="mt-4 p-3 bg-white rounded-lg">
+                <p class="text-xs text-gray-500"><strong>Emotion:</strong> क्रोध (Anger)</p>
+                <p class="text-xs text-gray-500"><strong>Color:</strong> 🔴 Red</p>
+                <p class="text-xs text-gray-500"><strong>Deity:</strong> Kali/Rudra</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Veera (Heroism) -->
+    <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-orange-800">वीર</h2>
+                <span class="w-12 h-12 rounded-full bg-orange-300 flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-orange-700 text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-orange-700">Veera</h3>
+            <p class="text-sm text-gray-600 mt-2">Heroism / Courage / Valor</p>
+            <div class="mt-4 p-3 bg-white rounded-lg">
+                <p class="text-xs text-gray-500"><strong>Emotion:</strong> उत्साह (Enthusiasm)</p>
+                <p class="text-xs text-gray-500"><strong>Color:</strong> 🟠 Orange</p>
+                <p class="text-xs text-gray-500"><strong>Deity:</strong> Rama/Indra</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bhayanaka (Fear) -->
+    <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-200">भયાનક</h2>
+                <span class="w-12 h-12 rounded-full bg-gray-600 flex items-center justify-center">
+                    <i class="fas fa-skull text-gray-300 text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-300">Bhayanaka</h3>
+            <p class="text-sm text-gray-400 mt-2">Terror / Fear / Horror</p>
+            <div class="mt-4 p-3 bg-gray-800 rounded-lg">
+                <p class="text-xs text-gray-400"><strong>Emotion:</strong> भय (Fear)</p>
+                <p class="text-xs text-gray-400"><strong>Color:</strong> ⚫ Black</p>
+                <p class="text-xs text-gray-400"><strong>Deity:</strong> Kala (Time)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bibhatsa (Disgust) -->
+    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-blue-800">બીભત્સ</h2>
+                <span class="w-12 h-12 rounded-full bg-blue-300 flex items-center justify-center">
+                    <i class="fas fa-stomach text-blue-700 text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-blue-700">Bibhatsa</h3>
+            <p class="text-sm text-gray-600 mt-2">Disgust / Revulsion</p>
+            <div class="mt-4 p-3 bg-white rounded-lg">
+                <p class="text-xs text-gray-500"><strong>Emotion:</strong> जुगुप्सा (Disgust)</p>
+                <p class="text-xs text-gray-500"><strong>Color:</strong> 🔵 Blue</p>
+                <p class="text-xs text-gray-500"><strong>Deity:</strong> Brahma</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adbhuta (Wonder) -->
+    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-yellow-800">અદ્ભુત</h2>
+                <span class="w-12 h-12 rounded-full bg-yellow-300 flex items-center justify-center">
+                    <i class="fas fa-star text-yellow-700 text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-yellow-700">Adbhuta</h3>
+            <p class="text-sm text-gray-600 mt-2">Wonder / Awe / Marvelous</p>
+            <div class="mt-4 p-3 bg-white rounded-lg">
+                <p class="text-xs text-gray-500"><strong>Emotion:</strong> विस्मय (Wonder)</p>
+                <p class="text-xs text-gray-500"><strong>Color:</strong> 🟡 Yellow</p>
+                <p class="text-xs text-gray-500"><strong>Deity:</strong> Vishnu</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shanta (Peace) -->
+    <div class="bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-blue-700">शांત</h2>
+                <span class="w-12 h-12 rounded-full bg-blue-400 flex items-center justify-center">
+                    <i class="fas fa-om text-white text-xl"></i>
+                </span>
+            </div>
+            <h3 class="text-lg font-semibold text-blue-600">Shanta</h3>
+            <p class="text-sm text-gray-600 mt-2">Peace / Serenity / Tranquility</p>
+            <div class="mt-4 p-3 bg-white rounded-lg">
+                <p class="text-xs text-gray-500"><strong>Emotion:</strong> शम (Peace)</p>
+                <p class="text-xs text-gray-500"><strong>Color:</strong> 🔷 White-Blue</p>
+                <p class="text-xs text-gray-500"><strong>Deity:</strong> Shiva</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rasa Theory Explanation -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">
+        <i class="fas fa-info-circle text-primary mr-2"></i>
+        Understanding Rasa Theory
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h3 class="font-bold text-gray-700 mb-2">What is Rasa?</h3>
+            <p class="text-sm text-gray-600">Rasa (रस) means "essence" - the aesthetic pleasure derived from art. Established by Bharata in Natyashastra (2nd century BCE).</p>
+        </div>
+        <div>
+            <h3 class="font-bold text-gray-700 mb-2">The 8 + 1 = 9 Rasas</h3>
+            <p class="text-sm text-gray-600">Originally 8 rasas, expanded to 9 with Shanta (peace) - the ultimate goal of arts leading to spiritual liberation.</p>
+        </div>
+        <div>
+            <h3 class="font-bold text-gray-700 mb-2">How it's evoked</h3>
+            <p class="text-sm text-gray-600">Through Vibhavas (causes), Anubhavas (effects), and Vyabhichari Bhavas (transitory states).</p>
+        </div>
+        <div>
+            <h3 class="font-bold text-gray-700 mb-2">In Poetry Analysis</h3>
+            <p class="text-sm text-gray-600">Our system analyzes word choices, imagery, and emotional content to determine the dominant rasa in your text.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="flex justify-between">
+    <a href="{{ route('analyze') }}" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition">
+        <i class="fas fa-search mr-2"></i>Analyze with Rasa
+    </a>
+    <a href="{{ route('dashboard') }}" class="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-teal-700 transition">
+        <i class="fas fa-home mr-2"></i>Dashboard
+    </a>
+</div>
+{% endblock %}

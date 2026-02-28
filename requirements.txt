@@ -4,7 +4,7 @@
 # =============================================================================
 
 # =============================================================================
-# WEB FRAMEWORK
+# WEB FRAMEWORK (FastAPI)
 # =============================================================================
 fastapi==0.129.0
 uvicorn[standard]==0.34.2
@@ -89,9 +89,15 @@ python-Levenshtein==0.27.3
 levenshtein==0.27.3
 
 # =============================================================================
-# WEB FRAMEWORK (ALTERNATIVE)
+# WEB FRAMEWORKS
 # =============================================================================
+# FastAPI (Primary - Recommended)
+fastapi==0.129.0
+uvicorn[standard]==0.34.2
+
+# Flask (Alternative)
 flask==3.1.0
+flask-cors>=5.0.0
 
 # =============================================================================
 # UTILITIES
@@ -100,21 +106,24 @@ colorama==0.4.6
 tqdm==4.67.1
 
 # =============================================================================
-# DATABASE (PostgreSQL + SQLAlchemy + Alembic Migrations)
+# DATABASE (PostgreSQL + MySQL + SQLite + SQLAlchemy + Alembic Migrations)
 # Use psycopg (v3) instead of psycopg2-binary for Python 3.13 compatibility
+# PyMySQL for MySQL support
 # =============================================================================
 sqlalchemy>=2.0.40
 alembic>=1.13.0
 psycopg[binary]>=3.2.0
+pymysql>=1.1.0
+cryptography>=42.0.0
 python-dotenv==1.1.0
 
 # =============================================================================
 # POST-INSTALLATION
 # =============================================================================
-# Run after installation:
-#   python -m spacy download en_core_web_trf
-#   python -m spacy download en_core_web_sm
-#   
+# Required spaCy models (download after installation):
+#   python -m spacy download en_core_web_trf  # English transformer (primary)
+#   python -m spacy download xx_sent_ud_sm    # Multilingual (Hindi, Gujarati, Urdu, etc.)
+#
 # For NLTK (in Python):
 #   import nltk
 #   nltk.download('punkt')

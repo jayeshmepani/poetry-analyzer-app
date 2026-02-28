@@ -23,4 +23,4 @@ class WebController(BaseController):
         """
         # This is now just a redirect (handled in routes)
         # Kept for backwards compatibility
-        return self.redirect('/admin')
+        return self.redirect('/dashboard')
