@@ -4,9 +4,16 @@ Dialect Detection, Discourse Analysis, Text Correction, Idiom/Proverb Detection
 Based on ultimate_literary_master_system.md
 """
 
+import os
 import re
 import logging
+from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
+
+# Route HuggingFace model cache to local project directory (not C: drive)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+os.environ.setdefault("HF_HOME", str(_PROJECT_ROOT / ".huggingface_cache"))
+
 from transformers import pipeline
 
 logger = logging.getLogger(__name__)
@@ -22,34 +29,48 @@ class TransformerAnalyzer:
         self.language = language
         self._sentiment_pipe = None
         self._emotion_pipe = None
-        self._initialize_pipelines()
+        self._initialized = False
 
     def _initialize_models(self):
         # Alias for _initialize_pipelines to maintain consistency if needed
         self._initialize_pipelines()
 
     def _initialize_pipelines(self):
-        """Initialize transformer pipelines only for English (YAGNI)"""
+        """Initialize transformer pipelines only for English — called lazily on first use"""
+        if self._initialized:
+            return
+        self._initialized = True
         if self.language == "en":
             try:
-                # Use a lightweight but powerful model
+                import torch
+                # Use GPU (0) if available for these massive models, else fallback to CPU (-1)
+                device = 0 if torch.cuda.is_available() else -1
+                
+                # Use state-of-the-art flagship LARGE models for maximum accuracy
+                logger.info("Loading flagship sentiment model (siebert/sentiment-roberta-large-english)...")
                 self._sentiment_pipe = pipeline(
                     "sentiment-analysis", 
-                    model="distilbert-base-uncased-finetuned-sst-2-english",
-                    device=-1 # CPU
+                    model="siebert/sentiment-roberta-large-english",
+                    device=device
                 )
+                logger.info("Loading flagship emotion model (duelker/samo-goemotions-deberta-v3-large)...")
                 self._emotion_pipe = pipeline(
                     "text-classification", 
-                    model="j-hartmann/emotion-english-distilbert-base-uncased", 
-                    return_all_scores=True,
-                    device=-1
+                    model="duelker/samo-goemotions-deberta-v3-large", 
+                    top_k=None,
+                    device=device
                 )
-                logger.info("Transformer pipelines initialized")
+                logger.info("Transformer pipelines initialized successfully")
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 logger.warning(f"Transformer initialization failed: {e}")
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Perform sentiment and emotion analysis"""
+        # Lazy-load models on first call (avoids Flask debug reloader loading 2x ~3GB)
+        if not self._initialized:
+            self._initialize_pipelines()
         if self.language != "en" or not self._sentiment_pipe:
             return {"status": "unsupported_or_failed", "sentiment": {}, "emotions": {}}
 
@@ -72,6 +93,8 @@ class TransformerAnalyzer:
                 "dominant_emotion": max(emotions, key=emotions.get)
             }
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             logger.error(f"Transformer analysis failed: {e}")
             return {"error": str(e)}
 

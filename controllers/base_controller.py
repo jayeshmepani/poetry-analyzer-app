@@ -10,7 +10,6 @@ from fastapi import Request
 class BaseController:
     """
     Base controller with common functionality
-    Like Laravel's Controller class
     """
 
     def __init__(self, templates: Jinja2Templates):
@@ -19,7 +18,6 @@ class BaseController:
     def view(self, template: str, request: Request, data: dict = None):
         """
         Render a view template
-        Like Laravel's view() helper
         """
         return self.templates.TemplateResponse(
             template, {"request": request, **(data or {})}
@@ -28,7 +26,6 @@ class BaseController:
     def redirect(self, url: str):
         """
         Redirect to another URL
-        Like Laravel's redirect() helper
         """
         from fastapi.responses import RedirectResponse
 
@@ -37,7 +34,6 @@ class BaseController:
     def json(self, data: dict, status_code: int = 200):
         """
         Return JSON response
-        Like Laravel's response()->json()
         """
         from fastapi.responses import JSONResponse
 

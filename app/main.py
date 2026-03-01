@@ -1,22 +1,22 @@
 """
 Ultimate Literary & Linguistic Master System
-Laravel-style MVC Architecture
+Structured MVC Architecture
 
 Directory Structure:
-├── routes/          - All route definitions (like Laravel routes/)
-│   └── web.py       - Web routes (like routes/web.php)
-├── controllers/     - Request handlers (like Laravel App/Http/Controllers/)
-│   ├── BaseController.php
+├── routes/          - All route definitions
+│   └── web.py       - Web routes
+├── controllers/     - Request handlers
+│   ├── BaseController.py
 │   ├── WorkspaceController.py
 │   └── WebController.py
-├── middleware/      - HTTP middleware (like Laravel app/Http/Middleware/)
-├── config/          - Configuration files (like Laravel config/)
+├── middleware/      - HTTP middleware
+├── config/          - Configuration files
 ├── app/             - Application logic
-│   ├── models/      - Database models (like Laravel app/Models/)
-│   ├── services/    - Business logic (like Laravel app/Services/)
-│   └── database.py  - DB connection (like Laravel config/database.php)
-├── templates/       - Views (like Laravel resources/views/)
-└── static/          - Assets (like Laravel public/)
+│   ├── models/      - Database models
+│   ├── services/    - Business logic
+│   └── database.py  - DB connection
+├── templates/       - Views
+└── static/          - Assets
 """
 
 from fastapi import FastAPI, Request
@@ -65,7 +65,7 @@ if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 # ==================== ROUTE REGISTRATION ====================
-# Laravel-style: All routes are defined in routes/web.py
+# All routes are defined in routes/web.py
 # Like: Route::group([], function() { require base_path('routes/web.php'); });
 
 from routes.web import register_web_routes

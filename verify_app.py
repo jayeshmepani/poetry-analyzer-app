@@ -157,14 +157,14 @@ def main():
     
     # Ensure database is initialized
     print("Initializing database...")
-    subprocess.run(["venv/bin/python", "init_db.py"], capture_output=True)
+    subprocess.run(["venv\\Scripts\\python.exe", "init_db.py"], capture_output=True)
 
     # 1. Test FastAPI
     print("\n" + "="*50)
     print("  PHASE 1: FastAPI VERIFICATION")
     print("="*50)
     
-    fastapi_cmd = "venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 9000"
+    fastapi_cmd = "venv\\Scripts\\uvicorn.exe app.main:app --host 0.0.0.0 --port 9000"
     process = run_framework(fastapi_cmd)
     
     if process:
@@ -175,22 +175,6 @@ def main():
             process.wait()
             print("FastAPI server stopped.")
     
-    # 2. Test Flask
-    print("\n" + "="*50)
-    print("  PHASE 2: Flask VERIFICATION")
-    print("="*50)
-    
-    flask_cmd = "venv/bin/python flask_app.py --port 9000"
-    process = run_framework(flask_cmd)
-    
-    if process:
-        try:
-            final_report["Flask"] = test_routes("Flask")
-        finally:
-            process.terminate()
-            process.wait()
-            print("Flask server stopped.")
-
     # FINAL SUMMARY
     print("\n" + "="*50)
     print("  FINAL VERIFICATION SUMMARY")

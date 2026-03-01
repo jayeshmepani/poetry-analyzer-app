@@ -1,6 +1,6 @@
 """
 Web Routes Configuration
-Laravel-style routing for Poetry Analyzer App
+Routing for Poetry Analyzer App
 All routes are defined here and automatically registered
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 class Route:
     """
-    Laravel-style Route class
+    Route class
     Usage: Route.get('/path', controller_method)
     """
     
@@ -91,7 +91,7 @@ class Route:
         return self
     
     def group(self, prefix: str, callback: Callable):
-        """Create route group with prefix (like Laravel Route::group)"""
+        """Create route group with prefix"""
         callback(self, prefix)
         return self
     

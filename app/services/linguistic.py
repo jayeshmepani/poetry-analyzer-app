@@ -156,15 +156,21 @@ class LinguisticAnalyzer:
         else:
             self.words = re.findall(r"\b[a-zA-Z]+\b", self.text.lower())
 
-        # Use spaCy for sentence segmentation if available (xx_sent_ud_sm or en_core_web_trf)
+        # Use spaCy for sentence segmentation if available
         if self.nlp:
             doc = self.nlp(self.text)
             self.sentences = [
                 sent.text.strip() for sent in doc.sents if sent.text.strip()
             ]
         else:
-            self.sentences = re.split(r"[.!?।]+", self.text)
-            self.sentences = [s.strip() for s in self.sentences if s.strip()]
+            try:
+                self.sentences = nltk.sent_tokenize(self.text)
+                if not self.words: # If indic tokenizer wasn't used
+                    self.words = nltk.word_tokenize(self.text.lower())
+            except Exception as e:
+                logger.warning(f"NLTK tokenization failed, falling back to regex: {e}")
+                self.sentences = re.split(r"[.!?।]+", self.text)
+                self.sentences = [s.strip() for s in self.sentences if s.strip()]
 
     def _analyze_with_spacy(self) -> Dict[str, Any]:
         """Analyze using spaCy with full potential - leveraging all installed libraries"""
@@ -312,15 +318,34 @@ class LinguisticAnalyzer:
         }
 
     def _analyze_rule_based(self) -> Dict[str, Any]:
-        """Fallback rule-based analysis"""
+        """Fallback rule-based analysis utilizing NLTK"""
         return {
             "phonetics": self._analyze_phonetics_basic(),
             "morphology": self._analyze_morphology_basic(),
             "syntax": self._analyze_syntax_basic(),
             "semantics": self._analyze_semantics_basic(),
             "lexical_relations": self._analyze_lexical_relations(),
-            "pos_distribution": self._analyze_pos_basic(),
+            "pos_distribution": self._analyze_pos_nltk(),
         }
+
+    def _analyze_pos_nltk(self) -> Dict[str, Any]:
+        """POS tagging using NLTK"""
+        try:
+            tokens = nltk.word_tokenize(self.text)
+            pos_tags = nltk.pos_tag(tokens)
+            tag_counts = Counter(tag for word, tag in pos_tags)
+            return {
+                "nouns": sum(1 for tag, count in tag_counts.items() if tag.startswith('NN')),
+                "verbs": sum(1 for tag, count in tag_counts.items() if tag.startswith('VB')),
+                "adjectives": sum(1 for tag, count in tag_counts.items() if tag.startswith('JJ')),
+                "adverbs": sum(1 for tag, count in tag_counts.items() if tag.startswith('RB')),
+                "pronouns": sum(1 for tag, count in tag_counts.items() if tag.startswith('PR')),
+                "total_tagged": len(pos_tags),
+                "nltk_tag_distribution": dict(tag_counts)
+            }
+        except Exception as e:
+            logger.warning(f"NLTK POS tagging failed: {e}")
+            return self._analyze_pos_basic()
 
     # ==================== PHONETICS ====================
     def _analyze_phonetics_basic(self) -> Dict[str, Any]:

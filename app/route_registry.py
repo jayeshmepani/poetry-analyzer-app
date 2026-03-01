@@ -1,6 +1,6 @@
 """
 Named route registry for template helpers.
-Provides Laravel-style route(name) indirection for templates and shared UI code.
+Provides route(name) indirection for templates and shared UI code.
 """
 
 from typing import Dict, Any

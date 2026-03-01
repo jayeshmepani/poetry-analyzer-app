@@ -13,7 +13,6 @@ from typing import Dict, Any, List
 class DatabaseVerifier:
     """
     Verify database setup and data
-    Like Laravel's db:status command
     """
     
     @staticmethod

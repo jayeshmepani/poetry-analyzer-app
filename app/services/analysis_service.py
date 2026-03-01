@@ -160,6 +160,30 @@ class CompleteAnalysisService:
                 "additional": additional,
             }
 
+            # Extract Transformer Sentiment Analysis specifically for the frontend
+            sentiment_analysis = {}
+            if additional and "transformer_analysis" in additional:
+                # Direct extraction from the TransformerAnalyzer
+                transformer_data = additional["transformer_analysis"]
+                if "sentiment" in transformer_data and "emotions" in transformer_data:
+                    
+                    # Generate a basic sentiment arc (one point) so the visualization doesn't crash
+                    score = transformer_data.get("sentiment", {}).get("score", 0.0)
+                    is_positive = transformer_data.get("sentiment", {}).get("label") == "POSITIVE"
+                    val = score if is_positive else -score
+                    
+                    sentiment_analysis = {
+                        "sentiment": transformer_data.get("sentiment", {}),
+                        "emotion_distribution": transformer_data.get("emotions", {}),
+                        "dominant_emotion": transformer_data.get("dominant_emotion", "unknown"),
+                        "sentiment_arc": [{"position": "Segment 1", "score": val}]
+                    }
+            elif advanced and "sentiment" in advanced:
+                # Fallback to older textblob/vader if transformer failed
+                sentiment_analysis = advanced["sentiment"]
+                if "sentiment_arc" not in sentiment_analysis:
+                     sentiment_analysis["sentiment_arc"] = []
+
             # Run Evaluation
             evaluation = self.evaluation_engine.evaluate(text, metrics, self.language)
             ratings = evaluation["ratings"]
@@ -188,6 +212,7 @@ class CompleteAnalysisService:
                 # Specialized Analysis
                 "ghazal_verification": ghazal_verification,
                 "additional": additional,
+                "sentiment_analysis": sentiment_analysis,
                 # Evaluation
                 "evaluation": evaluation,
                 # Summaries
