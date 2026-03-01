@@ -1,69 +1,75 @@
-{% extends "workspace/base_workspace.html" %}
+{% extends "layouts/app.html" %}
 
 {% block title %}Dashboard - PoetryMaster{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 48px;">
-    <h2 style="font-size: 36px; font-weight: 900; color: #0f172a; margin-bottom: 8px;">Workspace Overview</h2>
-    <p style="font-size: 16px; color: #64748b; font-weight: 500;">Synthesized real-time telemetry from the linguistic analysis engine</p>
+<div class="page-header mb-8">
+    <div>
+        <h1 class="page-header-title mb-2">Workspace Overview</h1>
+        <p class="page-header-subtitle">Synthesized real-time telemetry from the linguistic analysis engine</p>
+    </div>
 </div>
 
-<!-- KPI Row (Section 8.5) -->
-<div class="kpi-grid">
-    <div class="card" style="border-left: 4px solid var(--blue-500);">
-        <p style="font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Total Analyses</p>
-        <div style="display: flex; align-items: flex-end; justify-content: space-between;">
-            <div style="font-size: 40px; font-weight: 900; color: #0f172a;" id="totalAnalyses">0</div>
-            <div style="width: 48px; height: 48px; background: #eff6ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2563eb; font-size: 20px;">
+<!-- KPI Row -->
+<div class="d-grid gap-6 grid-auto-md mb-8 stagger">
+    <div class="stat-card scroll-reveal" style="border-left: 4px solid var(--color-primary);">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-3">Total Analyses</p>
+        <div class="d-flex items-end justify-between">
+            <div class="stat-value text-text" id="totalAnalyses">0</div>
+            <div class="d-flex items-center justify-center rounded-lg bg-primary-subtle text-primary"
+                style="width: 48px; height: 48px; font-size: 1.25rem;">
                 <i class="fas fa-file-invoice"></i>
             </div>
         </div>
     </div>
 
-    <div class="card" style="border-left: 4px solid var(--emerald-600);">
-        <p style="font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Avg Quality</p>
-        <div style="display: flex; align-items: flex-end; justify-content: space-between;">
-            <div style="font-size: 40px; font-weight: 900; color: #0f172a;" id="avgScore">0.0</div>
-            <div style="width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #059669; font-size: 20px;">
+    <div class="stat-card scroll-reveal" style="border-left: 4px solid var(--color-success);">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-3">Avg Quality</p>
+        <div class="d-flex items-end justify-between">
+            <div class="stat-value text-text" id="avgScore">0.0</div>
+            <div class="d-flex items-center justify-center rounded-lg bg-success-subtle text-success"
+                style="width: 48px; height: 48px; font-size: 1.25rem;">
                 <i class="fas fa-star"></i>
             </div>
         </div>
     </div>
 
-    <div class="card" style="border-left: 4px solid #7c3aed;">
-        <p style="font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Languages</p>
-        <div style="display: flex; align-items: flex-end; justify-content: space-between;">
-            <div style="font-size: 40px; font-weight: 900; color: #0f172a;" id="langCount">0</div>
-            <div style="width: 48px; height: 48px; background: #f5f3ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #7c3aed; font-size: 20px;">
+    <div class="stat-card scroll-reveal" style="border-left: 4px solid var(--color-accent);">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-3">Languages</p>
+        <div class="d-flex items-end justify-between">
+            <div class="stat-value text-text" id="langCount">0</div>
+            <div class="d-flex items-center justify-center rounded-lg bg-accent-subtle text-accent"
+                style="width: 48px; height: 48px; font-size: 1.25rem;">
                 <i class="fas fa-globe-americas"></i>
             </div>
         </div>
     </div>
 
-    <div class="card" style="border-left: 4px solid var(--amber-500);">
-        <p style="font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Storage</p>
-        <div style="display: flex; align-items: flex-end; justify-content: space-between;">
-            <div style="font-size: 40px; font-weight: 900; color: #0f172a;" id="storageUsage">0MB</div>
-            <div style="width: 48px; height: 48px; background: #fffbeb; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 20px;">
+    <div class="stat-card scroll-reveal" style="border-left: 4px solid var(--color-warning);">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-3">Storage</p>
+        <div class="d-flex items-end justify-between">
+            <div class="stat-value text-text" id="storageUsage">0<span class="text-base text-soft ml-1">MB</span></div>
+            <div class="d-flex items-center justify-center rounded-lg bg-warning-subtle text-warning"
+                style="width: 48px; height: 48px; font-size: 1.25rem;">
                 <i class="fas fa-database"></i>
             </div>
         </div>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; margin-top: 32px;">
-    <div class="card">
-        <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 32px; display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-chart-line" style="color: #2563eb;"></i> Analysis Trends
+<div class="d-grid gap-8 grid-cols-1 lg:grid-cols-[2fr_1fr] mb-8">
+    <div class="card scroll-reveal">
+        <h3 class="text-xl font-extrabold mb-6 d-flex items-center gap-3">
+            <i class="fas fa-chart-line text-primary"></i> Analysis Trends
         </h3>
         <div style="position: relative; height: 350px;">
             <canvas id="analysesChart"></canvas>
         </div>
     </div>
 
-    <div class="card">
-        <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 32px; display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-chart-pie" style="color: #7c3aed;"></i> Languages
+    <div class="card scroll-reveal">
+        <h3 class="text-xl font-extrabold mb-6 d-flex items-center gap-3">
+            <i class="fas fa-chart-pie text-accent"></i> Languages
         </h3>
         <div style="position: relative; height: 350px;">
             <canvas id="languageChart"></canvas>
@@ -71,20 +77,22 @@
     </div>
 </div>
 
-<div class="card" style="margin-top: 32px; padding: 0;">
-    <div style="padding: 32px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="font-size: 20px; font-weight: 800; color: #0f172a;">Recent Data Vectors</h3>
-        <a href="{{ route('results') }}" style="font-size: 14px; font-weight: 700; color: #2563eb; text-decoration: none;">View All History</a>
+<div class="card p-0 scroll-reveal">
+    <div class="p-6 border-b d-flex justify-between items-center bg-subtle"
+        style="border-color: var(--color-border); border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl);">
+        <h3 class="text-xl font-extrabold">Recent Data Vectors</h3>
+        <a href="{{ route('results') }}" class="text-sm font-bold text-primary hover:underline">View All History</a>
     </div>
-    <div style="overflow-x: auto;">
-        <table class="data-table">
+
+    <div class="table-wrapper">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Identity / Title</th>
                     <th>Protocol</th>
                     <th>Score</th>
                     <th>Timestamp</th>
-                    <th style="text-align: right;">Action</th>
+                    <th class="text-right">Action</th>
                 </tr>
             </thead>
             <tbody id="recentAnalysesTable">
@@ -95,100 +103,109 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
-async function fetchDashboardData() {
-    try {
-        const response = await axios.get('/api/stats');
-        const data = response.data.success ? response.data.data : response.data;
-        updateDashboard(data);
-    } catch (e) {
-        console.error('Stats fetch failed:', e);
+    async function fetchDashboardData() {
+        try {
+            const response = await axios.get('/api/stats');
+            const data = response.data.success ? response.data.data : response.data;
+            updateDashboard(data);
+        } catch (e) {
+            console.error('Stats fetch failed:', e);
+        }
     }
-}
 
-function updateDashboard(data) {
-    document.getElementById('totalAnalyses').textContent = data.total_analyses || 0;
-    document.getElementById('avgScore').textContent = (data.avg_score || 0).toFixed(1);
-    document.getElementById('langCount').textContent = Object.keys(data.languages || {}).length;
-    document.getElementById('storageUsage').innerHTML = `${data.storage_mb || 0}<span style="font-size: 16px;">MB</span>`;
-    
-    initCharts(data.analyses_by_day || [0,0,0,0,0,0,0], data.languages || {});
-    renderRecentAnalyses(data.recent || []);
-}
+    function updateDashboard(data) {
+        document.getElementById('totalAnalyses').textContent = data.total_analyses || 0;
+        document.getElementById('avgScore').textContent = (data.avg_score || 0).toFixed(1);
+        document.getElementById('langCount').textContent = Object.keys(data.languages || {}).length;
+        document.getElementById('storageUsage').innerHTML = `${data.storage_mb || 0}<span class="text-base text-soft ml-1">MB</span>`;
 
-function initCharts(dayData, langs) {
-    new Chart(document.getElementById('analysesChart'), {
-        type: 'line',
-        data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-                data: dayData,
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.05)',
-                borderWidth: 4,
-                tension: 0.4,
-                fill: true,
-                pointRadius: 4,
-                pointHoverRadius: 8
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, border: { display: false } },
-                x: { grid: { display: false } }
+        initCharts(data.analyses_by_day || [0, 0, 0, 0, 0, 0, 0], data.languages || {});
+        renderRecentAnalyses(data.recent || []);
+    }
+
+    function initCharts(dayData, langs) {
+        new Chart(document.getElementById('analysesChart'), {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    data: dayData,
+                    borderColor: 'var(--color-primary)',
+                    backgroundColor: 'color-mix(in oklch, var(--color-primary) 10%, transparent)',
+                    borderWidth: 4,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'var(--color-border)' }, border: { display: false } },
+                    x: { grid: { display: false } }
+                }
             }
-        }
-    });
+        });
 
-    new Chart(document.getElementById('languageChart'), {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(langs).map(l => l.toUpperCase()),
-            datasets: [{
-                data: Object.values(langs),
-                backgroundColor: ['#2563eb', '#7c3aed', '#10b981', '#f59e0b', '#f43f5e'],
-                borderWidth: 0,
-                hoverOffset: 20
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 30, font: { weight: 'bold' } } } },
-            cutout: '75%'
-        }
-    });
-}
+        const colors = [
+            'var(--color-primary)', 'var(--color-accent)', 'var(--color-success)',
+            'var(--color-warning)', 'var(--color-danger)'
+        ];
 
-function renderRecentAnalyses(analyses) {
-    const tbody = document.getElementById('recentAnalysesTable');
-    if (!analyses.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding: 64px; text-align: center; color: #94a3b8; font-weight: 600; font-style: italic;">No data vectors in current range</td></tr>';
-        return;
+        new Chart(document.getElementById('languageChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(langs).map(l => l.toUpperCase()),
+                datasets: [{
+                    data: Object.values(langs),
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    hoverOffset: 20
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 30, font: { weight: 'bold', family: 'var(--font-sans)' } } } },
+                cutout: '75%'
+            }
+        });
     }
-    
-    tbody.innerHTML = analyses.map(a => `
-        <tr>
+
+    function renderRecentAnalyses(analyses) {
+        const tbody = document.getElementById('recentAnalysesTable');
+        if (!analyses.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-muted font-bold italic">No data vectors in current range</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = analyses.map(a => `
+        <tr class="table-row-hover">
             <td>
-                <div style="font-weight: 800; color: #0f172a;">${a.title || 'Untitled Vector'}</div>
-                <div style="font-size: 10px; color: #94a3b8; font-family: monospace; margin-top: 4px;">${a.uuid}</div>
+                <div class="font-extrabold text-text">${a.title || 'Untitled Vector'}</div>
+                <div class="font-mono text-xs text-muted mt-1">${a.uuid}</div>
             </td>
-            <td><span style="padding: 4px 12px; background: #f1f5f9; border-radius: 100px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase;">${a.language}</span></td>
-            <td><div style="font-size: 18px; font-weight: 900; color: ${getScoreColor(a.score).split(' ')[0]}">${(a.score || 0).toFixed(1)}</div></td>
-            <td style="font-size: 13px; color: #64748b; font-weight: 500;">${formatDate(a.created_at)}</td>
-            <td style="text-align: right;">
-                <button onclick="viewResultDetail('${a.uuid}')" style="width: 40px; height: 40px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; color: #2563eb; cursor: pointer; transition: all 0.2s;">
+            <td><span class="badge badge-neutral">${a.language}</span></td>
+            <td>
+                <div class="text-lg font-black" style="color: ${getScoreColor(a.score).split(' ')[0]}">
+                    ${(a.score || 0).toFixed(1)}
+                </div>
+            </td>
+            <td class="text-sm font-medium text-soft">${formatDate(a.created_at)}</td>
+            <td class="text-right">
+                <button onclick="viewResultDetail('${a.uuid}')" class="btn btn-outline" style="width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-lg);">
                     <i class="fas fa-eye"></i>
                 </button>
             </td>
         </tr>
     `).join('');
-}
+    }
 
-document.addEventListener('DOMContentLoaded', fetchDashboardData);
+    document.addEventListener('DOMContentLoaded', fetchDashboardData);
 </script>
 {% endblock %}

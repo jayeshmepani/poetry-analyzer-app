@@ -1,0 +1,44 @@
+{% extends "layouts/guest.html" %}
+
+{% block title %}Login - Poetry Analyzer{% endblock %}
+
+{% block content %}
+<div class="container d-flex items-center justify-center p-4 min-h-screen">
+    <div class="card w-full shadow-xl scroll-reveal" style="max-width: 440px;">
+
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold mb-2 tracking-tight text-text">Welcome Back</h1>
+            <p class="text-sm text-soft">Enter your credentials to access your workspace</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger mb-6">
+            <i class="fas fa-exclamation-circle text-lg mt-1"></i>
+            <div>{{ error }}</div>
+        </div>
+        {% endif %}
+
+        <form action="/login" method="POST" class="d-flex flex-col gap-6">
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" id="email" name="email" class="form-input" required placeholder="you@example.com"
+                    autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-input" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-full mt-2">
+                Sign In
+            </button>
+        </form>
+
+        <div class="text-center mt-8 text-sm text-soft">
+            Need an account? <a href="/register" class="text-primary font-medium hover:underline">Create one now</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

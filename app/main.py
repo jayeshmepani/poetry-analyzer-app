@@ -27,8 +27,10 @@ from fastapi.responses import HTMLResponse
 from pathlib import Path
 import logging
 
+from sqlalchemy.orm import Session
 from app.config import settings
-from app.database import init_db
+from app.database import init_db, SessionLocal
+from app.models.db_models import User
 from app.route_registry import route_url, WEB_ROUTE_PATHS
 
 # Configure logging
@@ -52,6 +54,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_user_to_request_state(request: Request, call_next):
+    request.state.user = None
+    auth_uuid = request.cookies.get("auth_uuid")
+    if auth_uuid:
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.uuid == auth_uuid).first()
+            if user and user.status == 1:
+                request.state.user = user
+        finally:
+            db.close()
+            
+    response = await call_next(request)
+    return response
 
 # Setup templates and static files
 BASE_DIR = Path(__file__).resolve().parent.parent

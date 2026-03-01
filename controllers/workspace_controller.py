@@ -3,12 +3,13 @@ Workspace Controller
 Handles all primary workspace routes
 """
 
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
 from controllers.base_controller import BaseController
 from fastapi.templating import Jinja2Templates
 from typing import Dict, Any, List, Optional
 from app.database import SessionLocal
-from app.models.db_models import AnalysisResult, UserSettings
+from app.models.db_models import AnalysisResult, UserSettings, User
+from routes.web import get_current_user
 from datetime import datetime
 import uuid
 
@@ -142,6 +143,19 @@ class WorkspaceController(BaseController):
         """
         try:
             data = await request.json()
+            
+            # Secure retrieve user from cookie
+            from app.database import SessionLocal
+            from app.models.db_models import User
+            
+            db = SessionLocal()
+            auth_uuid = request.cookies.get("auth_uuid")
+            if not auth_uuid:
+                return self.error("Not authenticated", 401)
+                
+            user = db.query(User).filter(User.uuid == auth_uuid).first()
+            if not user or user.status == 0:
+                return self.error("Invalid or inactive session", 403)
 
             # Use REAL analysis service
             from app.services.analysis_service import create_analysis_service
@@ -172,6 +186,7 @@ class WorkspaceController(BaseController):
                     strictness_level=data.get("strictness", 8),
                     word_count=len(data.get("text", "").split()),
                     line_count=len(data.get("text", "").split("\n")),
+                    user_id=user.id,
                     # Map scores from analysis result
                     overall_score=eval_obj.get("overall_score", 0),
                     technical_craft_score=ratings_obj.get("technical_craft", 0),
@@ -327,19 +342,20 @@ class WorkspaceController(BaseController):
         except Exception as e:
             return self.error(str(e), 500)
 
-    async def list_results(self, request: Request, limit: int = 50, offset: int = 0):
-        """List all analysis results"""
+    async def list_results(self, request: Request, user: User = Depends(get_current_user), limit: int = 50, offset: int = 0):
+        """List all analysis results strictly for the current user"""
         try:
             db = SessionLocal()
             try:
                 results = (
                     db.query(AnalysisResult)
+                    .filter(AnalysisResult.user_id == user.id)
                     .order_by(AnalysisResult.created_at.desc())
                     .offset(offset)
                     .limit(limit)
                     .all()
                 )
-                total = db.query(AnalysisResult).count()
+                total = db.query(AnalysisResult).filter(AnalysisResult.user_id == user.id).count()
                 return self.success(
                     {"results": [r.to_dict() for r in results], "total": total}
                 )
@@ -348,14 +364,14 @@ class WorkspaceController(BaseController):
         except Exception as e:
             return self.error(str(e), 500)
 
-    async def get_result(self, request: Request, result_id: str):
-        """Get single result by UUID"""
+    async def get_result(self, request: Request, result_id: str, user: User = Depends(get_current_user)):
+        """Get a specific analysis result strictly for the current user"""
         try:
             db = SessionLocal()
             try:
                 result = (
                     db.query(AnalysisResult)
-                    .filter(AnalysisResult.uuid == result_id)
+                    .filter(AnalysisResult.uuid == result_id, AnalysisResult.user_id == user.id)
                     .first()
                 )
                 if not result:
@@ -370,14 +386,14 @@ class WorkspaceController(BaseController):
         """Alias for get_result used for visualizations"""
         return await self.get_result(request, result_id)
 
-    async def delete_result(self, request: Request, result_id: str):
-        """Delete result"""
+    async def delete_result(self, request: Request, result_id: str, user: User = Depends(get_current_user)):
+        """Delete a specific analysis result"""
         try:
             db = SessionLocal()
             try:
                 result = (
                     db.query(AnalysisResult)
-                    .filter(AnalysisResult.uuid == result_id)
+                    .filter(AnalysisResult.uuid == result_id, AnalysisResult.user_id == user.id)
                     .first()
                 )
                 if not result:
@@ -390,16 +406,15 @@ class WorkspaceController(BaseController):
         except Exception as e:
             return self.error(str(e), 500)
 
-    async def clear_results(self, request: Request):
-        """Clear all data"""
+    async def clear_results(self, request: Request, user: User = Depends(get_current_user)):
+        """Clear all analysis results for the CURRENT user"""
         try:
             db = SessionLocal()
             try:
-                count = db.query(AnalysisResult).count()
-                db.query(AnalysisResult).delete()
+                deleted_count = db.query(AnalysisResult).filter(AnalysisResult.user_id == user.id).delete()
                 db.commit()
                 return self.success(
-                    {"message": f"Cleared {count} results", "count": count}
+                    {"deleted": deleted_count, "message": "All your history cleared"}
                 )
             finally:
                 db.close()
@@ -536,33 +551,45 @@ class WorkspaceController(BaseController):
         except Exception as e:
             return self.error(str(e), 500)
 
-    async def get_settings(self, request: Request):
-        """Settings retrieval"""
+    async def get_settings(self, request: Request, user: User = Depends(get_current_user)):
+        """Settings retrieval — scoped to current user"""
         db = SessionLocal()
         try:
-            settings_list = db.query(UserSettings).all()
+            settings_list = db.query(UserSettings).filter(
+                UserSettings.user_id == user.id
+            ).all()
             return self.success(
                 {"settings": {s.setting_key: s.setting_value for s in settings_list}}
             )
         finally:
             db.close()
 
-    async def save_settings(self, request: Request):
-        """Settings update"""
+    async def save_settings(self, request: Request, user: User = Depends(get_current_user)):
+        """Settings update — scoped to current user"""
         data = await request.json()
         db = SessionLocal()
         try:
             for key, value in data.get("settings", {}).items():
                 setting = (
                     db.query(UserSettings)
-                    .filter(UserSettings.setting_key == key)
+                    .filter(
+                        UserSettings.user_id == user.id,
+                        UserSettings.setting_key == key
+                    )
                     .first()
                 )
                 if setting:
                     setting.setting_value = value
                 else:
-                    db.add(UserSettings(setting_key=key, setting_value=value))
+                    db.add(UserSettings(
+                        user_id=user.id,   # ← FK required
+                        setting_key=key,
+                        setting_value=value
+                    ))
             db.commit()
             return self.success({"message": "Settings saved"})
+        except Exception as e:
+            db.rollback()
+            return self.error(str(e), 500)
         finally:
             db.close()

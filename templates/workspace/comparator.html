@@ -1,4 +1,4 @@
-{% extends "workspace/base_workspace.html" %}
+{% extends "layouts/app.html" %}
 {% block title %}Version Comparator{% endblock %}
 {% block content %}
 <div class="max-w-6xl mx-auto">
@@ -55,7 +55,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
 async function generateVersions() {
     const original = document.getElementById('originalText').value;

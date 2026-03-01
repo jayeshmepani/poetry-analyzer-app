@@ -1,4 +1,4 @@
-{% extends "workspace/base_workspace.html" %}
+{% extends "layouts/app.html" %}
 
 {% block title %}Oulipo Vectors - PoetryMaster{% endblock %}
 
@@ -89,7 +89,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
 let activeConstraint = null;
 

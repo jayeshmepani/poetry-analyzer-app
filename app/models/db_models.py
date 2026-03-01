@@ -3,12 +3,37 @@ Database Models
 SQLAlchemy ORM models for Poetry Analyzer
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Float, JSON, Index
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float, JSON, Index, ForeignKey
+from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 import uuid
 
 Base = declarative_base()
+
+class User(Base):
+    """
+    Monolithic application user model
+    """
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(String(36), unique=True, nullable=False, index=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password = Column(String(255), nullable=False)
+    role = Column(Integer, nullable=False, default=1) # 0=superadmin, 1=user
+    status = Column(Integer, nullable=False, default=1) # 0=inactive, 1=active
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    deleted_at = Column(DateTime, nullable=True) # Soft deletes
+    
+    # Relationships
+    analysis_results = relationship("AnalysisResult", back_populates="user", cascade="all, delete-orphan")
+    settings = relationship("UserSettings", back_populates="user", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<User(id={self.id}, name='{self.name}', email='{self.email}')>"
 
 
 class AnalysisResult(Base):
@@ -27,6 +52,10 @@ class AnalysisResult(Base):
         index=True,
         default=lambda: str(uuid.uuid4()),
     )
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    # Relationships
+    user = relationship("User", back_populates="analysis_results")
 
     # Text Information
     title = Column(String(255), nullable=True)
@@ -140,9 +169,14 @@ class UserSettings(Base):
     __tablename__ = "user_settings"
 
     id = Column(Integer, primary_key=True)
-    setting_key = Column(String(100), unique=True, nullable=False)
+    uuid = Column(String(36), unique=True, nullable=False, index=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    setting_key = Column(String(100), nullable=False)
     setting_value = Column(JSON, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="settings")
 
     def __repr__(self):
         return f"<UserSettings(key='{self.setting_key}')>"

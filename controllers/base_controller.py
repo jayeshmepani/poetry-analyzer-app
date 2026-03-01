@@ -15,13 +15,20 @@ class BaseController:
     def __init__(self, templates: Jinja2Templates):
         self.templates = templates
 
-    def view(self, template: str, request: Request, data: dict = None):
+    def view(self, template_name: str, request: Request, context: Dict[str, Any] = None):
         """
-        Render a view template
+        Render a Jinja2 template
         """
-        return self.templates.TemplateResponse(
-            template, {"request": request, **(data or {})}
-        )
+        ctx = {"request": request}
+        
+        # Inject global authenticated user if present
+        if hasattr(request.state, 'user'):
+            ctx["user"] = request.state.user
+            
+        if context:
+            ctx.update(context)
+        
+        return self.templates.TemplateResponse(template_name, ctx)
 
     def redirect(self, url: str):
         """

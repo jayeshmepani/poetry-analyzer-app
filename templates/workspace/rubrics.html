@@ -1,4 +1,4 @@
-{% extends "workspace/base_workspace.html" %}
+{% extends "layouts/app.html" %}
 {% block title %}Competition Rubric Calculator{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto">
@@ -59,7 +59,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
 const rubrics = {
     poetry_out_loud: [

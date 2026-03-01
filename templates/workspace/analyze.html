@@ -1,10 +1,11 @@
-{% extends "workspace/base_workspace.html" %}
+{% extends "layouts/app.html" %}
 
 {% block title %}Analyze Text - PoetryMaster{% endblock %}
 
 {% block content %}
 <!-- Page Hero -->
-<section class="page-hero rounded-[2rem] border border-white/80 bg-white/75 px-6 py-7 shadow-soft-xl backdrop-blur sm:px-8 mb-8">
+<section
+    class="page-hero rounded-[2rem] border border-white/80 bg-white/75 px-6 py-7 shadow-soft-xl backdrop-blur sm:px-8 mb-8">
     <div class="flex items-start gap-4">
         <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-100 text-3xl text-primary-600">
             <i class="fas fa-feather-alt"></i>
@@ -12,7 +13,8 @@
         <div class="flex-1">
             <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-slate-500">Literary Analysis</p>
             <h1 class="mb-3 text-3xl font-black text-slate-900">Ultimate Literary Analysis</h1>
-            <p class="max-w-3xl text-sm leading-7 text-slate-600">Comprehensive analysis powered by 70+ quantitative metrics, prosody analysis, literary devices detection, and multi-language support.</p>
+            <p class="max-w-3xl text-sm leading-7 text-slate-600">Comprehensive analysis powered by 70+ quantitative
+                metrics, prosody analysis, literary devices detection, and multi-language support.</p>
         </div>
     </div>
 </section>
@@ -36,8 +38,8 @@
                         <i class="fas fa-heading text-secondary-500 mr-2"></i>
                         Title <span class="text-slate-400 font-normal">(Optional)</span>
                     </label>
-                    <input type="text" id="title" name="title" placeholder="My Poem"
-                        class="form-input" autocomplete="off">
+                    <input type="text" id="title" name="title" placeholder="My Poem" class="form-input"
+                        autocomplete="off">
                     <p class="form-help">Give your work a meaningful title for better organization</p>
                 </div>
 
@@ -108,7 +110,8 @@
                         <div class="flex items-center gap-3 mb-2">
                             <input type="range" id="strictness" name="strictness" min="1" max="10" value="7"
                                 class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-500">
-                            <span id="strictnessValue" class="text-2xl font-black text-primary-600 w-12 text-center">7</span>
+                            <span id="strictnessValue"
+                                class="text-2xl font-black text-primary-600 w-12 text-center">7</span>
                         </div>
                         <div class="flex justify-between text-xs text-slate-500">
                             <span>Lenient</span>
@@ -129,10 +132,13 @@
                         class="form-input font-serif text-lg leading-relaxed"></textarea>
                     <div class="flex justify-between items-center mt-2 text-xs text-slate-500">
                         <div class="flex gap-4">
-                            <span id="wordCount"><i class="fas fa-font mr-1"></i> <span class="font-bold text-slate-700">0</span> words</span>
-                            <span id="lineCount"><i class="fas fa-align-left mr-1"></i> <span class="font-bold text-slate-700">0</span> lines</span>
+                            <span id="wordCount"><i class="fas fa-font mr-1"></i> <span
+                                    class="font-bold text-slate-700">0</span> words</span>
+                            <span id="lineCount"><i class="fas fa-align-left mr-1"></i> <span
+                                    class="font-bold text-slate-700">0</span> lines</span>
                         </div>
-                        <span id="charCount"><i class="fas fa-text-width mr-1"></i> <span class="font-bold text-slate-700">0</span> characters</span>
+                        <span id="charCount"><i class="fas fa-text-width mr-1"></i> <span
+                                class="font-bold text-slate-700">0</span> characters</span>
                     </div>
                 </div>
 
@@ -142,34 +148,42 @@
                         <i class="fas fa-cogs text-slate-600 mr-2"></i>
                         Analysis Options
                     </h3>
-                    
+
                     <!-- Core Analysis -->
                     <div class="mb-4">
                         <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Core Analysis</p>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeQuantitative" checked class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeQuantitative" checked
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Quantitative Metrics</span>
                                     <p class="text-xs text-slate-500 mt-1">Lexical diversity, readability</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeProsody" checked class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeProsody" checked
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Prosody & Meter</span>
                                     <p class="text-xs text-slate-500 mt-1">Rhythm, rhyme, meter</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeLiteraryDevices" checked class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeLiteraryDevices" checked
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Literary Devices</span>
                                     <p class="text-xs text-slate-500 mt-1">Metaphor, simile, etc.</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeLinguistic" checked class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeLinguistic" checked
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Linguistic Analysis</span>
                                     <p class="text-xs text-slate-500 mt-1">POS, morphology, syntax</p>
@@ -180,59 +194,76 @@
 
                     <!-- Advanced Analysis -->
                     <div>
-                        <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Advanced Analysis</p>
+                        <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Advanced Analysis
+                        </p>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeSentiment" checked class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeSentiment" checked
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Sentiment Analysis</span>
                                     <p class="text-xs text-slate-500 mt-1">Emotions, valence</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeRasa" class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeRasa"
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Rasa Theory</span>
                                     <p class="text-xs text-slate-500 mt-1">Navarasa (Indic)</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeStyle" checked class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeStyle" checked
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Style & Tone</span>
                                     <p class="text-xs text-slate-500 mt-1">Voice, register</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includePragmatics" class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includePragmatics"
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Pragmatics</span>
                                     <p class="text-xs text-slate-500 mt-1">Context, meaning</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeStructural" checked class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeStructural" checked
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Structural Analysis</span>
                                     <p class="text-xs text-slate-500 mt-1">Lines, stanzas, form</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeCultural" class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeCultural"
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Cultural Context</span>
                                     <p class="text-xs text-slate-500 mt-1">Historical, cultural</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeOrthography" class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeOrthography"
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Orthography</span>
                                     <p class="text-xs text-slate-500 mt-1">Spelling, script</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                                <input type="checkbox" id="includeConstraints" class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                            <label
+                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                <input type="checkbox" id="includeConstraints"
+                                    class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
                                     <span class="text-sm font-medium text-slate-700">Constraint Check</span>
                                     <p class="text-xs text-slate-500 mt-1">Oulipo, rules</p>
@@ -359,97 +390,97 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
-// Strictness slider value display
-const strictnessSlider = document.getElementById('strictness');
-const strictnessValue = document.getElementById('strictnessValue');
+    // Strictness slider value display
+    const strictnessSlider = document.getElementById('strictness');
+    const strictnessValue = document.getElementById('strictnessValue');
 
-if (strictnessSlider) {
-    strictnessSlider.addEventListener('input', function() {
-        strictnessValue.textContent = this.value;
-    });
-}
-
-// Text statistics
-const textArea = document.getElementById('text');
-const wordCount = document.getElementById('wordCount');
-const lineCount = document.getElementById('lineCount');
-const charCount = document.getElementById('charCount');
-
-if (textArea) {
-    textArea.addEventListener('input', function() {
-        const text = this.value;
-        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-        const lines = text ? text.split('\n').filter(l => l.trim()).length : 0;
-        const chars = text.length;
-        
-        wordCount.querySelector('span').textContent = words;
-        lineCount.querySelector('span').textContent = lines;
-        charCount.querySelector('span').textContent = chars;
-    });
-}
-
-// Form submission
-const analysisForm = document.getElementById('analysisForm');
-if (analysisForm) {
-    analysisForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = {
-            title: document.getElementById('title').value || 'Untitled',
-            text: document.getElementById('text').value,
-            language: document.getElementById('language').value,
-            form: document.getElementById('form').value || null,
-            strictness: parseInt(document.getElementById('strictness').value)
-        };
-        
-        if (!formData.text.trim()) {
-            showToast('Please enter some text to analyze', 'warning');
-            return;
-        }
-        
-        // Show loading
-        document.getElementById('loadingOverlay').classList.remove('hidden');
-        document.getElementById('loadingOverlay').classList.add('flex');
-        
-        try {
-            const response = await axios.post('/api/analyze', formData);
-            
-            if (response.data && response.data.success) {
-                // Redirect to results page with the analysis ID
-                const analysisId = response.data.data.id || response.data.data.uuid;
-                showToast('Analysis completed successfully!', 'success');
-                window.location.href = `/results?view=${analysisId}`;
-            } else {
-                throw new Error(response.data?.error || 'Analysis failed');
-            }
-        } catch (error) {
-            console.error('Analysis error:', error);
-            let errorMessage = 'Analysis failed. Please try again.';
-            if (error.response) {
-                errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-            showToast(errorMessage, 'error', 5000);
-        } finally {
-            // Hide loading
-            document.getElementById('loadingOverlay').classList.add('hidden');
-            document.getElementById('loadingOverlay').classList.remove('flex');
-        }
-    });
-}
-
-function clearForm() {
-    if (confirm('Are you sure you want to clear the form?')) {
-        document.getElementById('analysisForm').reset();
-        strictnessValue.textContent = '7';
-        wordCount.querySelector('span').textContent = '0';
-        lineCount.querySelector('span').textContent = '0';
-        charCount.querySelector('span').textContent = '0';
-        showToast('Form cleared', 'info');
+    if (strictnessSlider) {
+        strictnessSlider.addEventListener('input', function () {
+            strictnessValue.textContent = this.value;
+        });
     }
-}
+
+    // Text statistics
+    const textArea = document.getElementById('text');
+    const wordCount = document.getElementById('wordCount');
+    const lineCount = document.getElementById('lineCount');
+    const charCount = document.getElementById('charCount');
+
+    if (textArea) {
+        textArea.addEventListener('input', function () {
+            const text = this.value;
+            const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+            const lines = text ? text.split('\n').filter(l => l.trim()).length : 0;
+            const chars = text.length;
+
+            wordCount.querySelector('span').textContent = words;
+            lineCount.querySelector('span').textContent = lines;
+            charCount.querySelector('span').textContent = chars;
+        });
+    }
+
+    // Form submission
+    const analysisForm = document.getElementById('analysisForm');
+    if (analysisForm) {
+        analysisForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = {
+                title: document.getElementById('title').value || 'Untitled',
+                text: document.getElementById('text').value,
+                language: document.getElementById('language').value,
+                form: document.getElementById('form').value || null,
+                strictness: parseInt(document.getElementById('strictness').value)
+            };
+
+            if (!formData.text.trim()) {
+                showToast('Please enter some text to analyze', 'warning');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+
+            try {
+                const response = await axios.post('/api/analyze', formData);
+
+                if (response.data && response.data.success) {
+                    // Redirect to results page with the analysis ID
+                    const analysisId = response.data.data.id || response.data.data.uuid;
+                    showToast('Analysis completed successfully!', 'success');
+                    window.location.href = `/results?view=${analysisId}`;
+                } else {
+                    throw new Error(response.data?.error || 'Analysis failed');
+                }
+            } catch (error) {
+                console.error('Analysis error:', error);
+                let errorMessage = 'Analysis failed. Please try again.';
+                if (error.response) {
+                    errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                showToast(errorMessage, 'error', 5000);
+            } finally {
+                // Hide loading
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+            }
+        });
+    }
+
+    function clearForm() {
+        if (confirm('Are you sure you want to clear the form?')) {
+            document.getElementById('analysisForm').reset();
+            strictnessValue.textContent = '7';
+            wordCount.querySelector('span').textContent = '0';
+            lineCount.querySelector('span').textContent = '0';
+            charCount.querySelector('span').textContent = '0';
+            showToast('Form cleared', 'info');
+        }
+    }
 </script>
 {% endblock %}

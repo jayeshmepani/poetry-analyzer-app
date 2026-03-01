@@ -1,65 +1,66 @@
-{% extends "workspace/base_workspace.html" %}
+{% extends "layouts/app.html" %}
 
 {% block title %}Batch Analysis - PoetryMaster{% endblock %}
 
 {% block content %}
 <!-- Page Hero -->
-<section class="page-hero rounded-[2rem] border border-white/80 bg-white/75 px-6 py-7 shadow-soft-xl backdrop-blur sm:px-8 mb-8">
-    <div class="flex items-start gap-4">
-        <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary-100 text-3xl text-secondary-600">
+<section class="page-hero card px-6 py-7 mb-8">
+    <div class="d-flex align-start gap-4">
+        <div class="icon-box icon-box-lg bg-secondary-10 text-secondary">
             <i class="fas fa-layer-group"></i>
         </div>
         <div class="flex-1">
-            <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-slate-500">Multi-Text Analysis</p>
-            <h1 class="mb-3 text-3xl font-black text-slate-900">Batch Analysis</h1>
-            <p class="max-w-3xl text-sm leading-7 text-slate-600">Analyze multiple poems or texts simultaneously and compare their metrics, quality scores, and literary features</p>
+            <p class="mb-2 text-xs font-black uppercase tracking-widest text-muted">Multi-Text Analysis</p>
+            <h1 class="mb-3 text-3xl font-black text-dark">Batch Analysis</h1>
+            <p class="max-w-3xl text-sm leading-relaxed text-muted">Analyze multiple poems or texts simultaneously and
+                compare their metrics, quality scores, and literary features</p>
         </div>
     </div>
 </section>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 lg-grid-cols-3 gap-6">
     <!-- Main Form -->
-    <div class="lg:col-span-2 space-y-6">
+    <div class="lg-col-span-2 space-y-6">
         <!-- Text Items Container -->
         <div class="card">
             <div class="mb-6">
-                <h2 class="text-2xl font-bold text-slate-900 mb-2">
-                    <i class="fas fa-plus-circle text-secondary-500 mr-2"></i>
+                <h2 class="text-2xl font-bold text-dark mb-2">
+                    <i class="fas fa-plus-circle text-secondary mr-2"></i>
                     Add Texts for Analysis
                 </h2>
-                <p class="text-sm text-slate-600">Enter up to 10 texts for comprehensive batch analysis</p>
+                <p class="text-sm text-muted">Enter up to 10 texts for comprehensive batch analysis</p>
             </div>
 
             <div id="textItems" class="space-y-6 mb-6">
                 <!-- Text Item 1 -->
-                <div class="text-item card border-2 border-slate-200 hover:border-secondary-300 transition">
-                    <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-200">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-secondary-100 text-lg font-black text-secondary-600">
+                <div class="text-item card border-2 border-light shadow-hover transition">
+                    <div class="d-flex justify-between align-center mb-4 pb-4 border-b border-light">
+                        <div class="d-flex align-center gap-3">
+                            <div class="icon-box bg-secondary-10 text-secondary text-lg font-black">
                                 1
                             </div>
-                            <h3 class="font-bold text-slate-900">Text #1</h3>
+                            <h3 class="font-bold text-dark">Text #1</h3>
                         </div>
-                        <button onclick="removeTextItem(this)" class="btn btn-sm btn-danger" title="Remove text">
+                        <button onclick="removeTextItem(this)" class="btn btn-danger px-3 py-2" title="Remove text">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
-                    
+
                     <div class="space-y-4">
                         <div class="form-group mb-0">
                             <label class="form-label">
-                                <i class="fas fa-tag text-slate-400 mr-2"></i>
-                                Title <span class="text-slate-400 font-normal">(Optional)</span>
+                                <i class="fas fa-tag text-muted mr-2"></i>
+                                Title <span class="text-muted font-normal">(Optional)</span>
                             </label>
-                            <input type="text" class="form-input" placeholder="My Poem">
+                            <input type="text" class="form-control" placeholder="My Poem">
                         </div>
-                        
+
                         <div class="form-group mb-0">
                             <label class="form-label">
-                                <i class="fas fa-globe text-slate-400 mr-2"></i>
+                                <i class="fas fa-globe text-muted mr-2"></i>
                                 Language
                             </label>
-                            <select class="form-input language-select">
+                            <select class="form-select language-select">
                                 <option value="en">🇬🇧 English</option>
                                 <option value="hi">🇮🇳 Hindi (हिन्दी)</option>
                                 <option value="gu">🇮🇳 Gujarati (ગુજરાતી)</option>
@@ -69,32 +70,33 @@
                                 <option value="sa">🇮🇳 Sanskrit (संस्कृत)</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group mb-0">
                             <label class="form-label">
-                                <i class="fas fa-pen-fancy text-slate-400 mr-2"></i>
-                                Text <span class="text-error-500">*</span>
+                                <i class="fas fa-pen-fancy text-muted mr-2"></i>
+                                Text <span class="text-danger">*</span>
                             </label>
-                            <textarea placeholder="Enter your poem or literary text here..." rows="5" class="form-input font-serif text-input"></textarea>
+                            <textarea placeholder="Enter your poem or literary text here..." rows="5"
+                                class="form-control font-serif text-input"></textarea>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Add Text Button -->
-            <button onclick="addTextItem()" class="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-600 hover:border-secondary-400 hover:text-secondary-600 hover:bg-secondary-50 transition font-semibold">
+            <button onclick="addTextItem()" class="btn btn-outline w-full py-4 border-dashed font-semibold mb-6">
                 <i class="fas fa-plus-circle mr-2"></i>
                 Add Another Text
-                <span class="text-xs text-slate-500 ml-2">(Maximum 10)</span>
+                <span class="text-xs text-muted ml-2">(Maximum 10)</span>
             </button>
 
             <!-- Action Buttons -->
-            <div class="flex gap-4 mt-6 pt-6 border-t border-slate-200">
-                <button onclick="startBatchAnalysis()" class="btn btn-primary btn-lg flex-1">
+            <div class="d-flex gap-4 pt-6 border-t border-light">
+                <button onclick="startBatchAnalysis()" class="btn btn-primary flex-1">
                     <i class="fas fa-play mr-2"></i>
                     Start Batch Analysis
                 </button>
-                <button onclick="clearAll()" class="btn btn-secondary btn-lg px-8">
+                <button onclick="clearAll()" class="btn btn-secondary px-8">
                     <i class="fas fa-eraser mr-2"></i>
                     Clear All
                 </button>
@@ -105,73 +107,81 @@
     <!-- Sidebar -->
     <div class="space-y-6">
         <!-- Tips Card -->
-        <div class="card bg-gradient-to-br from-secondary-50 to-accent-50 border border-secondary-200">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">
-                <i class="fas fa-lightbulb text-warning-500 mr-2"></i>
+        <div class="card bg-secondary-10 border-secondary-20">
+            <h3 class="text-lg font-bold text-dark mb-4">
+                <i class="fas fa-lightbulb text-warning mr-2"></i>
                 Batch Analysis Tips
             </h3>
-            <ul class="space-y-3 text-sm text-slate-700">
-                <li class="flex items-start gap-3">
-                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-secondary-100 text-xs font-bold text-secondary-600 flex-shrink-0">1</div>
-                    <span>Add up to <strong class="text-secondary-600">10 texts</strong> per batch for optimal performance</span>
+            <ul class="space-y-3 text-sm text-dark">
+                <li class="d-flex align-start gap-3">
+                    <div class="icon-box icon-box-sm bg-secondary-20 text-secondary text-xs font-bold flex-shrink-0">1
+                    </div>
+                    <span>Add up to <strong class="text-secondary">10 texts</strong> per batch for optimal
+                        performance</span>
                 </li>
-                <li class="flex items-start gap-3">
-                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-secondary-100 text-xs font-bold text-secondary-600 flex-shrink-0">2</div>
-                    <span>Each text is analyzed <strong class="text-secondary-600">independently</strong> with 70+ metrics</span>
+                <li class="d-flex align-start gap-3">
+                    <div class="icon-box icon-box-sm bg-secondary-20 text-secondary text-xs font-bold flex-shrink-0">2
+                    </div>
+                    <span>Each text is analyzed <strong class="text-secondary">independently</strong> with 70+
+                        metrics</span>
                 </li>
-                <li class="flex items-start gap-3">
-                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-secondary-100 text-xs font-bold text-secondary-600 flex-shrink-0">3</div>
-                    <span>Results include <strong class="text-secondary-600">comparative metrics</strong> and quality rankings</span>
+                <li class="d-flex align-start gap-3">
+                    <div class="icon-box icon-box-sm bg-secondary-20 text-secondary text-xs font-bold flex-shrink-0">3
+                    </div>
+                    <span>Results include <strong class="text-secondary">comparative metrics</strong> and quality
+                        rankings</span>
                 </li>
-                <li class="flex items-start gap-3">
-                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-secondary-100 text-xs font-bold text-secondary-600 flex-shrink-0">4</div>
-                    <span>Export all results as <strong class="text-secondary-600">CSV or PDF</strong> for further analysis</span>
+                <li class="d-flex align-start gap-3">
+                    <div class="icon-box icon-box-sm bg-secondary-20 text-secondary text-xs font-bold flex-shrink-0">4
+                    </div>
+                    <span>Export all results as <strong class="text-secondary">CSV or PDF</strong> for further
+                        analysis</span>
                 </li>
             </ul>
         </div>
 
         <!-- Stats Card -->
         <div class="card">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">
-                <i class="fas fa-chart-bar text-primary-500 mr-2"></i>
+            <h3 class="text-lg font-bold text-dark mb-4">
+                <i class="fas fa-chart-bar text-primary mr-2"></i>
                 Current Batch
             </h3>
             <div class="space-y-4">
-                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div class="text-sm text-slate-600">Texts Added</div>
-                    <div id="currentCount" class="text-2xl font-black text-secondary-600">1</div>
+                <div class="d-flex align-center justify-between p-3 bg-light rounded-lg">
+                    <div class="text-sm text-muted">Texts Added</div>
+                    <div id="currentCount" class="text-2xl font-black text-secondary">1</div>
                 </div>
-                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div class="text-sm text-slate-600">Remaining Slots</div>
-                    <div id="remainingSlots" class="text-2xl font-black text-primary-600">9</div>
+                <div class="d-flex align-center justify-between p-3 bg-light rounded-lg">
+                    <div class="text-sm text-muted">Remaining Slots</div>
+                    <div id="remainingSlots" class="text-2xl font-black text-primary">9</div>
                 </div>
-                <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                    <div id="progressBar" class="bg-gradient-to-r from-secondary-500 to-accent-500 h-3 rounded-full transition-all" style="width: 10%"></div>
+                <div class="w-full bg-light rounded-full h-3 overflow-hidden">
+                    <div id="progressBar" class="bg-primary h-3 rounded-full transition-all" style="width: 10%"></div>
                 </div>
             </div>
         </div>
 
         <!-- Use Cases -->
-        <div class="card bg-gradient-to-br from-primary-50 to-secondary-50">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">
-                <i class="fas fa-check-circle text-success-500 mr-2"></i>
+        <div class="card bg-primary-10">
+            <h3 class="text-lg font-bold text-dark mb-4">
+                <i class="fas fa-check-circle text-success mr-2"></i>
                 Perfect For
             </h3>
-            <ul class="space-y-2 text-sm text-slate-700">
-                <li class="flex items-start gap-2">
-                    <i class="fas fa-check text-success-500 mt-0.5"></i>
+            <ul class="space-y-2 text-sm text-dark">
+                <li class="d-flex align-start gap-2">
+                    <i class="fas fa-check text-success mt-1"></i>
                     <span>Comparing multiple poems by the same author</span>
                 </li>
-                <li class="flex items-start gap-2">
-                    <i class="fas fa-check text-success-500 mt-0.5"></i>
+                <li class="d-flex align-start gap-2">
+                    <i class="fas fa-check text-success mt-1"></i>
                     <span>Analyzing different translations</span>
                 </li>
-                <li class="flex items-start gap-2">
-                    <i class="fas fa-check text-success-500 mt-0.5"></i>
+                <li class="d-flex align-start gap-2">
+                    <i class="fas fa-check text-success mt-1"></i>
                     <span>Studying class or workshop submissions</span>
                 </li>
-                <li class="flex items-start gap-2">
-                    <i class="fas fa-check text-success-500 mt-0.5"></i>
+                <li class="d-flex align-start gap-2">
+                    <i class="fas fa-check text-success mt-1"></i>
                     <span>Tracking your writing progress over time</span>
                 </li>
             </ul>
@@ -180,51 +190,52 @@
 </div>
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg text-center">
+<div id="loadingOverlay" class="d-none fixed inset-0 z-[100] align-center justify-center p-4"
+    style="background: rgba(15,23,42,0.8); backdrop-filter: blur(8px);">
+    <div class="card text-center max-w-lg mx-auto w-full border-none shadow-2xl p-10">
         <div class="mb-6">
-            <i class="fas fa-circle-notch fa-spin text-6xl text-secondary-500"></i>
+            <div class="spinner border-4 border-secondary border-t-transparent h-16 w-16 mx-auto rounded-full"></div>
         </div>
-        <h3 class="text-2xl font-bold text-slate-900 mb-2">Analyzing Your Texts</h3>
-        <p id="loadingMessage" class="text-slate-600 mb-6">Processing with 70+ metrics per text...</p>
-        <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-            <div class="bg-gradient-to-r from-secondary-500 to-accent-500 h-3 rounded-full animate-pulse"></div>
+        <h3 class="text-2xl font-bold text-dark mb-2">Analyzing Your Texts</h3>
+        <p id="loadingMessage" class="text-muted mb-6">Processing with 70+ metrics per text...</p>
+        <div class="w-full bg-light rounded-full h-3 overflow-hidden">
+            <div class="bg-secondary h-3 rounded-full loading-pulse w-full"></div>
         </div>
-        <p class="text-xs text-slate-500 mt-4">This may take a few minutes depending on the number and length of texts</p>
+        <p class="text-xs text-muted mt-4">This may take a few minutes depending on the number and length of texts</p>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
-let textItemCount = 1;
-const MAX_ITEMS = 10;
+    let textItemCount = 1;
+    const MAX_ITEMS = 10;
 
-function updateStats() {
-    document.getElementById('currentCount').textContent = textItemCount;
-    document.getElementById('remainingSlots').textContent = MAX_ITEMS - textItemCount;
-    document.getElementById('progressBar').style.width = (textItemCount / MAX_ITEMS * 100) + '%';
-}
-
-function addTextItem() {
-    if (textItemCount >= MAX_ITEMS) {
-        showToast(`Maximum ${MAX_ITEMS} texts allowed per batch`, 'warning');
-        return;
+    function updateStats() {
+        document.getElementById('currentCount').textContent = textItemCount;
+        document.getElementById('remainingSlots').textContent = MAX_ITEMS - textItemCount;
+        document.getElementById('progressBar').style.width = (textItemCount / MAX_ITEMS * 100) + '%';
     }
-    
-    textItemCount++;
-    const container = document.getElementById('textItems');
-    const newItem = document.createElement('div');
-    newItem.className = 'text-item card border-2 border-slate-200 hover:border-secondary-300 transition';
-    newItem.innerHTML = `
-        <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-200">
-            <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-secondary-100 text-lg font-black text-secondary-600">
+
+    function addTextItem() {
+        if (textItemCount >= MAX_ITEMS) {
+            showToast(`Maximum ${MAX_ITEMS} texts allowed per batch`, 'warning');
+            return;
+        }
+
+        textItemCount++;
+        const container = document.getElementById('textItems');
+        const newItem = document.createElement('div');
+        newItem.className = 'text-item card border-2 border-light shadow-hover transition mb-6';
+        newItem.innerHTML = `
+        <div class="d-flex justify-between align-center mb-4 pb-4 border-b border-light">
+            <div class="d-flex align-center gap-3">
+                <div class="icon-box bg-secondary-10 text-secondary text-lg font-black">
                     ${textItemCount}
                 </div>
-                <h3 class="font-bold text-slate-900">Text #${textItemCount}</h3>
+                <h3 class="font-bold text-dark">Text #${textItemCount}</h3>
             </div>
-            <button onclick="removeTextItem(this)" class="btn btn-sm btn-danger" title="Remove text">
+            <button onclick="removeTextItem(this)" class="btn btn-danger px-3 py-2" title="Remove text">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
@@ -232,18 +243,18 @@ function addTextItem() {
         <div class="space-y-4">
             <div class="form-group mb-0">
                 <label class="form-label">
-                    <i class="fas fa-tag text-slate-400 mr-2"></i>
-                    Title <span class="text-slate-400 font-normal">(Optional)</span>
+                    <i class="fas fa-tag text-muted mr-2"></i>
+                    Title <span class="text-muted font-normal">(Optional)</span>
                 </label>
-                <input type="text" class="form-input" placeholder="My Poem">
+                <input type="text" class="form-control" placeholder="My Poem">
             </div>
             
             <div class="form-group mb-0">
                 <label class="form-label">
-                    <i class="fas fa-globe text-slate-400 mr-2"></i>
+                    <i class="fas fa-globe text-muted mr-2"></i>
                     Language
                 </label>
-                <select class="form-input language-select">
+                <select class="form-select language-select">
                     <option value="en">🇬🇧 English</option>
                     <option value="hi">🇮🇳 Hindi (हिन्दी)</option>
                     <option value="gu">🇮🇳 Gujarati (ગુજરાતી)</option>
@@ -256,101 +267,101 @@ function addTextItem() {
             
             <div class="form-group mb-0">
                 <label class="form-label">
-                    <i class="fas fa-pen-fancy text-slate-400 mr-2"></i>
-                    Text <span class="text-error-500">*</span>
+                    <i class="fas fa-pen-fancy text-muted mr-2"></i>
+                    Text <span class="text-danger">*</span>
                 </label>
-                <textarea placeholder="Enter your poem or literary text here..." rows="5" class="form-input font-serif text-input"></textarea>
+                <textarea placeholder="Enter your poem or literary text here..." rows="5" class="form-control font-serif text-input"></textarea>
             </div>
         </div>
     `;
-    container.appendChild(newItem);
-    updateStats();
-    
-    // Scroll to new item
-    newItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function removeTextItem(button) {
-    const items = document.querySelectorAll('.text-item');
-    if (items.length > 1) {
-        button.closest('.text-item').remove();
-        textItemCount--;
+        container.appendChild(newItem);
         updateStats();
-        showToast('Text removed', 'info');
-    } else {
-        showToast('At least one text is required', 'warning');
-    }
-}
 
-function clearAll() {
-    if (!confirm('Are you sure you want to clear all texts?')) return;
-    
-    document.getElementById('textItems').innerHTML = '';
-    textItemCount = 0;
-    addTextItem();
+        // Scroll to new item
+        newItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function removeTextItem(button) {
+        const items = document.querySelectorAll('.text-item');
+        if (items.length > 1) {
+            button.closest('.text-item').remove();
+            textItemCount--;
+            updateStats();
+            showToast('Text removed', 'info');
+        } else {
+            showToast('At least one text is required', 'warning');
+        }
+    }
+
+    function clearAll() {
+        if (!confirm('Are you sure you want to clear all texts?')) return;
+
+        document.getElementById('textItems').innerHTML = '';
+        textItemCount = 0;
+        addTextItem();
+        updateStats();
+        showToast('All texts cleared', 'info');
+    }
+
+    async function startBatchAnalysis() {
+        const items = [];
+        document.querySelectorAll('.text-item').forEach((item, index) => {
+            const text = item.querySelector('.text-input').value.trim();
+            if (text) {
+                items.push({
+                    text: text,
+                    title: item.querySelector('input').value || `Text ${index + 1}`,
+                    language: item.querySelector('.language-select').value
+                });
+            }
+        });
+
+        if (items.length === 0) {
+            showToast('Please enter at least one text', 'warning');
+            return;
+        }
+
+        if (items.length > MAX_ITEMS) {
+            showToast(`Maximum ${MAX_ITEMS} texts allowed per batch`, 'warning');
+            return;
+        }
+
+        // Show loading overlay
+        document.getElementById('loadingOverlay').classList.remove('d-none');
+        document.getElementById('loadingOverlay').classList.add('d-flex');
+        document.getElementById('loadingMessage').textContent = `Analyzing ${items.length} text${items.length > 1 ? 's' : ''}... This may take ${items.length * 30} seconds.`;
+
+        try {
+            const response = await axios.post('/api/analyze/batch', { items });
+
+            const responseData = response.data.data || response.data;
+            if (response.data && response.data.success !== false) {
+                showToast(`✅ Batch analysis completed! ${items.length} text${items.length > 1 ? 's' : ''} analyzed`, 'success');
+
+                // Redirect to results page
+                setTimeout(() => {
+                    window.location.href = '{{ route('results') }}';
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('Batch analysis error:', error);
+
+            let errorMessage = 'Batch analysis failed';
+            if (error.response) {
+                errorMessage = error.response.data?.detail || error.response.data?.error || errorMessage;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            showToast(`❌ ${errorMessage}`, 'error', 5000);
+        } finally {
+            // Hide loading overlay
+            document.getElementById('loadingOverlay').classList.add('d-none');
+            document.getElementById('loadingOverlay').classList.remove('d-flex');
+        }
+    }
+
+    // Initialize stats
     updateStats();
-    showToast('All texts cleared', 'info');
-}
-
-async function startBatchAnalysis() {
-    const items = [];
-    document.querySelectorAll('.text-item').forEach((item, index) => {
-        const text = item.querySelector('.text-input').value.trim();
-        if (text) {
-            items.push({
-                text: text,
-                title: item.querySelector('input').value || `Text ${index + 1}`,
-                language: item.querySelector('.language-select').value
-            });
-        }
-    });
-
-    if (items.length === 0) {
-        showToast('Please enter at least one text', 'warning');
-        return;
-    }
-
-    if (items.length > MAX_ITEMS) {
-        showToast(`Maximum ${MAX_ITEMS} texts allowed per batch`, 'warning');
-        return;
-    }
-
-    // Show loading overlay
-    document.getElementById('loadingOverlay').classList.remove('hidden');
-    document.getElementById('loadingOverlay').classList.add('flex');
-    document.getElementById('loadingMessage').textContent = `Analyzing ${items.length} text${items.length > 1 ? 's' : ''}... This may take ${items.length * 30} seconds.`;
-
-    try {
-        const response = await axios.post('/api/analyze/batch', { items });
-        
-        const responseData = response.data.data || response.data;
-        if (response.data && response.data.success !== false) {
-            showToast(`✅ Batch analysis completed! ${items.length} text${items.length > 1 ? 's' : ''} analyzed`, 'success');
-            
-            // Redirect to results page
-            setTimeout(() => {
-                window.location.href = '{{ route('results') }}';
-            }, 1500);
-        }
-    } catch (error) {
-        console.error('Batch analysis error:', error);
-        
-        let errorMessage = 'Batch analysis failed';
-        if (error.response) {
-            errorMessage = error.response.data?.detail || error.response.data?.error || errorMessage;
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-        
-        showToast(`❌ ${errorMessage}`, 'error', 5000);
-    } finally {
-        // Hide loading overlay
-        document.getElementById('loadingOverlay').classList.add('hidden');
-        document.getElementById('loadingOverlay').classList.remove('flex');
-    }
-}
-
-// Initialize stats
-updateStats();
 </script>
 {% endblock %}

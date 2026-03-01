@@ -1,0 +1,218 @@
+/* ============================================================
+   components/toast.css — Toast Notifications
+   Uses: @starting-style, transition-behavior: allow-discrete,
+         overlay property, oklch, CSS nesting, logical properties,
+         clamp(), dvh units, @layer
+   ============================================================ */
+
+@layer components {
+
+    /* ---- Toast Container ---- */
+    .toast-container {
+        position: fixed;
+        inset-block-end: var(--space-6);
+        inset-inline-end: var(--space-6);
+        z-index: var(--z-toast);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+        align-items: flex-end;
+        /* Intrinsic width */
+        width: fit-content;
+        max-width: min(90vw, 400px);
+        /* Prevent layout shift */
+        contain: layout;
+        isolation: isolate;
+        pointer-events: none;
+    }
+
+    /* ---- Individual Toast ---- */
+    .toast {
+        /* Sizing */
+        width: clamp(280px, 80vw, 400px);
+        padding: var(--space-4);
+        border-radius: var(--radius-lg);
+
+        /* Color system */
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        color: var(--color-text);
+        box-shadow: var(--shadow-xl);
+
+        /* Layout */
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-3);
+        pointer-events: auto;
+
+        /* Discrete animation entry/exit */
+        opacity: 0;
+        transform: translateX(calc(100% + var(--space-6)));
+        display: none;
+        transition:
+            opacity var(--dur-slow) var(--ease-out),
+            transform var(--dur-slow) var(--ease-spring),
+            display var(--dur-slow) allow-discrete,
+            overlay var(--dur-slow) allow-discrete;
+
+        /* ---- Active state ---- */
+        &.toast-show {
+            display: flex;
+            opacity: 1;
+            transform: translateX(0);
+
+            /* Entry: define where animation starts FROM */
+            @starting-style {
+                opacity: 0;
+                transform: translateX(calc(100% + var(--space-6)));
+            }
+        }
+
+        /* ---- Variants ---- */
+        &.toast-success {
+            border-inline-start: 4px solid var(--color-success);
+            background: color-mix(in oklch, var(--color-surface) 95%, var(--color-success));
+
+            /* no & needed — .toast-icon is a descendant, not joined */
+            .toast-icon {
+                color: var(--color-success);
+            }
+        }
+
+        &.toast-danger,
+        &.toast-error {
+            border-inline-start: 4px solid var(--color-danger);
+            background: color-mix(in oklch, var(--color-surface) 95%, var(--color-danger));
+
+            .toast-icon {
+                color: var(--color-danger);
+            }
+        }
+
+        &.toast-warning {
+            border-inline-start: 4px solid var(--color-warning);
+            background: color-mix(in oklch, var(--color-surface) 95%, var(--color-warning));
+
+            .toast-icon {
+                color: var(--color-warning);
+            }
+        }
+
+        &.toast-info {
+            border-inline-start: 4px solid var(--color-info);
+            background: color-mix(in oklch, var(--color-surface) 95%, var(--color-info));
+
+            .toast-icon {
+                color: var(--color-info);
+            }
+        }
+    }
+
+    /* ---- Toast Icon ---- */
+    .toast-icon {
+        flex-shrink: 0;
+        width: 1.25rem;
+        height: 1.25rem;
+        color: var(--color-text-muted);
+        margin-block-start: 1px;
+    }
+
+    /* ---- Toast Body ---- */
+    .toast-body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+    }
+
+    .toast-title {
+        font-size: var(--text-sm);
+        font-weight: 600;
+        color: var(--color-text);
+        line-height: var(--leading-tight);
+        /* text-box-trim where supported */
+        text-box: trim-both cap alphabetic;
+    }
+
+    .toast-message {
+        font-size: var(--text-xs);
+        color: var(--color-text-soft);
+        line-height: var(--leading-normal);
+        /* text-wrap: pretty for multi-line readability */
+        text-wrap: pretty;
+    }
+
+    /* ---- Close Button ---- */
+    .toast-close {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--color-text-muted);
+        padding: var(--space-1);
+        border-radius: var(--radius-sm);
+        line-height: 1;
+        transition: color var(--dur-fast), background var(--dur-fast);
+        margin-block-start: -2px;
+
+        &:hover {
+            color: var(--color-text);
+            background: var(--color-bg-subtle);
+        }
+    }
+
+    /* ---- Progress Bar (auto-dismiss countdown) ---- */
+    .toast-progress {
+        position: absolute;
+        inset-block-end: 0;
+        inset-inline: 0;
+        height: 3px;
+        background: currentColor;
+        opacity: 0.3;
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        transform-origin: left;
+        /* width shrinks over duration via JS custom property */
+        width: var(--toast-progress, 100%);
+        transition: width linear;
+        transition-duration: var(--toast-duration, 4000ms);
+    }
+
+    /* Make toast position relative for progress bar */
+    .toast:has(.toast-progress) {
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* ---- Mobile: bottom-center ---- */
+    @media (max-width: 480px) {
+        .toast-container {
+            inset-inline-end: var(--space-3);
+            inset-inline-start: var(--space-3);
+            inset-block-end: var(--space-4);
+            align-items: stretch;
+            max-width: 100%;
+        }
+
+        .toast {
+            width: 100%;
+        }
+    }
+
+    /* ---- Reduced motion ---- */
+    @media (prefers-reduced-motion: reduce) {
+        .toast {
+            transition:
+                opacity var(--dur-fast) linear,
+                display var(--dur-fast) allow-discrete;
+            transform: none;
+
+            &.toast-show {
+                @starting-style {
+                    opacity: 0;
+                    transform: none;
+                }
+            }
+        }
+    }
+}

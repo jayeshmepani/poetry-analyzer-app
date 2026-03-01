@@ -2,13 +2,13 @@
  * Analysis Form Handler and Results Display
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('analysisForm');
-    
+
     if (form) {
-        form.addEventListener('submit', async function(e) {
+        form.addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const formData = {
                 title: document.getElementById('title').value || 'Untitled',
                 language: document.getElementById('language').value,
@@ -16,18 +16,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 text: document.getElementById('text').value,
                 strictness: parseInt(document.getElementById('strictness').value)
             };
-            
+
             if (!formData.text.trim()) {
                 showToast('Please enter some text to analyze', 'warning');
                 return;
             }
 
             showLoading('Analyzing your text with 70+ metrics...');
-            
+
             try {
-                const response = await axios.post('/api/analyze', formData);
+                const response = await axios.post('/analyze/submit', formData);
                 hideLoading();
-                
+
                 if (response.data && response.data.success) {
                     displayResults(response.data.data || response.data);
                     showToast('Analysis completed successfully!', 'success');
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const errorMsg = response.data?.message || response.data?.error || 'Analysis failed';
                     throw new Error(errorMsg);
                 }
-                
+
             } catch (error) {
                 hideLoading();
                 console.error('Analysis error:', error);
@@ -247,7 +247,7 @@ function renderMetricCard(name, value) {
     if (typeof value === 'number') display = value.toFixed(2);
     if (Array.isArray(value)) display = value.length;
     if (value === undefined || value === null || value === '') display = 'N/A';
-    
+
     return `
         <div class="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
             <div class="text-lg font-bold text-gray-800 truncate" title="${value}">${display}</div>

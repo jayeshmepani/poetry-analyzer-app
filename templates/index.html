@@ -1,137 +1,314 @@
-{% extends "base.html" %}
+{% extends "layouts/guest.html" %}
 
 {% block title %}Home - Ultimate Literary Master System{% endblock %}
 
+{% block page_css %}
+<style>
+    /* Page-specific overrides for a premium aesthetic */
+    .home-hero {
+        position: relative;
+        padding: var(--space-16) var(--space-6);
+        background: radial-gradient(circle at top right, var(--color-primary-subtle), transparent 40%),
+            radial-gradient(circle at bottom left, var(--color-accent-subtle, var(--color-success-subtle)), transparent 40%);
+        overflow: hidden;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .home-hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url('data:image/svg+xml;utf8,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1.5" fill="%2300000010"/></svg>') repeat;
+        opacity: 0.4;
+        z-index: 0;
+    }
+
+    [data-theme="dark"] .home-hero::before {
+        background: url('data:image/svg+xml;utf8,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1.5" fill="%23ffffff10"/></svg>') repeat;
+    }
+
+    .home-hero-content {
+        position: relative;
+        z-index: 10;
+        max-width: var(--container-max);
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .title-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-4);
+        background: color-mix(in oklch, var(--color-surface) 60%, transparent);
+        border: 1px solid var(--color-border);
+        backdrop-filter: blur(8px);
+        border-radius: var(--radius-full);
+        font-size: var(--text-2xs);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-widest);
+        color: var(--color-text-soft);
+        margin-bottom: var(--space-6);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .hero-heading {
+        font-size: clamp(2.5rem, 6vw, 4.5rem);
+        font-weight: 800;
+        line-height: var(--leading-tight);
+        color: var(--color-text);
+        text-wrap: balance;
+        margin-bottom: var(--space-6);
+        letter-spacing: var(--tracking-tight);
+    }
+
+    .hero-desc {
+        font-size: var(--text-lg);
+        color: var(--color-text-soft);
+        max-width: 48rem;
+        margin: 0 auto var(--space-8);
+        line-height: var(--leading-relaxed);
+        text-wrap: pretty;
+    }
+
+    /* Feature Grid */
+    .feature-section {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        padding: var(--space-12) var(--space-6);
+    }
+
+    .feature-icon-box {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-lg);
+        font-size: 1.25rem;
+        margin-bottom: var(--space-4);
+    }
+
+    .icon-box-primary {
+        background: var(--color-primary-subtle);
+        color: var(--color-primary);
+    }
+
+    .icon-box-success {
+        background: var(--color-success-subtle);
+        color: var(--color-success);
+    }
+
+    .icon-box-warning {
+        background: var(--color-warning-subtle);
+        color: var(--color-warning);
+    }
+
+    .icon-box-neutral {
+        background: var(--color-bg-subtle);
+        color: var(--color-text-soft);
+    }
+
+    .home-section-title {
+        font-size: var(--text-3xl);
+        font-weight: 800;
+        margin-bottom: var(--space-8);
+        letter-spacing: var(--tracking-tight);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="hero-shell gradient-bg mb-10 text-white">
-    <div class="relative z-10 mx-auto max-w-5xl text-center">
-        <p class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-white/80">
-            <i class="fas fa-wave-square text-cyan-200"></i>
+<!-- Hero Section -->
+<section class="home-hero">
+    <div class="home-hero-content stagger">
+        <div class="title-pill scroll-reveal">
+            <i class="fas fa-wave-square text-primary"></i>
             Literary Intelligence Platform
-        </p>
-        <h1 class="mx-auto max-w-4xl font-serif text-4xl font-bold leading-tight sm:text-6xl">
+        </div>
+
+        <h1 class="hero-heading scroll-reveal">
             Deep poetry analysis without losing the texture of the poem.
         </h1>
-        <p class="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-100 sm:text-xl">
-            Move from raw text to metrics, prosody, comparative theory, and multilingual interpretation in one coherent workflow.
+
+        <p class="hero-desc scroll-reveal">
+            Move from raw text to metrics, prosody, comparative theory, and multilingual interpretation in one coherent
+            workflow.
         </p>
-        <div class="mt-8 flex flex-wrap justify-center gap-3">
-            <a href="/analyze" class="btn btn-primary !bg-white !text-slate-900 hover:!bg-slate-100">
+
+        <div class="d-flex justify-center gap-4 flex-wrap scroll-reveal">
+            <a href="/analyze" class="btn btn-primary btn-lg">
                 <i class="fas fa-search"></i>
                 Start Analysis
             </a>
-            <a href="/dashboard" class="btn btn-secondary !bg-white/10 !text-white hover:!bg-white/20">
+            <a href="/dashboard" class="btn btn-secondary btn-lg">
                 <i class="fas fa-chart-line"></i>
                 Open Dashboard
             </a>
         </div>
-        <div class="mt-10 flex flex-wrap justify-center gap-3 text-sm font-semibold text-slate-100">
-            <span class="info-pill !bg-white/10 !text-white !border-white/10"><i class="fas fa-check text-emerald-300"></i>15+ metrics</span>
-            <span class="info-pill !bg-white/10 !text-white !border-white/10"><i class="fas fa-check text-emerald-300"></i>11 theory lenses</span>
-            <span class="info-pill !bg-white/10 !text-white !border-white/10"><i class="fas fa-check text-emerald-300"></i>6+ languages</span>
+
+        <div class="d-flex justify-center flex-wrap gap-4 mt-8 scroll-reveal">
+            <span class="badge badge-neutral p-4 rounded-full text-sm">
+                <i class="fas fa-check text-success mr-2"></i> 15+ metrics
+            </span>
+            <span class="badge badge-neutral p-4 rounded-full text-sm">
+                <i class="fas fa-check text-success mr-2"></i> 11 theory lenses
+            </span>
+            <span class="badge badge-neutral p-4 rounded-full text-sm">
+                <i class="fas fa-check text-success mr-2"></i> 6+ languages
+            </span>
         </div>
     </div>
 </section>
 
-<section class="mb-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-    <article class="feature-card card-hover">
-        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-blue-50 text-2xl text-primary">
-            <i class="fas fa-chart-bar"></i>
-        </div>
-        <h2 class="mb-3 text-xl">Quantitative Metrics</h2>
-        <p class="text-sm leading-7">TTR, MTLD, MATTR, readability, lexical density, and supporting diagnostics presented with readable summaries.</p>
-    </article>
-    <article class="feature-card card-hover">
-        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-teal-50 text-2xl text-secondary">
-            <i class="fas fa-music"></i>
-        </div>
-        <h2 class="mb-3 text-xl">Prosody Analysis</h2>
-        <p class="text-sm leading-7">Meter, rhyme patterning, and scansion support for English, Hindi, Urdu, Gujarati, and adjacent forms.</p>
-    </article>
-    <article class="feature-card card-hover">
-        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-orange-50 text-2xl text-accent">
-            <i class="fas fa-language"></i>
-        </div>
-        <h2 class="mb-3 text-xl">Linguistic Layers</h2>
-        <p class="text-sm leading-7">Phonetics, morphology, syntax, and semantic signals built for both close reading and quick triage.</p>
-    </article>
-    <article class="feature-card card-hover">
-        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100 text-2xl text-slate-800">
-            <i class="fas fa-feather-alt"></i>
-        </div>
-        <h2 class="mb-3 text-xl">Literary Devices</h2>
-        <p class="text-sm leading-7">Tropes, imagery, Navarasa, Sanskrit Alankar, and style cues tied back to the original text.</p>
-    </article>
+<!-- Features Grid -->
+<section class="feature-section">
+    <div class="d-grid gap-6 grid-auto-md stagger">
+
+        <article class="card card-hover scroll-reveal">
+            <div class="feature-icon-box icon-box-primary">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Quantitative Metrics</h2>
+            <p class="text-sm text-soft leading-relaxed">
+                TTR, MTLD, MATTR, readability, lexical density, and supporting diagnostics presented with readable
+                summaries.
+            </p>
+        </article>
+
+        <article class="card card-hover scroll-reveal">
+            <div class="feature-icon-box icon-box-success">
+                <i class="fas fa-music"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Prosody Analysis</h2>
+            <p class="text-sm text-soft leading-relaxed">
+                Meter, rhyme patterning, and scansion support for English, Hindi, Urdu, Gujarati, and adjacent forms.
+            </p>
+        </article>
+
+        <article class="card card-hover scroll-reveal">
+            <div class="feature-icon-box icon-box-warning">
+                <i class="fas fa-language"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Linguistic Layers</h2>
+            <p class="text-sm text-soft leading-relaxed">
+                Phonetics, morphology, syntax, and semantic signals built for both close reading and quick triage.
+            </p>
+        </article>
+
+        <article class="card card-hover scroll-reveal">
+            <div class="feature-icon-box icon-box-neutral">
+                <i class="fas fa-feather-alt"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Literary Devices</h2>
+            <p class="text-sm text-soft leading-relaxed">
+                Tropes, imagery, Navarasa, Sanskrit Alankar, and style cues tied back to the original text.
+            </p>
+        </article>
+
+    </div>
 </section>
 
-<section class="section-shell mb-10">
-    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+<!-- Method Stack -->
+<section class="feature-section isolate relative">
+    <div class="d-flex justify-between items-end flex-wrap gap-4 mb-8 scroll-reveal">
         <div>
-            <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-slate-500">Method Stack</p>
-            <h2 class="text-3xl sm:text-4xl">Designed for both interpretation and validation</h2>
+            <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-2">Method Stack</p>
+            <h2 class="home-section-title mb-0">Designed for both interpretation and validation</h2>
         </div>
-        <p class="max-w-2xl text-sm leading-7 text-slate-600">The platform uses structured models instead of a single opaque score, so you can see which framework is driving a conclusion.</p>
+        <p class="max-w-md text-sm text-soft leading-relaxed text-balance">
+            The platform uses structured models instead of a single opaque score, so you can see which framework is
+            driving a conclusion.
+        </p>
     </div>
-    <div class="grid gap-5 md:grid-cols-3">
-        <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
-            <h3 class="mb-3 text-lg"><i class="fas fa-layer-group mr-2 text-primary"></i>TP-CASTT</h3>
-            <p class="text-sm leading-7">A line-by-line interpretive scaffold for title, paraphrase, connotation, attitude, shifts, and theme.</p>
+
+    <div class="d-grid gap-6 grid-auto-md stagger">
+        <div class="card bg-subtle scroll-reveal">
+            <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
+                <i class="fas fa-layer-group text-primary"></i> TP-CASTT
+            </h3>
+            <p class="text-sm text-soft leading-relaxed">A line-by-line interpretive scaffold for title, paraphrase,
+                connotation, attitude, shifts, and theme.</p>
         </div>
-        <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
-            <h3 class="mb-3 text-lg"><i class="fas fa-landmark mr-2 text-secondary"></i>Touchstone</h3>
-            <p class="text-sm leading-7">Compare against canonical passages to surface tonal, rhetorical, and structural differences.</p>
+        <div class="card bg-subtle scroll-reveal">
+            <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
+                <i class="fas fa-landmark text-success"></i> Touchstone
+            </h3>
+            <p class="text-sm text-soft leading-relaxed">Compare against canonical passages to surface tonal,
+                rhetorical, and structural differences.</p>
         </div>
-        <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
-            <h3 class="mb-3 text-lg"><i class="fas fa-brain mr-2 text-accent"></i>11 Theory Lenses</h3>
-            <p class="text-sm leading-7">Move between New Criticism, structuralism, feminist, Marxist, and other frameworks without rebuilding the input.</p>
+        <div class="card bg-subtle scroll-reveal">
+            <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
+                <i class="fas fa-brain text-warning"></i> 11 Theory Lenses
+            </h3>
+            <p class="text-sm text-soft leading-relaxed">Move between New Criticism, structuralism, feminist, Marxist,
+                and other frameworks without rebuilding the input.</p>
         </div>
     </div>
 </section>
 
-<section class="mb-10 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-    <div class="section-shell gradient-bg text-white">
-        <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-white/70">Coverage</p>
-        <h2 class="mb-4 text-3xl text-white sm:text-4xl">Multilingual by design, not as an afterthought.</h2>
-        <p class="mb-6 max-w-2xl text-sm leading-7 text-slate-100">Language support is built directly into the analysis path, so form detection, prosody, and summaries stay grounded in the poem’s context.</p>
-        <div class="flex flex-wrap gap-3 text-sm font-semibold">
-            <span class="info-pill"><i class="fas fa-flag-usa text-blue-600"></i>English</span>
-            <span class="info-pill"><i class="fas fa-om text-orange-600"></i>हिन्दी</span>
-            <span class="info-pill"><i class="fas fa-book text-emerald-600"></i>ગુજરાતી</span>
-            <span class="info-pill"><i class="fas fa-star text-sky-600"></i>اردو</span>
-            <span class="info-pill"><i class="fas fa-pen-fancy text-amber-700"></i>मराठी</span>
-            <span class="info-pill"><i class="fas fa-water text-cyan-600"></i>বাংলা</span>
+<!-- Multilingual / Stats Section -->
+<section class="feature-section">
+    <div class="d-grid gap-6 grid-cols-2">
+        <div class="card bg-primary text-white scroll-reveal isolate"
+            style="grid-column: 1 / -1; @media(min-width: 900px){grid-column: 1 / 2;}">
+            <p class="text-2xs font-bold uppercase tracking-widest mb-2" style="color: oklch(100% 0 0 / 0.7)">Coverage
+            </p>
+            <h2 class="text-3xl font-extrabold mb-4 mt-2">Multilingual by design, not as an afterthought.</h2>
+            <p class="text-sm mb-6 leading-relaxed" style="color: oklch(100% 0 0 / 0.8)">
+                Language support is built directly into the analysis path, so form detection, prosody, and summaries
+                stay grounded in the poem’s context.
+            </p>
+
+            <div class="d-flex flex-wrap gap-3 mt-auto">
+                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
+                        class="fas fa-flag-usa mr-1"></i> English</span>
+                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
+                        class="fas fa-om mr-1"></i> हिन्दी</span>
+                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
+                        class="fas fa-book mr-1"></i> ગુજરાતી</span>
+                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
+                        class="fas fa-star mr-1"></i> اردو</span>
+                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
+                        class="fas fa-pen-fancy mr-1"></i> मराठी</span>
+                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
+                        class="fas fa-water mr-1"></i> বাংলা</span>
+            </div>
         </div>
-    </div>
-    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
-        <div class="metric-card text-center">
-            <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Features</p>
-            <div class="mt-3 text-5xl font-black text-primary">129</div>
-            <p class="mt-2 text-sm text-slate-600">Integrated frontend and backend capabilities</p>
-        </div>
-        <div class="metric-card text-center">
-            <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Libraries</p>
-            <div class="mt-3 text-5xl font-black text-secondary">42</div>
-            <p class="mt-2 text-sm text-slate-600">Analysis, visualization, and NLP dependencies</p>
-        </div>
-        <div class="metric-card text-center">
-            <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Frameworks</p>
-            <div class="mt-3 text-5xl font-black text-accent">11</div>
-            <p class="mt-2 text-sm text-slate-600">Critical and interpretive models</p>
+
+        <div class="d-grid gap-6 flex-col justify-center align-center"
+            style="grid-column: 1 / -1; @media(min-width: 900px){grid-column: 2 / 3;}">
+            <div class="stat-card scroll-reveal text-center w-full">
+                <p class="stat-label">Features</p>
+                <div class="stat-value text-primary" style="font-size: 3rem;">129</div>
+                <p class="mt-2 text-xs text-soft">Integrated frontend and backend capabilities</p>
+            </div>
+            <div class="stat-card scroll-reveal text-center w-full">
+                <p class="stat-label">Libraries</p>
+                <div class="stat-value text-success" style="font-size: 3rem;">42</div>
+                <p class="mt-2 text-xs text-soft">Analysis, visualization, and NLP dependencies</p>
+            </div>
         </div>
     </div>
 </section>
 
-<section class="hero-shell gradient-bg text-center text-white">
-    <div class="relative z-10 mx-auto max-w-3xl">
-        <p class="mb-3 text-xs font-black uppercase tracking-[0.24em] text-white/70">Ready When You Are</p>
-        <h2 class="text-3xl text-white sm:text-5xl">Run a full analysis on your next poem in minutes.</h2>
-        <p class="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-100">Use the public flow for focused submissions or jump into the main workspace for historical and comparative views.</p>
-        <div class="mt-8 flex flex-wrap justify-center gap-3">
-            <a href="/analyze" class="btn btn-primary !bg-white !text-slate-900 hover:!bg-slate-100">
+<!-- Footer CTA -->
+<section class="home-hero text-center mb-0 border-0 scroll-reveal"
+    style="background: var(--color-surface); margin-bottom: 0;">
+    <div class="home-hero-content">
+        <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-3">Ready When You Are</p>
+        <h2 class="hero-heading" style="font-size: clamp(2rem, 5vw, 3rem);">Run a full analysis on your next poem in
+            minutes.</h2>
+        <p class="hero-desc">Use the public flow for focused submissions or jump into the main workspace for historical
+            and comparative views.</p>
+
+        <div class="d-flex justify-center gap-4 flex-wrap mt-8">
+            <a href="/analyze" class="btn btn-primary btn-lg shadow-lg">
                 <i class="fas fa-search"></i>
                 Analyze Your Text
             </a>
-            <a href="/docs" target="_blank" rel="noopener noreferrer" class="btn btn-secondary !bg-white/10 !text-white hover:!bg-white/20">
+            <a href="/docs" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg shadow-sm">
                 <i class="fas fa-book"></i>
                 Read API Docs
             </a>

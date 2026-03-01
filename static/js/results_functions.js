@@ -2,21 +2,21 @@ async function viewResultDetail(uuid) {
     showLoading('Loading full comprehensive report...');
 
     try {
-        const response = await axios.get(`/api/result/${uuid}`);
+        const response = await axios.get(`/result/${uuid}`);
         const result = response.data.data || response.data;
-        
+
         // Store current result for JSON download
         window.currentAnalysisResult = result;
 
         const modalContent = document.getElementById('modalContent');
-        
+
         // Extract nested data
         const qm = result.quantitative_metrics || result.quantitative || {};
         const prosody = result.prosody_analysis || result.prosody || {};
         const literary = result.literary_devices || {};
         const evalData = result.evaluation || {};
         const ratingsData = evalData.ratings || {};
-        
+
         // Detailed mapping for ratings to ensure NO zeros if data exists
         const ratings = {
             overall: result.overall_score || evalData.overall_score || 0,
@@ -191,11 +191,11 @@ async function viewResultDetail(uuid) {
                 </div>
             </div>
         `;
-        
+
         hideLoading();
         document.getElementById('viewModal').classList.remove('hidden');
         document.getElementById('viewModal').classList.add('flex');
-        
+
     } catch (error) {
         console.error('Error loading result:', error);
         hideLoading();
@@ -240,7 +240,7 @@ function downloadResultsAsJSON() {
         showToast('No analysis data loaded to download', 'warning');
         return;
     }
-    
+
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

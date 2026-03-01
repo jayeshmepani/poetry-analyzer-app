@@ -9,6 +9,36 @@ from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from app.database import SessionLocal
+from app.models.db_models import User
+
+def get_current_user(request: Request):
+    """
+    Dependency to strictly enforce Session Authentication
+    Requires an active cookie and validates the user status
+    """
+    auth_uuid = request.cookies.get("auth_uuid")
+    if not auth_uuid:
+        raise HTTPException(
+            status_code=302, 
+            detail="Not authenticated",
+            headers={"Location": "/login"}
+        )
+        
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.uuid == auth_uuid).first()
+        if not user:
+            raise HTTPException(
+                status_code=302, 
+                detail="Invalid session",
+                headers={"Location": "/login"}
+            )
+        if user.status == 0:
+            raise HTTPException(status_code=403, detail="Account deactivated")
+        return user
+    finally:
+        db.close()
 
 
 class Route:
@@ -22,37 +52,72 @@ class Route:
         self.templates = templates
         self.routes: List[Dict[str, Any]] = []
     
-    def get(self, path: str, endpoint: Callable, name: str = None):
+    def get(self, path: str, endpoint: Callable, name: str = None, protected: bool = False):
         """Register GET route"""
         self.routes.append({
             'method': 'GET',
             'path': path,
             'endpoint': endpoint,
-            'name': name or endpoint.__name__
+            'name': name or endpoint.__name__,
+            'protected': protected
         })
-        self.app.get(path, response_class=HTMLResponse, name=name)(endpoint)
+        
+        dependencies = [Depends(get_current_user)] if protected else []
+        self.app.get(path, response_class=HTMLResponse, name=name, dependencies=dependencies)(endpoint)
         return self
     
-    def post(self, path: str, endpoint: Callable, name: str = None):
+    def post(self, path: str, endpoint: Callable, name: str = None, protected: bool = False):
         """Register POST route"""
         self.routes.append({
             'method': 'POST',
             'path': path,
             'endpoint': endpoint,
-            'name': name or endpoint.__name__
+            'name': name or endpoint.__name__,
+            'protected': protected
         })
-        self.app.post(path, name=name)(endpoint)
+        
+        dependencies = [Depends(get_current_user)] if protected else []
+        self.app.post(path, name=name, dependencies=dependencies)(endpoint)
         return self
     
-    def delete(self, path: str, endpoint: Callable, name: str = None):
+    def delete(self, path: str, endpoint: Callable, name: str = None, protected: bool = False):
         """Register DELETE route"""
         self.routes.append({
             'method': 'DELETE',
             'path': path,
             'endpoint': endpoint,
-            'name': name or endpoint.__name__
+            'name': name or endpoint.__name__,
+            'protected': protected
         })
-        self.app.delete(path, name=name)(endpoint)
+        
+        dependencies = [Depends(get_current_user)] if protected else []
+        self.app.delete(path, name=name, dependencies=dependencies)(endpoint)
+        return self
+
+    def put(self, path: str, endpoint: Callable, name: str = None, protected: bool = False):
+        """Register PUT route"""
+        self.routes.append({
+            'method': 'PUT',
+            'path': path,
+            'endpoint': endpoint,
+            'name': name or endpoint.__name__,
+            'protected': protected
+        })
+        dependencies = [Depends(get_current_user)] if protected else []
+        self.app.put(path, name=name, dependencies=dependencies)(endpoint)
+        return self
+
+    def patch(self, path: str, endpoint: Callable, name: str = None, protected: bool = False):
+        """Register PATCH route"""
+        self.routes.append({
+            'method': 'PATCH',
+            'path': path,
+            'endpoint': endpoint,
+            'name': name or endpoint.__name__,
+            'protected': protected
+        })
+        dependencies = [Depends(get_current_user)] if protected else []
+        self.app.patch(path, name=name, dependencies=dependencies)(endpoint)
         return self
     
     def redirect(self, path: str, to: str, name: str = None):
@@ -110,61 +175,85 @@ def register_web_routes(app: FastAPI, templates: Jinja2Templates):
     # Import controllers
     from controllers.web_controller import WebController
     from controllers.workspace_controller import WorkspaceController
+    from controllers.auth_controller import AuthController
+    from controllers.admin_controller import AdminController
     
     # Initialize controllers
     web = WebController(templates)
     workspace = WorkspaceController(templates)
+    auth = AuthController(templates)
+    admin = AdminController(templates)
     
-    # ==================== PAGE ROUTES ====================
-    route.redirect('/', '/dashboard', name='home')
+    # ==================== ADMIN ROUTES (ROLE 0 ONLY) ====================
+    route.get('/admin', admin.index, name='admin.index')
+    route.get('/admin/users', admin.index, name='admin.users.index')
+    route.get('/admin/users/data', admin.data, name='admin.users.data')
+    route.post('/admin/users', admin.store, name='admin.users.store')
+    route.post('/admin/users/delete-multiple', admin.destroy_multiple, name='admin.users.destroy_multiple')
+    route.get('/admin/users/{user_uuid}/edit', admin.edit, name='admin.users.edit')
+    route.put('/admin/users/{user_uuid}', admin.update, name='admin.users.update')
+    route.delete('/admin/users/{user_uuid}', admin.destroy, name='admin.users.destroy')
+    route.patch('/admin/users/{user_uuid}/toggle', admin.toggle_status, name='admin.users.toggle_status')
+    
+    # ==================== AUTH ROUTES ====================
+    route.get('/login', auth.login_view, name='login')
+    route.post('/login', auth.login_post, name='login.post')
+    route.get('/register', auth.register_view, name='register')
+    route.post('/register', auth.register_post, name='register.post')
+    route.get('/logout', auth.logout, name='logout')
+    
+    # ==================== PUBLIC ROUTES ====================
+    route.redirect('/', '/login', name='home')
 
-    route.get('/dashboard', workspace.dashboard, name='dashboard')
-    route.get('/analyze', workspace.analyze, name='analyze')
-    route.get('/batch', workspace.batch, name='batch')
-    route.get('/results', workspace.results, name='results')
-    route.get('/database', workspace.database_status, name='database')
-    route.get('/visualize', workspace.visualize, name='visualize')
-    route.get('/forms', workspace.forms, name='forms')
-    route.get('/meters', workspace.meters, name='meters')
-    route.get('/rasas', workspace.rasas, name='rasas')
-    route.get('/settings', workspace.settings, name='settings')
-    route.get('/theory', workspace.theory, name='theory')
-    route.get('/touchstone', workspace.touchstone, name='touchstone')
-    route.get('/constraints', workspace.constraints, name='constraints')
-    route.get('/performance', workspace.performance, name='performance')
-    route.get('/rubrics', workspace.rubrics, name='rubrics')
-    route.get('/comparator', workspace.comparator, name='comparator')
+    # ==================== PROTECTED WORKSPACE ROUTES ====================
+    # All of these routes require get_current_user
+    route.get('/dashboard', workspace.dashboard, name='dashboard', protected=True)
+    route.get('/analyze', workspace.analyze, name='analyze', protected=True)
+    route.get('/batch', workspace.batch, name='batch', protected=True)
+    route.get('/results', workspace.results, name='results', protected=True)
+    route.get('/database', workspace.database_status, name='database', protected=True)
+    route.get('/visualize', workspace.visualize, name='visualize', protected=True)
+    route.get('/forms', workspace.forms, name='forms', protected=True)
+    route.get('/meters', workspace.meters, name='meters', protected=True)
+    route.get('/rasas', workspace.rasas, name='rasas', protected=True)
+    route.get('/settings', workspace.settings, name='settings', protected=True)
+    route.get('/theory', workspace.theory, name='theory', protected=True)
+    route.get('/touchstone', workspace.touchstone, name='touchstone', protected=True)
+    route.get('/constraints', workspace.constraints, name='constraints', protected=True)
+    route.get('/performance', workspace.performance, name='performance', protected=True)
+    route.get('/rubrics', workspace.rubrics, name='rubrics', protected=True)
+    route.get('/comparator', workspace.comparator, name='comparator', protected=True)
 
-    # ==================== API ROUTES (Internal) ====================
-    # These are used by AJAX calls from frontend
-    route.post('/api/analyze', workspace.analyze_post, name='api.analyze')
-    route.post('/api/analyze/batch', workspace.batch_analyze_post, name='api.analyze.batch')
-    route.get('/api/stats', workspace.stats, name='api.stats')
-    route.get('/api/results', workspace.list_results, name='api.results.list')
-    route.get('/api/result/{result_id}', workspace.get_result, name='api.result.get')
-    route.get('/api/visualize/{result_id}', workspace.get_visualization, name='api.visualize')
-    route.delete('/api/result/{result_id}', workspace.delete_result, name='api.result.delete')
-    route.post('/api/clear-results', workspace.clear_results, name='api.results.clear')
+    # ==================== DATA ROUTES (AJAX) ====================
+    # These are used by AJAX calls from frontend but operate monolithically
+    route.post('/analyze/submit', workspace.analyze_post, name='analyze.submit', protected=True)
+    route.post('/analyze/batch/submit', workspace.batch_analyze_post, name='analyze.batch.submit', protected=True)
+    route.get('/stats', workspace.stats, name='stats', protected=True)
+    route.get('/results/list', workspace.list_results, name='results.list', protected=True)
+    route.get('/result/{result_id}', workspace.get_result, name='result.get', protected=True)
+    route.get('/visualize/{result_id}/data', workspace.get_visualization, name='visualize.data', protected=True)
+    route.delete('/result/{result_id}', workspace.delete_result, name='result.delete', protected=True)
+    route.post('/results/clear', workspace.clear_results, name='results.clear', protected=True)
     
-    # ⭐ Advanced API endpoints
-    route.post('/api/constraints/apply', workspace.apply_constraint_api, name='api.constraints.apply')
-    route.get('/api/theory/recommendations', workspace.get_theory_recommendations, name='api.theory.recommendations')
-    route.post('/api/analysis/theory', workspace.analyze_with_theory_api, name='api.theory.analyze')
-    route.post('/api/analysis/touchstone', workspace.analyze_touchstone_api, name='api.touchstone.analyze')
-    route.post('/api/analysis/performance', workspace.analyze_performance_api, name='api.performance.analyze')
-    route.post('/api/analysis/versions', workspace.generate_versions_api, name='api.versions.generate')
+    # ⭐ Advanced Tools
+    route.post('/constraints/apply', workspace.apply_constraint_api, name='constraints.apply', protected=True)
+    route.get('/theory/recommendations', workspace.get_theory_recommendations, name='theory.recommendations', protected=True)
+    route.post('/analysis/theory', workspace.analyze_with_theory_api, name='theory.analyze', protected=True)
+    route.post('/analysis/touchstone', workspace.analyze_touchstone_api, name='touchstone.analyze', protected=True)
+    route.post('/analysis/performance', workspace.analyze_performance_api, name='performance.analyze', protected=True)
+    route.post('/analysis/versions', workspace.generate_versions_api, name='versions.generate', protected=True)
     
-    # ⭐ Database API endpoints
-    route.get('/api/database/status', workspace.database_status_api, name='api.database.status')
-    route.post('/api/database/initialize', workspace.database_init, name='api.database.init')
+    # ⭐ Database 
+    route.get('/database/status/api', workspace.database_status_api, name='database.status.api', protected=True)
+    route.post('/database/initialize', workspace.database_init, name='database.init', protected=True)
     
-    # ⭐ Settings API endpoints
-    route.get('/api/settings', workspace.get_settings, name='api.settings.get')
-    route.post('/api/settings', workspace.save_settings, name='api.settings.save')
+    # ⭐ Settings 
+    route.get('/settings/get', workspace.get_settings, name='settings.get', protected=True)
+    route.post('/settings/save', workspace.save_settings, name='settings.save', protected=True)
     
     # ==================== REFERENCE ROUTES ====================
-    route.get('/api/forms', workspace.get_forms, name='api.forms')
-    route.get('/api/meters', workspace.get_meters, name='api.meters')
-    route.get('/api/rasas', workspace.get_rasas, name='api.rasas')
+    route.get('/forms/data', workspace.get_forms, name='forms.data', protected=True)
+    route.get('/meters/data', workspace.get_meters, name='meters.data', protected=True)
+    route.get('/rasas/data', workspace.get_rasas, name='rasas.data', protected=True)
     
     return route

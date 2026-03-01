@@ -1,4 +1,4 @@
-{% extends "workspace/base_workspace.html" %}
+{% extends "layouts/app.html" %}
 {% block title %}Touchstone Comparison - Poetry Analyzer{% endblock %}
 {% block content %}
 <div class="max-w-6xl mx-auto">
@@ -70,7 +70,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
 const touchstones = {
     milton: "And courage never to submit or yield",

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Poetry Analyzer{% endblock %} — Poetry Analyzer</title>
+    {% include "layouts/partials/head.html" %}
+    {% block page_css %}{% endblock %}
+</head>
+
+<body class="app-body">
+
+    <div class="app-shell">
+
+        {% include "layouts/partials/sidebar.html" %}
+
+        <div class="app-content-wrap">
+
+            {% include "layouts/partials/header.html" %}
+
+            <main class="app-main" id="main-content">
+                {% block content %}{% endblock %}
+            </main>
+
+            {% include "layouts/partials/footer.html" %}
+
+        </div>
+    </div>
+
+    {% include "layouts/partials/scripts.html" %}
+    {% block page_js %}{% endblock %}
+
+</body>
+
+</html>

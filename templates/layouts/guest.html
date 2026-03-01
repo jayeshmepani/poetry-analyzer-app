@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Poetry Analyzer{% endblock %} — Poetry Analyzer</title>
+    {% include "layouts/partials/head.html" %}
+    {% block page_css %}{% endblock %}
+</head>
+
+<body class="guest-body">
+
+    <div class="guest-shell">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% include "layouts/partials/scripts.html" %}
+    {% block page_js %}{% endblock %}
+
+</body>
+
+</html>

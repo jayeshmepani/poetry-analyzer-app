@@ -1,4 +1,4 @@
-{% extends "workspace/base_workspace.html" %}
+{% extends "layouts/app.html" %}
 {% block title %}Performance Analyzer{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto">
@@ -72,7 +72,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
 function selectRubric(type) {
     showInfo(`Selected ${type.charAt(0).toUpperCase() + type.slice(1)} Rubric`);
