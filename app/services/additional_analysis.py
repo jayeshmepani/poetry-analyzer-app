@@ -68,7 +68,7 @@ class TransformerAnalyzer:
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Perform sentiment and emotion analysis"""
-        # Lazy-load models on first call (avoids Flask debug reloader loading 2x ~3GB)
+        # Lazy-load models on first call (avoids debug reloader loading 2x ~3GB)
         if not self._initialized:
             self._initialize_pipelines()
         if self.language != "en" or not self._sentiment_pipe:
