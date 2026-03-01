@@ -12,24 +12,20 @@ from sqlalchemy.sql.sqltypes import Integer, Float, String, Text, DateTime, JSON
 import os
 import logging
 from dotenv import load_dotenv
+from app.config import settings
 
 load_dotenv()
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Database URL from environment or default
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///./poetry_analyzer.db"
-)
+# Database URL from dedicated environment variables
+DATABASE_URL = settings.db.get_url
 
 # Detect database type
-DB_TYPE = "sqlite"
-if DATABASE_URL.startswith("postgresql"):
+DB_TYPE = settings.db.connection.lower()
+if DB_TYPE in ["pgsql", "postgres"]:
     DB_TYPE = "postgresql"
-elif DATABASE_URL.startswith("mysql"):
-    DB_TYPE = "mysql"
 
 logger.info(f"📊 Using database type: {DB_TYPE}")
 logger.info(f"🔗 Database URL: {'***' if 'password' in DATABASE_URL else DATABASE_URL}")

@@ -33,11 +33,10 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-# Get database URL from environment
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///./poetry_analyzer.db"
-)
+from app.config import settings
+
+# Get database URL from Pydantic Laravel-style environment configuration
+DATABASE_URL = settings.db.get_url
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

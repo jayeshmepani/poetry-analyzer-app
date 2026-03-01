@@ -247,10 +247,39 @@ class AppSettings(BaseSettings):
         env_prefix = "APP_"
 
 
+class DatabaseSettings(BaseSettings):
+    """Database configuration mimicking a classic .env structure"""
+    
+    connection: str = Field(default="sqlite", description="Database connection type (sqlite, mysql, pgsql)")
+    host: str = Field(default="127.0.0.1", description="Database host")
+    port: int = Field(default=3306, description="Database port")
+    database: str = Field(default="poetry_analyzer", description="Database name")
+    username: str = Field(default="root", description="Database username")
+    password: str = Field(default="", description="Database password")
+
+    @property
+    def get_url(self) -> str:
+        """Construct SQLAlchemy URL from simple environment variables"""
+        conn = self.connection.lower()
+        if conn == "sqlite":
+            return f"sqlite:///./{self.database}.db"
+        elif conn == "mysql":
+            pwd = f":{self.password}" if self.password else ""
+            return f"mysql+pymysql://{self.username}{pwd}@{self.host}:{self.port}/{self.database}"
+        elif conn in ["pgsql", "postgresql", "postgres"]:
+            pwd = f":{self.password}" if self.password else ""
+            return f"postgresql://{self.username}{pwd}@{self.host}:{self.port}/{self.database}"
+        return f"sqlite:///./{self.database}.db"
+        
+    class Config:
+        env_prefix = "DB_"
+
+
 class Settings(BaseSettings):
     """Master settings class combining all configurations"""
 
     app: AppSettings = Field(default_factory=AppSettings)
+    db: DatabaseSettings = Field(default_factory=DatabaseSettings)
     spacy: SpaCySettings = Field(default_factory=SpaCySettings)
     stanza: StanzaSettings = Field(default_factory=StanzaSettings)
     indic_nlp: IndicNLPSettings = Field(default_factory=IndicNLPSettings)

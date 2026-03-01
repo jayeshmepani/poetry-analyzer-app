@@ -1,383 +1,172 @@
-# Ultimate Literary & Linguistic Master System
-## Backend Implementation - COMPLETE ✅
+# Poetry Analyzer App
 
-Comprehensive poetry and literary analysis system implementing all frameworks from `quantitative_poetry_metrics.md` and `ultimate_literary_master_system.md`.
-
----
-
-## 📊 **Backend Completion Status: 100%**
-
-### ✅ **Completed Modules**
-
-| Module | File | Status | Features |
-|--------|------|--------|----------|
-| **Configuration** | `config.py` | ✅ | 10 setting classes, env support |
-| **Schemas** | `schemas.py` | ✅ | 50+ Pydantic models |
-| **Linguistic Analysis** | `linguistic.py` | ✅ | spaCy, Stanza, Indic NLP |
-| **Quantitative Metrics** | `quantitative.py` | ✅ | TTR, MTLD, MATTR, RH1/RH2, MCI |
-| **Prosody Engine** | `prosody.py` | ✅ | English meter, Hindi Chhand, Urdu Aruz, Gujarati |
-| **Literary Devices** | `literary_devices.py` | ✅ | Tropes, Schemes, Alankar, Rasa |
-| **Advanced Analysis** | `advanced_analysis.py` | ✅ | TP-CASTT, SWIFT, Touchstone, Sentiment |
-| **Evaluation** | `evaluation.py` | ✅ | 7-category scoring, publishability |
-| **Analysis Service** | `analysis_service.py` | ✅ | Orchestrates all modules |
-| **API Application** | `main.py` | ✅ | FastAPI with 20+ endpoints |
+A state-of-the-art literary and linguistic analysis engine. The application operates on a pure, asynchronous **FastAPI** architecture and leverages flagship 1.5GB HuggingFace Transformer models for unparalleled sentiment and emotion classification.
 
 ---
 
-## 🚀 **Quick Start**
+## 🚀 Installation Guide
 
-### **Automated Installation (Recommended)**
+We support Windows, Linux, and macOS. The backend requires **Python 3.12 (64-bit)**.
+_(Note: Python 3.12 is strictly required over 3.13 due to `pkg_resources` dependencies in the `pronouncing` library)._
 
-#### **Linux/macOS**
+### 1. Prerequisite Build Tools
+
+Because we compile massive NLP libraries, you need C++ build tools installed on your system.
+
+**Windows (PowerShell as Admin):**
+Install the [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/). Make sure to select "C++ build tools" during installation.
+
+**Linux (Ubuntu/Debian):**
+
 ```bash
-cd poetry_analyzer_app
-chmod +x install.sh
-./install.sh
-```
-
-#### **Windows (PowerShell as Administrator)**
-```powershell
-cd poetry_analyzer_app
-.\install.ps1
-```
-
-### **Manual Installation**
-
-#### **1. Install System Dependencies**
-
-**Ubuntu/Debian:**
-```bash
-sudo apt update && sudo apt install -y \
-    build-essential gcc g++ gfortran \
-    libopenblas-dev liblapack-dev pkg-config \
-    python3-dev python3-pip python3-venv cmake git
+sudo apt update
+sudo apt install -y build-essential gcc g++ python3.12-dev python3.12-venv
 ```
 
 **macOS:**
+
 ```bash
 xcode-select --install
-brew install python@3.13 openblas pkg-config cmake git
+brew install python@3.12
 ```
+
+### 2. Python Environment Setup
+
+Open your terminal inside the `poetry-analyzer-app` directory and create a virtual environment.
 
 **Windows:**
-- Install [Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-- Install [Python 3.13 (64-bit)](https://www.python.org/downloads/)
 
-> 📖 **See [INSTALLATION.md](INSTALLATION.md) for detailed platform-specific instructions**
-
-#### **2. Create Virtual Environment**
-```bash
-cd poetry_analyzer_app
-
-# Create virtual environment
-python3.13 -m venv .env
-
-# Activate (Linux/macOS)
-source .env/bin/activate
-
-# Activate (Windows PowerShell)
-.\.env\Scripts\Activate.ps1
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 ```
 
-#### **3. Install Python Dependencies**
+**Linux/macOS:**
+
 ```bash
-# Upgrade build tools
+python3.12 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Core Dependencies
+
+Install the required packages. We use strict version pinning to ensure absolute stability between the FastAPI backend and the AI models.
+
+```bash
+# Upgrade build tools first
 python -m pip install --upgrade pip setuptools wheel
 
-# Install requirements
+# Install the exact application requirements
 pip install -r requirements.txt
 ```
 
-#### **4. Download NLP Models**
+### 4. Download Core NLP Models
+
+You must download the foundational language weights for spaCy and NLTK.
+
+_(Note: The flagship HuggingFace Transformer models like `siebert/sentiment-roberta-large-english` and `duelker/samo-goemotions-deberta-v3-large` will automatically download on their first run via the transformers pipeline)._
+
 ```bash
-# spaCy English transformer (Primary model for English)
 python -m spacy download en_core_web_trf
-
-# spaCy Multilingual small (For other languages)
 python -m spacy download xx_sent_ud_sm
-```
 
-#### **5. Run the Application**
-```bash
-# Using run script
-chmod +x run.sh
-./run.sh
-
-# Or manually
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-#### **6. Access the API**
-
-- **Interactive Docs**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **Root**: http://localhost:8000
-
----
-
-## 📁 **Project Structure**
-
-```
-poetry_analyzer_app/
-├── app/
-│   ├── __init__.py
-│   ├── config.py                    # Configuration system
-│   ├── main.py                      # FastAPI application
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── schemas.py               # Pydantic models (50+)
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── analysis_service.py      # Master orchestrator
-│   │   ├── linguistic.py            # spaCy/Stanza/Indic NLP
-│   │   ├── quantitative.py          # TTR, MTLD, readability
-│   │   ├── prosody.py               # Meter, rhyme, Chhand, Aruz
-│   │   ├── literary_devices.py      # Tropes, Alankar, Rasa
-│   │   ├── advanced_analysis.py     # TP-CASTT, Touchstone
-│   │   └── evaluation.py            # 7-category scoring
-│   ├── api/
-│   │   ├── __init__.py
-│   │   └── routes.py                # API routes (in main.py)
-│   └── utils/
-│       ├── __init__.py
-│       └── helpers.py               # Utility functions
-├── templates/                       # Frontend (to be added)
-├── static/                          # CSS, JS, images
-├── requirements.txt                 # All dependencies
-├── run.sh                          # Run script
-└── README.md                       # This file
+python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger')"
 ```
 
 ---
 
-## 🔧 **API Endpoints**
+## ⚡ Running the Server
 
-### **Analysis Endpoints**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/analyze` | Analyze single text |
-| `POST` | `/api/v1/analyze/batch` | Batch analysis |
-| `GET` | `/api/v1/result/{id}` | Get stored result |
-| `DELETE` | `/api/v1/result/{id}` | Delete result |
-
-### **Generation Endpoints**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/generate/constraint` | Oulipo constraint generation |
-
-### **Reference Endpoints**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/forms` | List poetic forms |
-| `GET` | `/api/v1/meters` | List metrical patterns |
-| `GET` | `/api/v1/rasas` | Navarasa information |
-
-### **Visualization Endpoints**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/visualize/{id}` | Get chart data |
-
-### **Utility Endpoints**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Health check |
-| `GET` | `/api/v1/stats` | Usage statistics |
-| `POST` | `/api/v1/clear-results` | Clear storage |
-
----
-
-## 📊 **Analysis Features**
-
-### **1. Quantitative Metrics**
-- **Lexical Diversity**: TTR, MTLD, MATTR, Hapax Legomena
-- **Readability**: Flesch-Kincaid, Gunning Fog, Coleman-Liau, ARI, SMOG
-- **Hindi Metrics**: RH1, RH2, Matra Complexity Index, Jukta Akshar Density
-- **Structural**: Line count, stanza pattern, enjambment ratio, golden ratio
-
-### **2. Prosody Analysis**
-- **English**: Iambic, Trochaic, Anapestic, Dactylic, Spondaic
-- **Hindi**: Doha, Chaupai, Soratha, Kundaliya, Rola, Harigitika
-- **Urdu**: Mutaqaarib, Hazaj, Ramal, Kaamil, Mujtass
-- **Gujarati**: Padyabandh, Garbi, Raas, Ghazal
-
-### **3. Linguistic Analysis**
-- **Phonetics**: Alliteration, assonance, consonance, onomatopoeia, phonesthemes
-- **Morphology**: Prefixes, suffixes, compounds, word length distribution
-- **Syntax**: Sentence types, clause structure, syntactic complexity
-- **Semantics**: Concrete vs abstract, named entities, semantic density
-- **POS**: Full part-of-speech distribution
-
-### **4. Literary Devices**
-- **Tropes**: Metaphor, simile, personification, metonymy, synecdoche, hyperbole, irony, oxymoron, paradox
-- **Schemes**: Alliteration, anaphora, epistrophe, parallelism, antithesis, chiasmus
-- **Imagery**: Visual, auditory, tactile, gustatory, olfactory, kinesthetic, organic
-- **Sanskrit Alankar**: Yamaka, Shlesha, Utpreksha, Vibhavana, Vishesokti, Rupak, Upama
-- **Rasa Theory**: Complete Navarasa analysis (Shringara, Hasya, Karuna, Raudra, Veera, Bhayanaka, Bibhatsa, Adbhuta, Shanta)
-
-### **5. Advanced Analysis**
-- **TP-CASTT**: Title, Paraphrase, Connotation, Attitude, Shift, Title, Theme
-- **SWIFT**: Structure, Word Choice, Imagery, Figurative Language, Theme
-- **Touchstone Method**: Comparison against canonical passages (Milton, Shakespeare, Homer, Dante)
-- **Sentiment Analysis**: Valence, Arousal, Dominance (VAD), emotion distribution, sentiment arc
-
-### **6. Evaluation & Scoring**
-- **7-Category Ratings**: Technical Craft, Language & Diction, Imagery & Voice, Emotional Impact, Cultural Fidelity, Originality, Computational Greatness
-- **Publishability Assessment**: Ready / Light Edits / Heavy Revision / Major Rework
-- **Performance Assessment**: Suitability for spoken word, breath units, memorability
-- **Strengths & Suggestions**: Prioritized improvement recommendations
-
----
-
-## 🌍 **Language Support**
-
-| Language | Support Level | Features |
-|----------|---------------|----------|
-| **English** | ⭐⭐⭐⭐⭐ | Full support |
-| **Hindi** | ⭐⭐⭐⭐⭐ | Chhand, RH1/RH2, Rasa, Alankar |
-| **Gujarati** | ⭐⭐⭐⭐ | Prosody, basic analysis |
-| **Urdu** | ⭐⭐⭐⭐ | Aruz/Bahr analysis |
-| **Marathi** | ⭐⭐⭐ | Basic metrics |
-| **Bengali** | ⭐⭐⭐ | Basic metrics |
-
----
-
-## 📝 **Example Usage**
-
-### **Analyze a Poem**
+Initialize the database migrations via Alembic (first run only):
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/analyze" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "My Poem",
-    "text": "Shall I compare thee to a summer'\''s day?\nThou art more lovely and more temperate...",
-    "language": "en",
-    "form": "sonnet",
-    "strictness": 8
-  }'
+alembic upgrade head
 ```
 
-### **Batch Analysis**
+Start the FastAPI asynchronous server:
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/analyze/batch" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {"text": "First poem...", "language": "en"},
-      {"text": "Second poem...", "language": "hi"}
-    ],
-    "compare": true
-  }'
+uvicorn app.main:app --host 0.0.0.0 --port 9005 --reload
 ```
 
-### **Python SDK**
+### View The Application
 
-```python
-from app.services.analysis_service import create_analysis_service
+- **Main Interface:** `http://localhost:9005`
+- **Interactive API Docs (Swagger):** `http://localhost:9005/docs`
 
-service = create_analysis_service(language="en", strictness=8)
+---
 
-result = service.analyze(
-    text="Your poem here...",
-    title="My Poem",
-    form="sonnet"
-)
+## 💾 Native Database Support
 
-print(f"Overall Quality: {result['evaluation']['ratings']['overall_quality']}/10")
-print(f"Executive Summary: {result['executive_summary']}")
+The application natively supports **SQLite** (default), **PostgreSQL**, and **MySQL/MariaDB**.
+
+To switch your database backend, simply edit the dedicated `DB_` variables in your `.env` file. The SQLAlchemy engine will automatically parse these into the correct driver connection string and configure the appropriate connection pooling parameters behind the scenes.
+
+**SQLite (Default)**:
+
+```env
+DB_CONNECTION=sqlite
+DB_DATABASE=poetry_analyzer
+```
+
+**PostgreSQL**:
+
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=poetry_db
+DB_USERNAME=postgres
+DB_PASSWORD=secret
+```
+
+**MySQL**:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=poetry_db
+DB_USERNAME=root
+DB_PASSWORD=secret
 ```
 
 ---
 
-## 🧪 **Testing**
+## 🧠 Core Technologies & Dependencies
 
-```bash
-# Run tests (when added)
-pytest tests/
+As defined in `requirements.txt`, the application is powered by a heavily curated AI stack:
 
-# Test single module
-python -m pytest tests/test_quantitative.py -v
+- **Web Framework**: FastAPI `0.135.0` + Uvicorn `0.41.0` + Jinja2 `3.1.6`
+- **Deep Learning**: PyTorch `2.10.0` + Transformers `4.49.0`
+- **NLP Pipelines**: spaCy `3.8.11`, NLTK `3.9.3`, Stanza `1.11.1`, indic-nlp-library `0.92`
+- **Text Processing**: textdescriptives `2.8.4`, textstat `0.7.13`, syllables `1.1.5`, pronouncing `0.2.0`
+- **Data & Math**: Pandas `3.0.1`, NumPy `1.26.4`
+- **Database**: SQLAlchemy `2.0.47` + Alembic `1.18.4`
+
+---
+
+## 📁 Project Architecture
+
+The system utilizes a structured, modern MVC-style architecture fully migrated to FastAPI:
+
+```text
+poetry-analyzer-app/
+├── alembic/                # Database migration scripts and versions
+├── alembic.ini             # Alembic configuration
+├── app/                    # Primary Application Logic
+│   ├── api/                # API routers and endpoints
+│   ├── models/             # SQLAlchemy ORM models & Pydantic schemas
+│   ├── services/           # Core NLP logic (linguistic, prosody, quantitative, transformers)
+│   ├── utils/              # Helper functions
+│   ├── config.py           # Pydantic Settings management
+│   ├── database.py         # SQLAlchemy engine setup
+│   ├── main.py             # FastAPI application entrypoint
+│   └── route_registry.py   # Named route resolution
+├── controllers/            # View data binding for full-stack templates
+├── routes/                 # Web route definitions mapping URLs to controllers
+├── static/                 # CSS/JS assets
+├── templates/              # Jinja2 HTML templates
+├── requirements.txt        # Strictly pinned dependencies
+└── verify_app.py           # Integration test suite
 ```
-
----
-
-## 📚 **Documentation**
-
-- **API Docs**: http://localhost:8000/docs (Swagger UI)
-- **ReDoc**: http://localhost:8000/redoc
-- **Source Code**: Inline docstrings throughout
-
----
-
-## 🔑 **Key Formulas Implemented**
-
-### **From quantitative_poetry_metrics.md**
-
-1. **Type-Token Ratio**: `TTR = Unique Words / Total Words`
-2. **MTLD**: Measure of Textual Lexical Diversity (threshold-based)
-3. **MATTR**: Moving-Average Type-Token Ratio (windowed)
-4. **Flesch-Kincaid**: `0.39 × (W/S) + 11.8 × (Syl/W) - 15.59`
-5. **RH1**: `-2.34 + 2.14(AWL) + 0.01(JUK)`
-6. **RH2**: `-0.82 + 1.83(AWL) + 0.09(PSW)`
-7. **MCI**: `(Guru Syllables / Total Syllables) × 100`
-8. **Computational Greatness**: Weighted composite score
-
-### **From ultimate_literary_master_system**
-
-1. **7-Category Rating System**: Weighted average with customizable weights
-2. **Rasa Vector**: 9-dimensional emotion space
-3. **TP-CASTT Pipeline**: 7-step analysis
-4. **Touchstone Comparison**: Canonical passage similarity
-
----
-
-## 🎯 **Next Steps (Frontend)**
-
-Backend is **100% complete**. Next phase: **Frontend Implementation**
-
-1. Create Jinja2 templates
-2. Add Tailwind CSS styling
-3. Implement FontAwesome icons
-4. Build interactive visualizations (Chart.js)
-5. Create analysis input form
-6. Build results dashboard
-7. Add comparative analysis view
-
----
-
-## 📞 **Support**
-
-For issues or questions:
-1. Check API docs at `/docs`
-2. Review source code docstrings
-3. Check logs for error details
-
----
-
-## 📄 **License**
-
-Based on research frameworks from quantitative_poetry_metrics.md and ultimate_literary_master_system.md
-
----
-
-## 📚 **Installation Documentation**
-
-| Document | Description |
-|----------|-------------|
-| **[INSTALLATION.md](INSTALLATION.md)** | Complete installation guide for Windows, Linux, and macOS |
-| **[EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md)** | System-level dependencies (compilers, libraries) |
-| **[requirements.txt](requirements.txt)** | Python package dependencies |
-| **[install.sh](install.sh)** | Automated installation script (Linux/macOS) |
-| **[install.ps1](install.ps1)** | Automated installation script (Windows) |
-
----
-
-**Backend Status: ✅ COMPLETE**
-**Version**: 2.0.0
-**Last Updated**: February 27, 2026
