@@ -13,8 +13,9 @@ class CustomToast {
     }
 
     _init() {
-        if (document.getElementById('toast-container')) return;
+        if (document.querySelector('.toast-container')) return;
         this._container = document.createElement('div');
+        this._container.className = 'toast-container';
         this._container.id = 'toast-container';
         document.body.appendChild(this._container);
     }
@@ -45,11 +46,11 @@ class CustomToast {
         this._container.appendChild(toast);
 
         // Animate in
-        requestAnimationFrame(() => toast.classList.add('toast-visible'));
+        requestAnimationFrame(() => toast.classList.add('toast-show'));
 
         // Progress bar + auto-dismiss
         const progress = toast.querySelector('.toast-progress');
-        progress.style.animationDuration = `${duration}ms`;
+        progress.style.setProperty('--toast-duration', `${duration}ms`);
         progress.classList.add('toast-progress-run');
 
         const timer = setTimeout(() => this._dismiss(toast), duration);
@@ -64,7 +65,7 @@ class CustomToast {
     }
 
     _dismiss(toast) {
-        toast.classList.remove('toast-visible');
+        toast.classList.remove('toast-show');
         toast.addEventListener('transitionend', () => toast.remove(), { once: true });
     }
 

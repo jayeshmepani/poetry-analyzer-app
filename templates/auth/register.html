@@ -4,16 +4,16 @@
 
 {% block content %}
 <div class="container d-flex items-center justify-center py-12 px-4 min-h-screen">
-    <div class="card w-full shadow-xl scroll-reveal" style="max-width: 480px;">
+    <div class="card w-full max-w-sm shadow-xl scroll-reveal">
 
         <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold mb-2 tracking-tight text-text">Create Account</h1>
+            <h1 class="text-2xl font-bold mb-2 tracking-tight text-text font-display">Create Account</h1>
             <p class="text-sm text-soft">Join to start analyzing poetry with advanced AI</p>
         </div>
 
         {% if error %}
         <div class="alert alert-danger mb-6">
-            <i class="fas fa-exclamation-circle text-lg mt-1"></i>
+            <svg class="icon text-lg mt-1" aria-hidden="true"><use href="#icon-exclamation-circle"></use></svg>
             <div>{{ error }}</div>
         </div>
         {% endif %}
@@ -33,14 +33,48 @@
 
             <div class="form-group">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" id="password" name="password" class="form-input" required
-                    placeholder="Create a strong password" minlength="8">
+                <div class="input-with-toggle">
+                    <input type="password" id="password" name="password" class="form-input" required
+                        placeholder="Create a strong password" minlength="8">
+                    <button type="button" class="toggle-visibility-btn" data-toggle-password="password"
+                        aria-label="Show password" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" data-icon="show">
+                            <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="d-none" data-icon="hide">
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6 0-10-7-10-7a21.76 21.76 0 0 1 5.08-6.12" />
+                            <path d="M1 1l22 22" />
+                            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c6 0 10 7 10 7a21.76 21.76 0 0 1-3.17 4.24" />
+                            <path d="M14.12 14.12a3 3 0 0 1-4.24-4.24" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="password_confirm" class="form-label">Confirm Password</label>
-                <input type="password" id="password_confirm" name="password_confirm" class="form-input" required
-                    placeholder="Type password again" minlength="8">
+                <div class="input-with-toggle">
+                    <input type="password" id="password_confirm" name="password_confirm" class="form-input" required
+                        placeholder="Type password again" minlength="8">
+                    <button type="button" class="toggle-visibility-btn" data-toggle-password="password_confirm"
+                        aria-label="Show password confirmation" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" data-icon="show">
+                            <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="d-none" data-icon="hide">
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6 0-10-7-10-7a21.76 21.76 0 0 1 5.08-6.12" />
+                            <path d="M1 1l22 22" />
+                            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c6 0 10 7 10 7a21.76 21.76 0 0 1-3.17 4.24" />
+                            <path d="M14.12 14.12a3 3 0 0 1-4.24-4.24" />
+                        </svg>
+                    </button>
+                </div>
                 <div id="passwordError" class="form-error mt-2 d-none">Passwords do not match</div>
             </div>
 

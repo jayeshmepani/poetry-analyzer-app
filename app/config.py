@@ -268,7 +268,7 @@ class DatabaseSettings(BaseSettings):
             return f"mysql+pymysql://{self.username}{pwd}@{self.host}:{self.port}/{self.database}"
         elif conn in ["pgsql", "postgresql", "postgres"]:
             pwd = f":{self.password}" if self.password else ""
-            return f"postgresql://{self.username}{pwd}@{self.host}:{self.port}/{self.database}"
+            return f"postgresql+psycopg://{self.username}{pwd}@{self.host}:{self.port}/{self.database}"
         return f"sqlite:///./{self.database}.db"
         
     class Config:

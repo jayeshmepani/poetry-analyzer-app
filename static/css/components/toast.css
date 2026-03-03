@@ -172,10 +172,21 @@
         opacity: 0.3;
         border-radius: 0 0 var(--radius-lg) var(--radius-lg);
         transform-origin: left;
-        /* width shrinks over duration via JS custom property */
-        width: var(--toast-progress, 100%);
-        transition: width linear;
-        transition-duration: var(--toast-duration, 4000ms);
+        width: 100%;
+    }
+
+    .toast-progress-run {
+        animation: toast-progress-shrink var(--toast-duration, 4000ms) linear forwards;
+    }
+
+    @keyframes toast-progress-shrink {
+        from {
+            transform: scaleX(1);
+        }
+
+        to {
+            transform: scaleX(0);
+        }
     }
 
     /* Make toast position relative for progress bar */

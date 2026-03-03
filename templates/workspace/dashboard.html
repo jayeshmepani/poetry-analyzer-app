@@ -12,46 +12,42 @@
 
 <!-- KPI Row -->
 <div class="d-grid gap-6 grid-auto-md mb-8 stagger">
-    <div class="stat-card scroll-reveal" style="border-left: 4px solid var(--color-primary);">
+    <div class="stat-card scroll-reveal border-l-primary">
         <p class="stat-label uppercase tracking-widest text-2xs mb-3">Total Analyses</p>
         <div class="d-flex items-end justify-between">
             <div class="stat-value text-text" id="totalAnalyses">0</div>
-            <div class="d-flex items-center justify-center rounded-lg bg-primary-subtle text-primary"
-                style="width: 48px; height: 48px; font-size: 1.25rem;">
-                <i class="fas fa-file-invoice"></i>
+            <div class="d-flex items-center justify-center rounded-lg bg-primary-subtle text-primary size-48 text-lg">
+                <svg class="icon" aria-hidden="true"><use href="#icon-file-invoice"></use></svg>
             </div>
         </div>
     </div>
 
-    <div class="stat-card scroll-reveal" style="border-left: 4px solid var(--color-success);">
+    <div class="stat-card scroll-reveal border-l-success">
         <p class="stat-label uppercase tracking-widest text-2xs mb-3">Avg Quality</p>
         <div class="d-flex items-end justify-between">
             <div class="stat-value text-text" id="avgScore">0.0</div>
-            <div class="d-flex items-center justify-center rounded-lg bg-success-subtle text-success"
-                style="width: 48px; height: 48px; font-size: 1.25rem;">
-                <i class="fas fa-star"></i>
+            <div class="d-flex items-center justify-center rounded-lg bg-success-subtle text-success size-48 text-lg">
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
             </div>
         </div>
     </div>
 
-    <div class="stat-card scroll-reveal" style="border-left: 4px solid var(--color-accent);">
+    <div class="stat-card scroll-reveal border-l-accent">
         <p class="stat-label uppercase tracking-widest text-2xs mb-3">Languages</p>
         <div class="d-flex items-end justify-between">
             <div class="stat-value text-text" id="langCount">0</div>
-            <div class="d-flex items-center justify-center rounded-lg bg-accent-subtle text-accent"
-                style="width: 48px; height: 48px; font-size: 1.25rem;">
-                <i class="fas fa-globe-americas"></i>
+            <div class="d-flex items-center justify-center rounded-lg bg-accent-subtle text-accent size-48 text-lg">
+                <svg class="icon" aria-hidden="true"><use href="#icon-globe-americas"></use></svg>
             </div>
         </div>
     </div>
 
-    <div class="stat-card scroll-reveal" style="border-left: 4px solid var(--color-warning);">
+    <div class="stat-card scroll-reveal border-l-warning">
         <p class="stat-label uppercase tracking-widest text-2xs mb-3">Storage</p>
         <div class="d-flex items-end justify-between">
             <div class="stat-value text-text" id="storageUsage">0<span class="text-base text-soft ml-1">MB</span></div>
-            <div class="d-flex items-center justify-center rounded-lg bg-warning-subtle text-warning"
-                style="width: 48px; height: 48px; font-size: 1.25rem;">
-                <i class="fas fa-database"></i>
+            <div class="d-flex items-center justify-center rounded-lg bg-warning-subtle text-warning size-48 text-lg">
+                <svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg>
             </div>
         </div>
     </div>
@@ -60,26 +56,25 @@
 <div class="d-grid gap-8 grid-cols-1 lg:grid-cols-[2fr_1fr] mb-8">
     <div class="card scroll-reveal">
         <h3 class="text-xl font-extrabold mb-6 d-flex items-center gap-3">
-            <i class="fas fa-chart-line text-primary"></i> Analysis Trends
+            <svg class="icon text-primary" aria-hidden="true"><use href="#icon-chart-line"></use></svg> Analysis Trends
         </h3>
-        <div style="position: relative; height: 350px;">
+        <div class="chart-panel">
             <canvas id="analysesChart"></canvas>
         </div>
     </div>
 
     <div class="card scroll-reveal">
         <h3 class="text-xl font-extrabold mb-6 d-flex items-center gap-3">
-            <i class="fas fa-chart-pie text-accent"></i> Languages
+            <svg class="icon text-accent" aria-hidden="true"><use href="#icon-chart-pie"></use></svg> Languages
         </h3>
-        <div style="position: relative; height: 350px;">
+        <div class="chart-panel">
             <canvas id="languageChart"></canvas>
         </div>
     </div>
 </div>
 
 <div class="card p-0 scroll-reveal">
-    <div class="p-6 border-b d-flex justify-between items-center bg-subtle"
-        style="border-color: var(--color-border); border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl);">
+    <div class="p-6 border-b rounded-t-xl d-flex justify-between items-center bg-subtle">
         <h3 class="text-xl font-extrabold">Recent Data Vectors</h3>
         <a href="{{ route('results') }}" class="text-sm font-bold text-primary hover:underline">View All History</a>
     </div>
@@ -198,8 +193,8 @@
             </td>
             <td class="text-sm font-medium text-soft">${formatDate(a.created_at)}</td>
             <td class="text-right">
-                <button onclick="viewResultDetail('${a.uuid}')" class="btn btn-outline" style="width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-lg);">
-                    <i class="fas fa-eye"></i>
+                <button onclick="viewResultDetail('${a.uuid}')" class="btn btn-outline size-40 p-0 d-flex items-center justify-center rounded-lg">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>
                 </button>
             </td>
         </tr>

@@ -4,7 +4,7 @@
 <div class="max-w-4xl mx-auto">
     <div class="mb-8">
         <h1 class="text-4xl font-bold text-gray-800 mb-2">
-            <i class="fas fa-microphone-alt text-primary mr-3"></i>
+            <svg class="icon text-primary mr-3" aria-hidden="true"><use href="#icon-microphone-alt"></use></svg>
             Performance & Recitation Analyzer
         </h1>
         <p class="text-gray-600">Assess poem suitability for spoken performance</p>
@@ -25,7 +25,7 @@
         </div>
 
         <button onclick="analyzePerformance()" class="w-full gradient-bg text-white py-4 rounded-lg font-bold text-lg mb-8">
-            <i class="fas fa-play mr-2"></i>Analyze for Performance
+            <svg class="icon mr-2" aria-hidden="true"><use href="#icon-play"></use></svg>Analyze for Performance
         </button>
 
         <div id="performanceResults" class="space-y-6 hidden">
@@ -38,25 +38,25 @@
             <!-- Metrics Grid -->
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="p-4 bg-blue-50 rounded-lg">
-                    <h4 class="font-bold text-blue-800 mb-2"><i class="fas fa-volume-up mr-2"></i>Vocal Dynamics</h4>
+                    <h4 class="font-bold text-blue-800 mb-2"><svg class="icon mr-2" aria-hidden="true"><use href="#icon-volume-up"></use></svg>Vocal Dynamics</h4>
                     <div class="text-2xl font-bold" id="vocalScore">0/10</div>
                     <p class="text-sm text-gray-600 mt-2" id="vocalNotes"></p>
                 </div>
 
                 <div class="p-4 bg-teal-50 rounded-lg">
-                    <h4 class="font-bold text-secondary mb-2"><i class="fas fa-lungs mr-2"></i>Breath Units</h4>
+                    <h4 class="font-bold text-secondary mb-2"><svg class="icon mr-2" aria-hidden="true"><use href="#icon-lungs"></use></svg>Breath Units</h4>
                     <div class="text-2xl font-bold" id="breathScore">0/10</div>
                     <p class="text-sm text-gray-600 mt-2" id="breathNotes"></p>
                 </div>
 
                 <div class="p-4 bg-green-50 rounded-lg">
-                    <h4 class="font-bold text-green-800 mb-2"><i class="fas fa-theater-masks mr-2"></i>Dramatic Arc</h4>
+                    <h4 class="font-bold text-green-800 mb-2"><svg class="icon mr-2" aria-hidden="true"><use href="#icon-theater-masks"></use></svg>Dramatic Arc</h4>
                     <div class="text-2xl font-bold" id="dramaticScore">0/10</div>
                     <p class="text-sm text-gray-600 mt-2" id="dramaticNotes"></p>
                 </div>
 
                 <div class="p-4 bg-yellow-50 rounded-lg">
-                    <h4 class="font-bold text-yellow-800 mb-2"><i class="fas fa-users mr-2"></i>Audience Engagement</h4>
+                    <h4 class="font-bold text-yellow-800 mb-2"><svg class="icon mr-2" aria-hidden="true"><use href="#icon-users"></use></svg>Audience Engagement</h4>
                     <div class="text-2xl font-bold" id="engagementScore">0/10</div>
                     <p class="text-sm text-gray-600 mt-2" id="engagementNotes"></p>
                 </div>
@@ -64,7 +64,7 @@
 
             <!-- Recommendations -->
             <div class="p-6 bg-gray-50 rounded-xl">
-                <h4 class="font-bold text-lg mb-3"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Performance Recommendations</h4>
+                <h4 class="font-bold text-lg mb-3"><svg class="icon text-yellow-500 mr-2" aria-hidden="true"><use href="#icon-lightbulb"></use></svg>Performance Recommendations</h4>
                 <ul id="recommendations" class="list-disc pl-6 space-y-2"></ul>
             </div>
         </div>

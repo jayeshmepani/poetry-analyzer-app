@@ -6,7 +6,7 @@
 <div class="page-header mb-8">
     <div>
         <h1 class="page-header-title mb-2">
-            <i class="fas fa-database text-primary mr-2"></i> Database Status
+            <svg class="icon text-primary mr-2" aria-hidden="true"><use href="#icon-database"></use></svg> Database Status
         </h1>
         <p class="page-header-subtitle">Monitor database connection, tables, and stored data</p>
     </div>
@@ -14,26 +14,25 @@
 
 <!-- Connection Status -->
 <div class="card mb-8 scroll-reveal">
-    <h2 class="text-xl font-bold text-text mb-6 pb-4 border-b d-flex items-center gap-2"
-        style="border-color: var(--color-border);">
-        <i class="fas fa-plug text-success"></i> Connection Status
+    <h2 class="text-xl font-bold text-text mb-6 pb-4 border-b d-flex items-center gap-2">
+        <svg class="icon text-success" aria-hidden="true"><use href="#icon-plug"></use></svg> Connection Status
     </h2>
     <div class="d-grid gap-4 grid-auto-md">
-        <div class="p-4 bg-subtle rounded-xl border" style="border-color: var(--color-border);">
+        <div class="p-4 bg-subtle rounded-xl border">
             <p class="text-xs font-bold text-muted uppercase tracking-widest mb-1">Status</p>
             <p class="text-lg font-bold" id="connStatus">
-                <i class="fas fa-spinner fa-spin text-muted"></i> Checking...
+                <svg class="icon fa-spin text-muted" aria-hidden="true"><use href="#icon-spinner"></use></svg> Checking...
             </p>
         </div>
-        <div class="p-4 bg-subtle rounded-xl border" style="border-color: var(--color-border);">
+        <div class="p-4 bg-subtle rounded-xl border">
             <p class="text-xs font-bold text-muted uppercase tracking-widest mb-1">Database</p>
             <p class="text-lg font-bold text-text" id="dbName">-</p>
         </div>
-        <div class="p-4 bg-subtle rounded-xl border" style="border-color: var(--color-border);">
+        <div class="p-4 bg-subtle rounded-xl border">
             <p class="text-xs font-bold text-muted uppercase tracking-widest mb-1">Host</p>
             <p class="text-lg font-bold text-text" id="dbHost">-</p>
         </div>
-        <div class="p-4 bg-subtle rounded-xl border" style="border-color: var(--color-border);">
+        <div class="p-4 bg-subtle rounded-xl border">
             <p class="text-xs font-bold text-muted uppercase tracking-widest mb-1">Driver</p>
             <p class="text-lg font-bold text-text" id="dbDriver">-</p>
         </div>
@@ -42,43 +41,41 @@
 
 <!-- Statistics -->
 <div class="d-grid gap-6 grid-auto-md mb-8 stagger">
-    <div class="stat-card scroll-reveal bg-primary text-white border-0" style="padding: 1.5rem;">
-        <p class="stat-label uppercase tracking-widest text-2xs mb-2" style="color: rgba(255,255,255,0.8);">Total
+    <div class="stat-card scroll-reveal bg-primary text-white border-0 p-6">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-2 text-white-soft">Total
             Analyses</p>
         <p class="text-4xl font-black m-0" id="totalAnalyses">-</p>
     </div>
-    <div class="stat-card scroll-reveal bg-success text-white border-0" style="padding: 1.5rem;">
-        <p class="stat-label uppercase tracking-widest text-2xs mb-2" style="color: rgba(255,255,255,0.8);">Average
+    <div class="stat-card scroll-reveal bg-success text-white border-0 p-6">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-2 text-white-soft">Average
             Score</p>
         <p class="text-4xl font-black m-0" id="avgScore">-</p>
     </div>
-    <div class="stat-card scroll-reveal bg-accent text-white border-0" style="padding: 1.5rem;">
-        <p class="stat-label uppercase tracking-widest text-2xs mb-2" style="color: rgba(255,255,255,0.8);">Recent (24h)
+    <div class="stat-card scroll-reveal bg-accent text-white border-0 p-6">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-2 text-white-soft">Recent (24h)
         </p>
         <p class="text-4xl font-black m-0" id="recentCount">-</p>
     </div>
-    <div class="stat-card scroll-reveal bg-warning text-white border-0" style="padding: 1.5rem;">
-        <p class="stat-label uppercase tracking-widest text-2xs mb-2" style="color: rgba(255,255,255,0.8);">Storage</p>
+    <div class="stat-card scroll-reveal bg-warning text-white border-0 p-6">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-2 text-white-soft">Storage</p>
         <p class="text-4xl font-black m-0" id="storageSize">-</p>
     </div>
 </div>
 
 <!-- Tables Status -->
 <div class="card mb-8 scroll-reveal">
-    <h2 class="text-xl font-bold text-text mb-6 pb-4 border-b d-flex items-center gap-2"
-        style="border-color: var(--color-border);">
-        <i class="fas fa-table text-primary"></i> Relational Tables
+    <h2 class="text-xl font-bold text-text mb-6 pb-4 border-b d-flex items-center gap-2">
+        <svg class="icon text-primary" aria-hidden="true"><use href="#icon-table"></use></svg> Relational Tables
     </h2>
     <div id="tablesList" class="d-flex flex-col gap-3">
-        <p class="text-muted"><i class="fas fa-spinner fa-spin mr-2"></i>Loading tables...</p>
+        <p class="text-muted"><svg class="icon fa-spin mr-2" aria-hidden="true"><use href="#icon-spinner"></use></svg>Loading tables...</p>
     </div>
 </div>
 
 <!-- Recent Analyses -->
 <div class="card p-0 scroll-reveal overflow-hidden">
-    <h2 class="text-xl font-bold text-text p-6 mb-0 border-b d-flex items-center gap-2 bg-subtle"
-        style="border-color: var(--color-border);">
-        <i class="fas fa-clock text-accent"></i> Recent Analyses
+    <h2 class="text-xl font-bold text-text p-6 mb-0 border-b d-flex items-center gap-2 bg-subtle">
+        <svg class="icon text-accent" aria-hidden="true"><use href="#icon-clock"></use></svg> Recent Analyses
     </h2>
     <div class="table-wrapper">
         <table class="table">
@@ -94,7 +91,7 @@
             <tbody id="recentTable">
                 <tr>
                     <td colspan="5" class="text-center p-8 text-muted font-medium">
-                        <i class="fas fa-spinner fa-spin mr-2"></i> Loading...
+                        <svg class="icon fa-spin mr-2" aria-hidden="true"><use href="#icon-spinner"></use></svg> Loading...
                     </td>
                 </tr>
             </tbody>
@@ -104,14 +101,14 @@
 
 <!-- Actions -->
 <div class="d-flex flex-wrap gap-4 mt-8 scroll-reveal">
-    <button onclick="loadDatabaseStatus()" class="btn btn-primary btn-lg px-8">
-        <i class="fas fa-sync-alt mr-2"></i> Refresh Status
+    <button onclick="loadDatabaseStatus()" class="btn btn-primary btn-lg">
+        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg> Refresh Status
     </button>
-    <button onclick="initializeDatabase()" class="btn btn-success btn-lg px-8">
-        <i class="fas fa-database mr-2"></i> Initialize Database
+    <button onclick="initializeDatabase()" class="btn btn-success btn-lg">
+        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-database"></use></svg> Initialize Database
     </button>
-    <button onclick="clearAllData()" class="btn btn-danger btn-lg px-8">
-        <i class="fas fa-trash mr-2"></i> Clear All Data
+    <button onclick="clearAllData()" class="btn btn-danger btn-lg">
+        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-trash"></use></svg> Clear All Data
     </button>
 </div>
 {% endblock %}
@@ -132,10 +129,10 @@
             const conn = data.connection;
             const connEl = document.getElementById('connStatus');
             if (conn.status.includes('connected')) {
-                connEl.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Connected';
+                connEl.innerHTML = '<svg class="icon mr-2" aria-hidden="true"><use href="#icon-check-circle"></use></svg>Connected';
                 connEl.className = 'text-2xl font-black text-success';
             } else {
-                connEl.innerHTML = '<i class="fas fa-times-circle mr-2"></i>Disconnected';
+                connEl.innerHTML = '<svg class="icon mr-2" aria-hidden="true"><use href="#icon-times-circle"></use></svg>Disconnected';
                 connEl.className = 'text-2xl font-black text-danger';
             }
 
@@ -150,13 +147,13 @@
                 tablesEl.innerHTML = tables.tables.map(t =>
                     `<div class="d-flex items-center justify-between p-4 bg-subtle rounded-xl border border-color-border">
                     <span class="font-bold text-text d-flex items-center gap-3">
-                        <i class="fas fa-table text-primary" style="font-size: 1.25rem;"></i> ${t}
+                        <svg class="icon text-primary" style="font-size: 1.25rem;" aria-hidden="true"><use href="#icon-table"></use></svg> ${t}
                     </span>
-                    <span class="text-success text-sm font-bold bg-success-subtle px-3 py-1 rounded-full"><i class="fas fa-check mr-1"></i> Exists</span>
+                    <span class="text-success text-sm font-bold bg-success-subtle px-3 py-1 rounded-full"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-check"></use></svg> Exists</span>
                 </div>`
                 ).join('');
             } else {
-                tablesEl.innerHTML = '<p class="text-warning p-4 bg-warning-subtle rounded-xl font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>No tables found. Click "Initialize Database" to create them.</p>';
+                tablesEl.innerHTML = '<p class="text-warning p-4 bg-warning-subtle rounded-xl font-bold"><svg class="icon mr-2" aria-hidden="true"><use href="#icon-exclamation-triangle"></use></svg>No tables found. Click "Initialize Database" to create them.</p>';
             }
 
             // Update statistics

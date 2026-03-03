@@ -4,7 +4,7 @@
 <div class="max-w-6xl mx-auto">
     <div class="mb-8">
         <h1 class="text-4xl font-bold text-gray-800 mb-2">
-            <i class="fas fa-balance-scale text-primary mr-3"></i>
+            <svg class="icon text-primary mr-3" aria-hidden="true"><use href="#icon-balance-scale"></use></svg>
             Touchstone Comparison Tool
         </h1>
         <p class="text-gray-600">Compare your poetry against canonical masterpieces (Matthew Arnold's method)</p>
@@ -13,14 +13,14 @@
     <div class="grid lg:grid-cols-2 gap-8">
         <!-- Your Poem -->
         <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold mb-4"><i class="fas fa-pen-fancy mr-2 text-secondary"></i>Your Poem</h3>
+            <h3 class="text-xl font-bold mb-4"><svg class="icon mr-2 text-secondary" aria-hidden="true"><use href="#icon-pen-fancy"></use></svg>Your Poem</h3>
             <textarea id="yourPoem" rows="12" placeholder="Paste your poem here..." class="w-full px-4 py-3 border rounded-lg font-serif"></textarea>
         </div>
 
         <!-- Touchstone Selection -->
         <div class="space-y-4">
             <div class="bg-white rounded-2xl shadow-xl p-6">
-                <h3 class="text-xl font-bold mb-4"><i class="fas fa-landmark mr-2 text-accent"></i>Select Touchstone</h3>
+                <h3 class="text-xl font-bold mb-4"><svg class="icon mr-2 text-accent" aria-hidden="true"><use href="#icon-landmark"></use></svg>Select Touchstone</h3>
                 <select id="touchstoneSelect" class="w-full px-4 py-3 border rounded-lg mb-4">
                     <option value="milton">Milton - "And courage never to submit or yield"</option>
                     <option value="shakespeare">Shakespeare - "Shall I compare thee to a summer's day?"</option>
@@ -32,11 +32,11 @@
             </div>
 
             <button onclick="comparePoems()" class="w-full gradient-bg text-white py-4 rounded-lg font-bold text-lg">
-                <i class="fas fa-search mr-2"></i>Compare
+                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-search"></use></svg>Compare
             </button>
             
             <button onclick="generateVersions()" class="w-full mt-4 bg-gray-100 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-200 transition">
-                <i class="fas fa-magic mr-2"></i>Generate Creative Versions
+                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-magic"></use></svg>Generate Creative Versions
             </button>
         </div>
     </div>
@@ -44,7 +44,7 @@
     <!-- Comparison Results -->
     <div id="comparisonResults" class="mt-8 hidden">
         <div class="bg-white rounded-2xl shadow-xl p-8">
-            <h3 class="text-2xl font-bold mb-6"><i class="fas fa-chart-bar text-primary mr-2"></i>Comparison Analysis</h3>
+            <h3 class="text-2xl font-bold mb-6"><svg class="icon text-primary mr-2" aria-hidden="true"><use href="#icon-chart-bar"></use></svg>Comparison Analysis</h3>
             
             <div class="grid md:grid-cols-3 gap-6 mb-8">
                 <div class="text-center p-4 bg-blue-50 rounded-lg">

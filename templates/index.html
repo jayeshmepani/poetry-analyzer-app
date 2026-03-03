@@ -7,9 +7,11 @@
     /* Page-specific overrides for a premium aesthetic */
     .home-hero {
         position: relative;
-        padding: var(--space-16) var(--space-6);
-        background: radial-gradient(circle at top right, var(--color-primary-subtle), transparent 40%),
-            radial-gradient(circle at bottom left, var(--color-accent-subtle, var(--color-success-subtle)), transparent 40%);
+        padding: clamp(4rem, 6vw, 6rem) var(--space-6);
+        background:
+            radial-gradient(circle at 15% 0%, color-mix(in oklch, var(--color-primary) 18%, transparent), transparent 55%),
+            radial-gradient(circle at 85% 20%, color-mix(in oklch, var(--color-success) 16%, transparent), transparent 60%),
+            linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-subtle) 100%);
         overflow: hidden;
         border-bottom: 1px solid var(--color-border);
     }
@@ -32,7 +34,17 @@
         z-index: 10;
         max-width: var(--container-max);
         margin: 0 auto;
+        display: grid;
+        gap: var(--space-10);
+        align-items: center;
         text-align: center;
+    }
+
+    @media (min-width: 1024px) {
+        .home-hero-content {
+            grid-template-columns: 1.1fr 0.9fr;
+            text-align: left;
+        }
     }
 
     .title-pill {
@@ -54,22 +66,126 @@
     }
 
     .hero-heading {
-        font-size: clamp(2.5rem, 6vw, 4.5rem);
+        font-family: var(--font-display);
+        font-size: clamp(2.6rem, 6vw, 4.6rem);
         font-weight: 800;
-        line-height: var(--leading-tight);
+        line-height: 1.05;
         color: var(--color-text);
         text-wrap: balance;
         margin-bottom: var(--space-6);
-        letter-spacing: var(--tracking-tight);
+        letter-spacing: -0.02em;
+    }
+
+    .hero-heading-sm {
+        font-size: clamp(2rem, 5vw, 3rem);
     }
 
     .hero-desc {
-        font-size: var(--text-lg);
+        font-size: var(--text-md);
         color: var(--color-text-soft);
-        max-width: 48rem;
+        max-width: 46ch;
         margin: 0 auto var(--space-8);
         line-height: var(--leading-relaxed);
         text-wrap: pretty;
+    }
+
+    @media (min-width: 1024px) {
+        .hero-desc {
+            margin: 0 0 var(--space-8);
+        }
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    @media (min-width: 1024px) {
+        .hero-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    .hero-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+        justify-content: center;
+        margin-top: var(--space-8);
+    }
+
+    @media (min-width: 1024px) {
+        .hero-badges {
+            justify-content: flex-start;
+        }
+    }
+
+    .hero-panel {
+        display: grid;
+        gap: var(--space-4);
+    }
+
+    .hero-panel-card {
+        background: color-mix(in oklch, var(--color-surface) 80%, transparent);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-2xl);
+        padding: var(--space-6);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
+        margin-bottom: var(--space-4);
+    }
+
+    .hero-sample {
+        display: grid;
+        gap: var(--space-4);
+    }
+
+    .hero-poem {
+        font-family: var(--font-serif);
+        font-size: var(--text-sm);
+        line-height: var(--leading-relaxed);
+        color: var(--color-text);
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+    }
+
+    .hero-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-3);
+    }
+
+    .hero-metric {
+        border-radius: var(--radius-lg);
+        padding: var(--space-3);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .hero-metric-label {
+        font-size: var(--text-2xs);
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-wide);
+        color: var(--color-text-muted);
+        margin-bottom: var(--space-1);
+    }
+
+    .hero-metric-value {
+        font-size: var(--text-lg);
+        font-weight: 700;
+        color: var(--color-text);
     }
 
     /* Feature Grid */
@@ -77,6 +193,26 @@
         max-width: var(--container-max);
         margin: 0 auto;
         padding: var(--space-12) var(--space-6);
+    }
+
+    .feature-grid {
+        display: grid;
+        gap: var(--space-6);
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .feature-card {
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        box-shadow: var(--shadow-sm);
+        transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
     }
 
     .feature-icon-box {
@@ -111,10 +247,55 @@
     }
 
     .home-section-title {
+        font-family: var(--font-display);
         font-size: var(--text-3xl);
         font-weight: 800;
         margin-bottom: var(--space-8);
         letter-spacing: var(--tracking-tight);
+    }
+
+    .method-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: var(--space-6);
+    }
+
+    .coverage-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: var(--space-6);
+    }
+
+    .coverage-main {
+        grid-column: 1 / -1;
+    }
+
+    .coverage-stats {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: var(--space-6);
+    }
+
+    .stat-value-lg {
+        font-size: clamp(2.4rem, 4vw, 3rem);
+    }
+
+    .text-on-primary-muted {
+        color: oklch(100% 0 0 / 0.7);
+    }
+
+    .text-on-primary-soft {
+        color: oklch(100% 0 0 / 0.8);
+    }
+
+    @media (min-width: 900px) {
+        .coverage-main {
+            grid-column: 1 / 7;
+        }
+
+        .coverage-stats {
+            grid-column: 7 / 13;
+        }
     }
 </style>
 {% endblock %}
@@ -123,52 +304,87 @@
 <!-- Hero Section -->
 <section class="home-hero">
     <div class="home-hero-content stagger">
-        <div class="title-pill scroll-reveal">
-            <i class="fas fa-wave-square text-primary"></i>
-            Literary Intelligence Platform
+        <div class="hero-copy">
+            <div class="title-pill scroll-reveal">
+                <svg class="icon text-primary" aria-hidden="true"><use href="#icon-wave-square"></use></svg>
+                Literary Intelligence Platform
+            </div>
+
+            <h1 class="hero-heading scroll-reveal">
+                Deep poetry analysis without losing the texture of the poem.
+            </h1>
+
+            <p class="hero-desc scroll-reveal">
+                Move from raw text to metrics, prosody, comparative theory, and multilingual interpretation in one coherent
+                workflow.
+            </p>
+
+            <div class="hero-actions scroll-reveal">
+                <a href="/analyze" class="btn btn-primary btn-lg">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+                    Start Analysis
+                </a>
+                <a href="/dashboard" class="btn btn-secondary btn-lg">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-chart-line"></use></svg>
+                    Open Dashboard
+                </a>
+            </div>
+
+            <div class="hero-badges scroll-reveal">
+                <span class="badge badge-neutral p-4 rounded-full text-sm">
+                    <svg class="icon text-success mr-2" aria-hidden="true"><use href="#icon-check"></use></svg> 15+ metrics
+                </span>
+                <span class="badge badge-neutral p-4 rounded-full text-sm">
+                    <svg class="icon text-success mr-2" aria-hidden="true"><use href="#icon-check"></use></svg> 11 theory lenses
+                </span>
+                <span class="badge badge-neutral p-4 rounded-full text-sm">
+                    <svg class="icon text-success mr-2" aria-hidden="true"><use href="#icon-check"></use></svg> 6+ languages
+                </span>
+            </div>
         </div>
 
-        <h1 class="hero-heading scroll-reveal">
-            Deep poetry analysis without losing the texture of the poem.
-        </h1>
-
-        <p class="hero-desc scroll-reveal">
-            Move from raw text to metrics, prosody, comparative theory, and multilingual interpretation in one coherent
-            workflow.
-        </p>
-
-        <div class="d-flex justify-center gap-4 flex-wrap scroll-reveal">
-            <a href="/analyze" class="btn btn-primary btn-lg">
-                <i class="fas fa-search"></i>
-                Start Analysis
-            </a>
-            <a href="/dashboard" class="btn btn-secondary btn-lg">
-                <i class="fas fa-chart-line"></i>
-                Open Dashboard
-            </a>
-        </div>
-
-        <div class="d-flex justify-center flex-wrap gap-4 mt-8 scroll-reveal">
-            <span class="badge badge-neutral p-4 rounded-full text-sm">
-                <i class="fas fa-check text-success mr-2"></i> 15+ metrics
-            </span>
-            <span class="badge badge-neutral p-4 rounded-full text-sm">
-                <i class="fas fa-check text-success mr-2"></i> 11 theory lenses
-            </span>
-            <span class="badge badge-neutral p-4 rounded-full text-sm">
-                <i class="fas fa-check text-success mr-2"></i> 6+ languages
-            </span>
+        <div class="hero-panel scroll-reveal">
+            <div class="hero-panel-card">
+                <div class="hero-panel-header">
+                    <p class="text-2xs font-bold uppercase tracking-widest text-muted">Sample Output</p>
+                    <span class="badge badge-primary">Preview</span>
+                </div>
+                <div class="hero-sample">
+                    <div class="hero-poem">
+                        “I have measured out my life with coffee spoons,
+                        <br>the evening spreads like a patient on a table…”
+                    </div>
+                    <div class="hero-metrics">
+                        <div class="hero-metric">
+                            <div class="hero-metric-label">Readability</div>
+                            <div class="hero-metric-value">College+</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="hero-metric-label">Lexical Density</div>
+                            <div class="hero-metric-value">0.62</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="hero-metric-label">Rhyme</div>
+                            <div class="hero-metric-value">Slant</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="hero-metric-label">Tone</div>
+                            <div class="hero-metric-value">Reflective</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
 
 <!-- Features Grid -->
 <section class="feature-section">
-    <div class="d-grid gap-6 grid-auto-md stagger">
+    <div class="feature-grid stagger">
 
-        <article class="card card-hover scroll-reveal">
+        <article class="feature-card scroll-reveal">
             <div class="feature-icon-box icon-box-primary">
-                <i class="fas fa-chart-bar"></i>
+                <svg class="icon" aria-hidden="true"><use href="#icon-chart-bar"></use></svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Quantitative Metrics</h2>
             <p class="text-sm text-soft leading-relaxed">
@@ -177,9 +393,9 @@
             </p>
         </article>
 
-        <article class="card card-hover scroll-reveal">
+        <article class="feature-card scroll-reveal">
             <div class="feature-icon-box icon-box-success">
-                <i class="fas fa-music"></i>
+                <svg class="icon" aria-hidden="true"><use href="#icon-music"></use></svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Prosody Analysis</h2>
             <p class="text-sm text-soft leading-relaxed">
@@ -187,9 +403,9 @@
             </p>
         </article>
 
-        <article class="card card-hover scroll-reveal">
+        <article class="feature-card scroll-reveal">
             <div class="feature-icon-box icon-box-warning">
-                <i class="fas fa-language"></i>
+                <svg class="icon" aria-hidden="true"><use href="#icon-language"></use></svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Linguistic Layers</h2>
             <p class="text-sm text-soft leading-relaxed">
@@ -197,9 +413,9 @@
             </p>
         </article>
 
-        <article class="card card-hover scroll-reveal">
+        <article class="feature-card scroll-reveal">
             <div class="feature-icon-box icon-box-neutral">
-                <i class="fas fa-feather-alt"></i>
+                <svg class="icon" aria-hidden="true"><use href="#icon-feather-alt"></use></svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Literary Devices</h2>
             <p class="text-sm text-soft leading-relaxed">
@@ -223,24 +439,24 @@
         </p>
     </div>
 
-    <div class="d-grid gap-6 grid-auto-md stagger">
-        <div class="card bg-subtle scroll-reveal">
+    <div class="method-grid stagger">
+        <div class="feature-card bg-subtle scroll-reveal">
             <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
-                <i class="fas fa-layer-group text-primary"></i> TP-CASTT
+                <svg class="icon text-primary" aria-hidden="true"><use href="#icon-layer-group"></use></svg> TP-CASTT
             </h3>
             <p class="text-sm text-soft leading-relaxed">A line-by-line interpretive scaffold for title, paraphrase,
                 connotation, attitude, shifts, and theme.</p>
         </div>
-        <div class="card bg-subtle scroll-reveal">
+        <div class="feature-card bg-subtle scroll-reveal">
             <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
-                <i class="fas fa-landmark text-success"></i> Touchstone
+                <svg class="icon text-success" aria-hidden="true"><use href="#icon-landmark"></use></svg> Touchstone
             </h3>
             <p class="text-sm text-soft leading-relaxed">Compare against canonical passages to surface tonal,
                 rhetorical, and structural differences.</p>
         </div>
-        <div class="card bg-subtle scroll-reveal">
+        <div class="feature-card bg-subtle scroll-reveal">
             <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
-                <i class="fas fa-brain text-warning"></i> 11 Theory Lenses
+                <svg class="icon text-warning" aria-hidden="true"><use href="#icon-brain"></use></svg> 11 Theory Lenses
             </h3>
             <p class="text-sm text-soft leading-relaxed">Move between New Criticism, structuralism, feminist, Marxist,
                 and other frameworks without rebuilding the input.</p>
@@ -250,43 +466,34 @@
 
 <!-- Multilingual / Stats Section -->
 <section class="feature-section">
-    <div class="d-grid gap-6 grid-cols-2">
-        <div class="card bg-primary text-white scroll-reveal isolate"
-            style="grid-column: 1 / -1; @media(min-width: 900px){grid-column: 1 / 2;}">
-            <p class="text-2xs font-bold uppercase tracking-widest mb-2" style="color: oklch(100% 0 0 / 0.7)">Coverage
-            </p>
+    <div class="coverage-grid">
+        <div class="card bg-primary text-white scroll-reveal isolate coverage-main">
+            <p class="text-2xs font-bold uppercase tracking-widest mb-2 text-on-primary-muted">Coverage</p>
             <h2 class="text-3xl font-extrabold mb-4 mt-2">Multilingual by design, not as an afterthought.</h2>
-            <p class="text-sm mb-6 leading-relaxed" style="color: oklch(100% 0 0 / 0.8)">
+            <p class="text-sm mb-6 leading-relaxed text-on-primary-soft">
                 Language support is built directly into the analysis path, so form detection, prosody, and summaries
                 stay grounded in the poem’s context.
             </p>
 
             <div class="d-flex flex-wrap gap-3 mt-auto">
-                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
-                        class="fas fa-flag-usa mr-1"></i> English</span>
-                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
-                        class="fas fa-om mr-1"></i> हिन्दी</span>
-                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
-                        class="fas fa-book mr-1"></i> ગુજરાતી</span>
-                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
-                        class="fas fa-star mr-1"></i> اردو</span>
-                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
-                        class="fas fa-pen-fancy mr-1"></i> मराठी</span>
-                <span class="badge" style="background: oklch(100% 0 0 / 0.2); border: none; color: white;"><i
-                        class="fas fa-water mr-1"></i> বাংলা</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-flag-usa"></use></svg> English</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-om"></use></svg> हिन्दी</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-book"></use></svg> ગુજરાતી</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-star"></use></svg> اردو</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-pen-fancy"></use></svg> मराठी</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-water"></use></svg> বাংলা</span>
             </div>
         </div>
 
-        <div class="d-grid gap-6 flex-col justify-center align-center"
-            style="grid-column: 1 / -1; @media(min-width: 900px){grid-column: 2 / 3;}">
+        <div class="coverage-stats">
             <div class="stat-card scroll-reveal text-center w-full">
                 <p class="stat-label">Features</p>
-                <div class="stat-value text-primary" style="font-size: 3rem;">129</div>
+                <div class="stat-value text-primary stat-value-lg">129</div>
                 <p class="mt-2 text-xs text-soft">Integrated frontend and backend capabilities</p>
             </div>
             <div class="stat-card scroll-reveal text-center w-full">
                 <p class="stat-label">Libraries</p>
-                <div class="stat-value text-success" style="font-size: 3rem;">42</div>
+                <div class="stat-value text-success stat-value-lg">42</div>
                 <p class="mt-2 text-xs text-soft">Analysis, visualization, and NLP dependencies</p>
             </div>
         </div>
@@ -294,22 +501,21 @@
 </section>
 
 <!-- Footer CTA -->
-<section class="home-hero text-center mb-0 border-0 scroll-reveal"
-    style="background: var(--color-surface); margin-bottom: 0;">
+<section class="home-hero text-center mb-0 border-0 bg-surface scroll-reveal">
     <div class="home-hero-content">
         <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-3">Ready When You Are</p>
-        <h2 class="hero-heading" style="font-size: clamp(2rem, 5vw, 3rem);">Run a full analysis on your next poem in
+        <h2 class="hero-heading hero-heading-sm">Run a full analysis on your next poem in
             minutes.</h2>
         <p class="hero-desc">Use the public flow for focused submissions or jump into the main workspace for historical
             and comparative views.</p>
 
         <div class="d-flex justify-center gap-4 flex-wrap mt-8">
             <a href="/analyze" class="btn btn-primary btn-lg shadow-lg">
-                <i class="fas fa-search"></i>
+                <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
                 Analyze Your Text
             </a>
             <a href="/docs" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg shadow-sm">
-                <i class="fas fa-book"></i>
+                <svg class="icon" aria-hidden="true"><use href="#icon-book"></use></svg>
                 Read API Docs
             </a>
         </div>

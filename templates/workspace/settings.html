@@ -6,9 +6,8 @@
 <!-- Page Hero -->
 <section class="card mb-8 scroll-reveal fade-in">
     <div class="d-flex items-start gap-4">
-        <div class="d-flex items-center justify-center rounded-2xl bg-accent-subtle text-3xl text-accent"
-            style="width: 64px; height: 64px; flex-shrink: 0;">
-            <i class="fas fa-cog"></i>
+        <div class="d-flex items-center justify-center rounded-xl bg-accent-subtle text-3xl text-accent size-64 flex-shrink-0">
+            <svg class="icon" aria-hidden="true"><use href="#icon-cog"></use></svg>
         </div>
         <div class="flex-1">
             <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-2">Configuration</p>
@@ -28,7 +27,7 @@
         <div class="card scroll-reveal">
             <div class="mb-6">
                 <h2 class="text-2xl font-bold text-text mb-2">
-                    <i class="fas fa-sliders-h text-accent mr-2"></i>
+                    <svg class="icon text-accent mr-2" aria-hidden="true"><use href="#icon-sliders-h"></use></svg>
                     Analysis Preferences
                 </h2>
                 <p class="text-sm text-soft">Configure default settings for poetry analysis</p>
@@ -38,7 +37,7 @@
                 <!-- Default Language -->
                 <div class="form-group">
                     <label for="defaultLanguage" class="form-label d-flex items-center gap-2">
-                        <i class="fas fa-globe text-muted"></i> Default Language
+                        <svg class="icon text-muted" aria-hidden="true"><use href="#icon-globe"></use></svg> Default Language
                     </label>
                     <select id="defaultLanguage" class="form-select">
                         <option value="en">🇬🇧 English</option>
@@ -55,31 +54,31 @@
                 <!-- Default Strictness -->
                 <div class="form-group">
                     <label for="strictness" class="form-label d-flex items-center gap-2">
-                        <i class="fas fa-gauge-high text-muted"></i> Default Strictness Level
+                        <svg class="icon text-muted" aria-hidden="true"><use href="#icon-gauge-high"></use></svg> Default Strictness Level
                     </label>
                     <div class="d-flex items-center gap-4 mb-3">
-                        <input type="range" id="strictness" min="1" max="10" value="8" class="w-full cursor-pointer"
-                            style="accent-color: var(--color-accent);"
+                        <input type="range" id="strictness" min="1" max="10" value="8"
+                            class="w-full cursor-pointer input-range accent-accent"
                             oninput="document.getElementById('strictnessValue').textContent = this.value">
                         <span id="strictnessValue" class="text-3xl font-black text-accent w-16 text-center">8</span>
                     </div>
                     <div class="d-flex justify-between text-xs font-medium text-muted">
                         <span class="d-flex items-center gap-1">
-                            <i class="fas fa-smile text-success"></i> Lenient (1)
+                            <svg class="icon text-success" aria-hidden="true"><use href="#icon-smile"></use></svg> Lenient (1)
                         </span>
                         <span class="d-flex items-center gap-1">
-                            <i class="fas fa-balance-scale text-accent"></i> Balanced (5)
+                            <svg class="icon text-accent" aria-hidden="true"><use href="#icon-balance-scale"></use></svg> Balanced (5)
                         </span>
                         <span class="d-flex items-center gap-1">
-                            <i class="fas fa-glasses text-danger"></i> Strict (10)
+                            <svg class="icon text-danger" aria-hidden="true"><use href="#icon-glasses"></use></svg> Strict (10)
                         </span>
                     </div>
                 </div>
 
                 <!-- Analysis Modules -->
-                <div class="pt-6 border-t" style="border-color: var(--color-border);">
+                <div class="pt-6 border-t">
                     <h3 class="text-lg font-bold text-text mb-4">
-                        <i class="fas fa-toggle-on text-accent mr-2"></i>
+                        <svg class="icon text-accent mr-2" aria-hidden="true"><use href="#icon-toggle-on"></use></svg>
                         Analysis Modules
                     </h3>
                     <p class="text-sm text-soft mb-4">Enable or disable specific analysis features</p>
@@ -91,9 +90,8 @@
                         <label
                             class="card card-sm bg-subtle d-flex items-center justify-between gap-4 cursor-pointer mb-0 table-row-hover">
                             <div class="d-flex items-start gap-4">
-                                <div class="d-flex items-center justify-center rounded-xl bg-primary-subtle text-primary"
-                                    style="width:48px;height:48px;font-size:1.5rem;flex-shrink:0;">
-                                    <i class="fas fa-music"></i>
+                                <div class="d-flex items-center justify-center rounded-xl bg-primary-subtle text-primary size-48 text-xl flex-shrink-0">
+                                    <svg class="icon" aria-hidden="true"><use href="#icon-music"></use></svg>
                                 </div>
                                 <div>
                                     <div class="d-flex items-center gap-2 mb-1">
@@ -104,17 +102,15 @@
                                         patterns</p>
                                 </div>
                             </div>
-                            <input type="checkbox" id="enableProsody" checked class="form-checkbox"
-                                style="width:1.5rem;height:1.5rem;">
+                            <input type="checkbox" id="enableProsody" checked class="form-checkbox size-24">
                         </label>
 
                         <!-- Literary -->
                         <label
                             class="card card-sm bg-subtle d-flex items-center justify-between gap-4 cursor-pointer mb-0 table-row-hover">
                             <div class="d-flex items-start gap-4">
-                                <div class="d-flex items-center justify-center rounded-xl bg-secondary-subtle text-secondary"
-                                    style="width:48px;height:48px;font-size:1.5rem;flex-shrink:0;">
-                                    <i class="fas fa-palette"></i>
+                                <div class="d-flex items-center justify-center rounded-xl bg-secondary-subtle text-secondary size-48 text-xl flex-shrink-0">
+                                    <svg class="icon" aria-hidden="true"><use href="#icon-palette"></use></svg>
                                 </div>
                                 <div>
                                     <div class="d-flex items-center gap-2 mb-1">
@@ -125,17 +121,15 @@
                                         devices</p>
                                 </div>
                             </div>
-                            <input type="checkbox" id="enableLiterary" checked class="form-checkbox"
-                                style="width:1.5rem;height:1.5rem;accent-color:var(--color-secondary);">
+                            <input type="checkbox" id="enableLiterary" checked class="form-checkbox size-24 accent-secondary">
                         </label>
 
                         <!-- Sentiment -->
                         <label
                             class="card card-sm bg-subtle d-flex items-center justify-between gap-4 cursor-pointer mb-0 table-row-hover">
                             <div class="d-flex items-start gap-4">
-                                <div class="d-flex items-center justify-center rounded-xl bg-warning-subtle text-warning"
-                                    style="width:48px;height:48px;font-size:1.5rem;flex-shrink:0;">
-                                    <i class="fas fa-heart"></i>
+                                <div class="d-flex items-center justify-center rounded-xl bg-warning-subtle text-warning size-48 text-xl flex-shrink-0">
+                                    <svg class="icon" aria-hidden="true"><use href="#icon-heart"></use></svg>
                                 </div>
                                 <div>
                                     <div class="d-flex items-center gap-2 mb-1">
@@ -145,30 +139,26 @@
                                     <p class="text-sm text-soft m-0">Analyze emotional tone, valence, and arousal</p>
                                 </div>
                             </div>
-                            <input type="checkbox" id="enableSentiment" checked class="form-checkbox"
-                                style="width:1.5rem;height:1.5rem;accent-color:var(--color-warning);">
+                            <input type="checkbox" id="enableSentiment" checked class="form-checkbox size-24 accent-warning">
                         </label>
 
                         <!-- Rasa -->
                         <label
                             class="card card-sm bg-subtle d-flex items-center justify-between gap-4 cursor-pointer mb-0 table-row-hover">
                             <div class="d-flex items-start gap-4">
-                                <div class="d-flex items-center justify-center rounded-xl bg-accent-subtle text-accent"
-                                    style="width:48px;height:48px;font-size:1.5rem;flex-shrink:0;">
-                                    <i class="fas fa-spa"></i>
+                                <div class="d-flex items-center justify-center rounded-xl bg-accent-subtle text-accent size-48 text-xl flex-shrink-0">
+                                    <svg class="icon" aria-hidden="true"><use href="#icon-spa"></use></svg>
                                 </div>
                                 <div>
                                     <div class="d-flex items-center gap-2 mb-1">
                                         <h4 class="font-bold text-text mb-0">Rasa Analysis</h4>
-                                        <span
-                                            class="badge badge-accent bg-accent text-white border-0 truncate">Specialized</span>
+                                        <span class="badge badge-accent truncate">Specialized</span>
                                     </div>
                                     <p class="text-sm text-soft m-0">Analyze nine aesthetic emotions (Navarasa) from
                                         Indian poetics</p>
                                 </div>
                             </div>
-                            <input type="checkbox" id="enableRasa" class="form-checkbox"
-                                style="width:1.5rem;height:1.5rem;accent-color:var(--color-accent);">
+                            <input type="checkbox" id="enableRasa" class="form-checkbox size-24 accent-accent">
                         </label>
 
                     </div>
@@ -176,15 +166,15 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="d-flex gap-4 mt-8 pt-6 border-t flex-wrap" style="border-color: var(--color-border);">
+            <div class="d-flex gap-4 mt-8 pt-6 border-t flex-wrap">
                 <button onclick="saveSettings()" class="btn btn-primary btn-lg flex-1">
-                    <i class="fas fa-save mr-2"></i> Save Settings
+                    <svg class="icon mr-2" aria-hidden="true"><use href="#icon-save"></use></svg> Save Settings
                 </button>
                 <button onclick="loadSettings()" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-sync-alt mr-2"></i> Reload
+                    <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg> Reload
                 </button>
                 <button onclick="resetToDefaults()" class="btn btn-danger btn-lg">
-                    <i class="fas fa-undo mr-2"></i> Reset
+                    <svg class="icon mr-2" aria-hidden="true"><use href="#icon-undo"></use></svg> Reset
                 </button>
             </div>
         </div>
@@ -193,19 +183,16 @@
     <!-- Sidebar Info Panels -->
     <div class="d-flex flex-col gap-6">
         <!-- System Status -->
-        <div class="card scroll-reveal"
-            style="background: linear-gradient(135deg, var(--color-primary-subtle), transparent); border-color: var(--color-primary-subtle);">
+        <div class="card scroll-reveal card-gradient-primary">
             <h3 class="text-lg font-bold text-text mb-4 d-flex items-center gap-2">
-                <i class="fas fa-info-circle text-primary"></i> System Status
+                <svg class="icon text-primary" aria-hidden="true"><use href="#icon-info-circle"></use></svg> System Status
             </h3>
             <div class="d-flex flex-col gap-3">
 
-                <div class="d-flex items-center justify-between p-3 rounded-lg"
-                    style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+                <div class="d-flex items-center justify-between p-3 rounded-lg bg-surface shadow-sm">
                     <div class="d-flex items-center gap-3">
-                        <div class="d-flex items-center justify-center rounded-full bg-primary-subtle text-primary"
-                            style="width:40px;height:40px;">
-                            <i class="fas fa-code-branch"></i>
+                        <div class="d-flex items-center justify-center rounded-full bg-primary-subtle text-primary size-40">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-code-branch"></use></svg>
                         </div>
                         <div class="leading-none">
                             <div class="text-xs text-soft mb-1">Version</div>
@@ -214,12 +201,10 @@
                     </div>
                 </div>
 
-                <div class="d-flex items-center justify-between p-3 rounded-lg"
-                    style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+                <div class="d-flex items-center justify-between p-3 rounded-lg bg-surface shadow-sm">
                     <div class="d-flex items-center gap-3">
-                        <div class="d-flex items-center justify-center rounded-full bg-success-subtle text-success"
-                            style="width:40px;height:40px;">
-                            <i class="fas fa-database"></i>
+                        <div class="d-flex items-center justify-center rounded-full bg-success-subtle text-success size-40">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg>
                         </div>
                         <div class="leading-none">
                             <div class="text-xs text-soft mb-1">Database</div>
@@ -228,12 +213,10 @@
                     </div>
                 </div>
 
-                <div class="d-flex items-center justify-between p-3 rounded-lg"
-                    style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
+                <div class="d-flex items-center justify-between p-3 rounded-lg bg-surface shadow-sm">
                     <div class="d-flex items-center gap-3">
-                        <div class="d-flex items-center justify-center rounded-full bg-accent-subtle text-accent"
-                            style="width:40px;height:40px;">
-                            <i class="fas fa-cog"></i>
+                        <div class="d-flex items-center justify-center rounded-full bg-accent-subtle text-accent size-40">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-cog"></use></svg>
                         </div>
                         <div class="leading-none">
                             <div class="text-xs text-soft mb-1">Settings</div>
@@ -246,30 +229,25 @@
         </div>
 
         <!-- Quick Tips -->
-        <div class="card scroll-reveal"
-            style="background: linear-gradient(135deg, var(--color-warning-subtle), transparent); border-color: var(--color-warning-subtle);">
+        <div class="card scroll-reveal card-gradient-warning">
             <h3 class="text-lg font-bold text-text mb-4 d-flex items-center gap-2">
-                <i class="fas fa-lightbulb text-warning"></i> Quick Tips
+                <svg class="icon text-warning" aria-hidden="true"><use href="#icon-lightbulb"></use></svg> Quick Tips
             </h3>
-            <ul class="d-flex flex-col gap-3 text-sm text-soft m-0 p-0" style="list-style: none;">
+            <ul class="d-flex flex-col gap-3 text-sm text-soft m-0 p-0">
                 <li class="d-flex items-start gap-3">
-                    <div class="d-flex items-center justify-center rounded-full bg-warning text-white text-xs font-bold"
-                        style="width:24px;height:24px;flex-shrink:0;">1</div>
+                    <div class="d-flex items-center justify-center rounded-full bg-warning text-white text-xs font-bold size-24 flex-shrink-0">1</div>
                     <span>Settings are <strong class="text-text">saved to database</strong> automatically</span>
                 </li>
                 <li class="d-flex items-start gap-3">
-                    <div class="d-flex items-center justify-center rounded-full bg-warning text-white text-xs font-bold"
-                        style="width:24px;height:24px;flex-shrink:0;">2</div>
+                    <div class="d-flex items-center justify-center rounded-full bg-warning text-white text-xs font-bold size-24 flex-shrink-0">2</div>
                     <span>Reload page to <strong class="text-text">restore</strong> saved settings</span>
                 </li>
                 <li class="d-flex items-start gap-3">
-                    <div class="d-flex items-center justify-center rounded-full bg-warning text-white text-xs font-bold"
-                        style="width:24px;height:24px;flex-shrink:0;">3</div>
+                    <div class="d-flex items-center justify-center rounded-full bg-warning text-white text-xs font-bold size-24 flex-shrink-0">3</div>
                     <span>Rasa analysis is <strong class="text-text">optional</strong> (Indic poetry only)</span>
                 </li>
                 <li class="d-flex items-start gap-3">
-                    <div class="d-flex items-center justify-center rounded-full bg-warning text-white text-xs font-bold"
-                        style="width:24px;height:24px;flex-shrink:0;">4</div>
+                    <div class="d-flex items-center justify-center rounded-full bg-warning text-white text-xs font-bold size-24 flex-shrink-0">4</div>
                     <span>Higher strictness = <strong class="text-text">more rigorous</strong> evaluation</span>
                 </li>
             </ul>
@@ -278,26 +256,25 @@
         <!-- Strictness Guide -->
         <div class="card scroll-reveal">
             <h3 class="text-lg font-bold text-text mb-4 d-flex items-center gap-2">
-                <i class="fas fa-gauge-high text-accent"></i> Strictness Guide
+                <svg class="icon text-accent" aria-hidden="true"><use href="#icon-gauge-high"></use></svg> Strictness Guide
             </h3>
             <div class="d-flex flex-col gap-3 mb-4">
                 <div class="d-flex items-center gap-3 text-sm">
-                    <div class="rounded-full bg-success" style="width:12px;height:12px;"></div>
+                    <div class="rounded-full bg-success size-12"></div>
                     <span class="text-soft">1-3: Lenient (beginner-friendly)</span>
                 </div>
                 <div class="d-flex items-center gap-3 text-sm">
-                    <div class="rounded-full bg-warning" style="width:12px;height:12px;"></div>
+                    <div class="rounded-full bg-warning size-12"></div>
                     <span class="text-soft">4-6: Balanced (standard)</span>
                 </div>
                 <div class="d-flex items-center gap-3 text-sm">
-                    <div class="rounded-full bg-danger" style="width:12px;height:12px;"></div>
+                    <div class="rounded-full bg-danger size-12"></div>
                     <span class="text-soft">7-10: Strict (professional)</span>
                 </div>
             </div>
 
-            <div class="p-3 bg-accent-subtle rounded-lg border text-xs text-soft leading-relaxed"
-                style="border-color: var(--color-accent-subtle);">
-                <i class="fas fa-info-circle text-accent mr-1"></i>
+            <div class="p-3 bg-accent-subtle rounded-lg border border-accent-subtle text-xs text-soft leading-relaxed">
+                <svg class="icon text-accent mr-1" aria-hidden="true"><use href="#icon-info-circle"></use></svg>
                 <strong class="text-text">Recommended:</strong> 7-8 for most accurate literary analysis
             </div>
         </div>
@@ -341,14 +318,14 @@
             document.getElementById('enableSentiment').checked = settings.enable_sentiment !== false;
             document.getElementById('enableRasa').checked = settings.enable_rasa === true;
 
-            document.getElementById('settingsStatus').innerHTML = '<span class="text-success"><i class="fas fa-check-circle mr-1"></i>Loaded</span>';
+            document.getElementById('settingsStatus').innerHTML = '<span class="text-success"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-check-circle"></use></svg>Loaded</span>';
             hideLoading();
             showToast('Settings loaded from database', 'success');
 
         } catch (error) {
             console.error('Error loading settings:', error);
             hideLoading();
-            document.getElementById('settingsStatus').innerHTML = '<span class="text-danger"><i class="fas fa-times-circle mr-1"></i>Error</span>';
+            document.getElementById('settingsStatus').innerHTML = '<span class="text-danger"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-times-circle"></use></svg>Error</span>';
             showToast('Failed to load settings. Using defaults.', 'warning');
 
             // Set defaults
@@ -375,13 +352,13 @@
             const response = await axios.post('/settings/save', { settings });
             hideLoading();
 
-            document.getElementById('settingsStatus').innerHTML = '<span class="text-success"><i class="fas fa-check-circle mr-1"></i>Saved</span>';
+            document.getElementById('settingsStatus').innerHTML = '<span class="text-success"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-check-circle"></use></svg>Saved</span>';
             showToast('Settings saved successfully', 'success');
 
             // Visual feedback
             const saveBtn = event.target.closest('.btn');
             const originalText = saveBtn.innerHTML;
-            saveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Saved!';
+            saveBtn.innerHTML = '<svg class="icon mr-2" aria-hidden="true"><use href="#icon-check"></use></svg>Saved!';
             saveBtn.classList.remove('btn-primary');
             saveBtn.style.background = 'var(--color-success)';
             setTimeout(() => {
@@ -393,7 +370,7 @@
         } catch (error) {
             hideLoading();
             console.error('Error saving settings:', error);
-            document.getElementById('settingsStatus').innerHTML = '<span class="text-danger"><i class="fas fa-times-circle mr-1"></i>Error</span>';
+            document.getElementById('settingsStatus').innerHTML = '<span class="text-danger"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-times-circle"></use></svg>Error</span>';
             showToast('Failed to save settings', 'error');
         }
     }

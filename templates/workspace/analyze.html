@@ -5,10 +5,10 @@
 {% block content %}
 <!-- Page Hero -->
 <section
-    class="page-hero rounded-[2rem] border border-white/80 bg-white/75 px-6 py-7 shadow-soft-xl backdrop-blur sm:px-8 mb-8">
+    class="page-hero rounded-4xl border border-white/80 bg-white/75 px-6 py-7 shadow-soft-xl backdrop-blur sm:px-8 mb-8">
     <div class="flex items-start gap-4">
         <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-100 text-3xl text-primary-600">
-            <i class="fas fa-feather-alt"></i>
+            <svg class="icon" aria-hidden="true"><use href="#icon-feather-alt"></use></svg>
         </div>
         <div class="flex-1">
             <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-slate-500">Literary Analysis</p>
@@ -25,7 +25,7 @@
         <div class="card">
             <div class="mb-6">
                 <h2 class="text-2xl font-bold text-slate-900 mb-2">
-                    <i class="fas fa-edit text-primary-500 mr-2"></i>
+                    <svg class="icon text-primary-500 mr-2" aria-hidden="true"><use href="#icon-edit"></use></svg>
                     Text Input
                 </h2>
                 <p class="text-sm text-slate-600">Enter your poem or literary text below for comprehensive analysis</p>
@@ -35,7 +35,7 @@
                 <!-- Title -->
                 <div class="form-group">
                     <label for="title" class="form-label">
-                        <i class="fas fa-heading text-secondary-500 mr-2"></i>
+                        <svg class="icon text-secondary-500 mr-2" aria-hidden="true"><use href="#icon-heading"></use></svg>
                         Title <span class="text-slate-400 font-normal">(Optional)</span>
                     </label>
                     <input type="text" id="title" name="title" placeholder="My Poem" class="form-input"
@@ -48,7 +48,7 @@
                     <!-- Language Selection -->
                     <div class="form-group">
                         <label for="language" class="form-label">
-                            <i class="fas fa-globe text-secondary-500 mr-2"></i>
+                            <svg class="icon text-secondary-500 mr-2" aria-hidden="true"><use href="#icon-globe"></use></svg>
                             Language <span class="text-error-500">*</span>
                         </label>
                         <select id="language" name="language" required class="form-input">
@@ -66,7 +66,7 @@
                     <!-- Poetic Form -->
                     <div class="form-group">
                         <label for="form" class="form-label">
-                            <i class="fas fa-scroll text-accent-500 mr-2"></i>
+                            <svg class="icon text-accent-500 mr-2" aria-hidden="true"><use href="#icon-scroll"></use></svg>
                             Poetic Form
                         </label>
                         <select id="form" name="form" class="form-input">
@@ -104,7 +104,7 @@
                     <!-- Strictness Level -->
                     <div class="form-group">
                         <label for="strictness" class="form-label">
-                            <i class="fas fa-sliders-h text-primary-500 mr-2"></i>
+                            <svg class="icon text-primary-500 mr-2" aria-hidden="true"><use href="#icon-sliders-h"></use></svg>
                             Strictness
                         </label>
                         <div class="flex items-center gap-3 mb-2">
@@ -124,7 +124,7 @@
                 <!-- Text Area -->
                 <div class="form-group">
                     <label for="text" class="form-label">
-                        <i class="fas fa-pen-fancy text-primary-500 mr-2"></i>
+                        <svg class="icon text-primary-500 mr-2" aria-hidden="true"><use href="#icon-pen-fancy"></use></svg>
                         Your Text <span class="text-error-500">*</span>
                     </label>
                     <textarea id="text" name="text" rows="12" required
@@ -132,12 +132,12 @@
                         class="form-input font-serif text-lg leading-relaxed"></textarea>
                     <div class="flex justify-between items-center mt-2 text-xs text-slate-500">
                         <div class="flex gap-4">
-                            <span id="wordCount"><i class="fas fa-font mr-1"></i> <span
+                            <span id="wordCount"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-font"></use></svg> <span
                                     class="font-bold text-slate-700">0</span> words</span>
-                            <span id="lineCount"><i class="fas fa-align-left mr-1"></i> <span
+                            <span id="lineCount"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-align-left"></use></svg> <span
                                     class="font-bold text-slate-700">0</span> lines</span>
                         </div>
-                        <span id="charCount"><i class="fas fa-text-width mr-1"></i> <span
+                        <span id="charCount"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-text-width"></use></svg> <span
                                 class="font-bold text-slate-700">0</span> characters</span>
                     </div>
                 </div>
@@ -145,7 +145,7 @@
                 <!-- Analysis Options -->
                 <div class="border-t border-slate-200 pt-6">
                     <h3 class="text-lg font-bold text-slate-900 mb-4">
-                        <i class="fas fa-cogs text-slate-600 mr-2"></i>
+                        <svg class="icon text-slate-600 mr-2" aria-hidden="true"><use href="#icon-cogs"></use></svg>
                         Analysis Options
                     </h3>
 
@@ -276,11 +276,11 @@
                 <!-- Submit Buttons -->
                 <div class="flex gap-4 pt-6 border-t border-slate-200">
                     <button type="submit" id="analyzeBtn" class="btn btn-primary btn-lg flex-1">
-                        <i class="fas fa-search mr-2"></i>
+                        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-search"></use></svg>
                         Start Comprehensive Analysis
                     </button>
                     <button type="button" onclick="clearForm()" class="btn btn-secondary btn-lg px-8">
-                        <i class="fas fa-eraser mr-2"></i>
+                        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-eraser"></use></svg>
                         Clear
                     </button>
                 </div>
@@ -293,7 +293,7 @@
         <!-- Quick Stats -->
         <div class="card">
             <h3 class="text-lg font-bold text-slate-900 mb-4">
-                <i class="fas fa-chart-bar text-primary-500 mr-2"></i>
+                <svg class="icon text-primary-500 mr-2" aria-hidden="true"><use href="#icon-chart-bar"></use></svg>
                 Analysis Stats
             </h3>
             <div class="space-y-4">
@@ -315,7 +315,7 @@
         <!-- Supported Languages -->
         <div class="card">
             <h3 class="text-lg font-bold text-slate-900 mb-4">
-                <i class="fas fa-globe-americas text-secondary-500 mr-2"></i>
+                <svg class="icon text-secondary-500 mr-2" aria-hidden="true"><use href="#icon-globe-americas"></use></svg>
                 Supported Languages
             </h3>
             <div class="space-y-2">
@@ -350,24 +350,24 @@
         <!-- Tips -->
         <div class="card bg-gradient-to-br from-primary-50 to-secondary-50">
             <h3 class="text-lg font-bold text-slate-900 mb-3">
-                <i class="fas fa-lightbulb text-warning-500 mr-2"></i>
+                <svg class="icon text-warning-500 mr-2" aria-hidden="true"><use href="#icon-lightbulb"></use></svg>
                 Pro Tips
             </h3>
             <ul class="space-y-2 text-sm text-slate-700">
                 <li class="flex items-start gap-2">
-                    <i class="fas fa-check text-success-500 mt-0.5"></i>
+                    <svg class="icon text-success-500 mt-0.5" aria-hidden="true"><use href="#icon-check"></use></svg>
                     <span>Use strictness 7-8 for balanced analysis</span>
                 </li>
                 <li class="flex items-start gap-2">
-                    <i class="fas fa-check text-success-500 mt-0.5"></i>
+                    <svg class="icon text-success-500 mt-0.5" aria-hidden="true"><use href="#icon-check"></use></svg>
                     <span>Select poetic form for better meter detection</span>
                 </li>
                 <li class="flex items-start gap-2">
-                    <i class="fas fa-check text-success-500 mt-0.5"></i>
+                    <svg class="icon text-success-500 mt-0.5" aria-hidden="true"><use href="#icon-check"></use></svg>
                     <span>Enable Rasa analysis for Indic poetry</span>
                 </li>
                 <li class="flex items-start gap-2">
-                    <i class="fas fa-check text-success-500 mt-0.5"></i>
+                    <svg class="icon text-success-500 mt-0.5" aria-hidden="true"><use href="#icon-check"></use></svg>
                     <span>Minimum 10 lines for best results</span>
                 </li>
             </ul>
@@ -379,7 +379,7 @@
 <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50">
     <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md text-center">
         <div class="mb-6">
-            <i class="fas fa-circle-notch fa-spin text-6xl text-primary-500"></i>
+            <svg class="icon fa-spin text-6xl text-primary-500" aria-hidden="true"><use href="#icon-circle-notch"></use></svg>
         </div>
         <h3 class="text-2xl font-bold text-slate-900 mb-2">Analyzing Your Text</h3>
         <p id="loadingMessage" class="text-slate-600 mb-6">Processing with 70+ metrics...</p>

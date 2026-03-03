@@ -7,7 +7,7 @@
 <section class="page-hero card px-6 py-7 mb-8">
     <div class="d-flex align-start gap-4">
         <div class="icon-box icon-box-lg bg-secondary-10 text-secondary">
-            <i class="fas fa-layer-group"></i>
+            <svg class="icon" aria-hidden="true"><use href="#icon-layer-group"></use></svg>
         </div>
         <div class="flex-1">
             <p class="mb-2 text-xs font-black uppercase tracking-widest text-muted">Multi-Text Analysis</p>
@@ -25,7 +25,7 @@
         <div class="card">
             <div class="mb-6">
                 <h2 class="text-2xl font-bold text-dark mb-2">
-                    <i class="fas fa-plus-circle text-secondary mr-2"></i>
+                    <svg class="icon text-secondary mr-2" aria-hidden="true"><use href="#icon-plus-circle"></use></svg>
                     Add Texts for Analysis
                 </h2>
                 <p class="text-sm text-muted">Enter up to 10 texts for comprehensive batch analysis</p>
@@ -42,14 +42,14 @@
                             <h3 class="font-bold text-dark">Text #1</h3>
                         </div>
                         <button onclick="removeTextItem(this)" class="btn btn-danger px-3 py-2" title="Remove text">
-                            <i class="fas fa-trash"></i>
+                            <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg>
                         </button>
                     </div>
 
                     <div class="space-y-4">
                         <div class="form-group mb-0">
                             <label class="form-label">
-                                <i class="fas fa-tag text-muted mr-2"></i>
+                                <svg class="icon text-muted mr-2" aria-hidden="true"><use href="#icon-tag"></use></svg>
                                 Title <span class="text-muted font-normal">(Optional)</span>
                             </label>
                             <input type="text" class="form-control" placeholder="My Poem">
@@ -57,7 +57,7 @@
 
                         <div class="form-group mb-0">
                             <label class="form-label">
-                                <i class="fas fa-globe text-muted mr-2"></i>
+                                <svg class="icon text-muted mr-2" aria-hidden="true"><use href="#icon-globe"></use></svg>
                                 Language
                             </label>
                             <select class="form-select language-select">
@@ -73,7 +73,7 @@
 
                         <div class="form-group mb-0">
                             <label class="form-label">
-                                <i class="fas fa-pen-fancy text-muted mr-2"></i>
+                                <svg class="icon text-muted mr-2" aria-hidden="true"><use href="#icon-pen-fancy"></use></svg>
                                 Text <span class="text-danger">*</span>
                             </label>
                             <textarea placeholder="Enter your poem or literary text here..." rows="5"
@@ -85,7 +85,7 @@
 
             <!-- Add Text Button -->
             <button onclick="addTextItem()" class="btn btn-outline w-full py-4 border-dashed font-semibold mb-6">
-                <i class="fas fa-plus-circle mr-2"></i>
+                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-plus-circle"></use></svg>
                 Add Another Text
                 <span class="text-xs text-muted ml-2">(Maximum 10)</span>
             </button>
@@ -93,11 +93,11 @@
             <!-- Action Buttons -->
             <div class="d-flex gap-4 pt-6 border-t border-light">
                 <button onclick="startBatchAnalysis()" class="btn btn-primary flex-1">
-                    <i class="fas fa-play mr-2"></i>
+                    <svg class="icon mr-2" aria-hidden="true"><use href="#icon-play"></use></svg>
                     Start Batch Analysis
                 </button>
                 <button onclick="clearAll()" class="btn btn-secondary px-8">
-                    <i class="fas fa-eraser mr-2"></i>
+                    <svg class="icon mr-2" aria-hidden="true"><use href="#icon-eraser"></use></svg>
                     Clear All
                 </button>
             </div>
@@ -109,7 +109,7 @@
         <!-- Tips Card -->
         <div class="card bg-secondary-10 border-secondary-20">
             <h3 class="text-lg font-bold text-dark mb-4">
-                <i class="fas fa-lightbulb text-warning mr-2"></i>
+                <svg class="icon text-warning mr-2" aria-hidden="true"><use href="#icon-lightbulb"></use></svg>
                 Batch Analysis Tips
             </h3>
             <ul class="space-y-3 text-sm text-dark">
@@ -143,7 +143,7 @@
         <!-- Stats Card -->
         <div class="card">
             <h3 class="text-lg font-bold text-dark mb-4">
-                <i class="fas fa-chart-bar text-primary mr-2"></i>
+                <svg class="icon text-primary mr-2" aria-hidden="true"><use href="#icon-chart-bar"></use></svg>
                 Current Batch
             </h3>
             <div class="space-y-4">
@@ -162,26 +162,26 @@
         </div>
 
         <!-- Use Cases -->
-        <div class="card bg-primary-10">
+        <div class="card bg-primary-subtle">
             <h3 class="text-lg font-bold text-dark mb-4">
-                <i class="fas fa-check-circle text-success mr-2"></i>
+                <svg class="icon text-success mr-2" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
                 Perfect For
             </h3>
             <ul class="space-y-2 text-sm text-dark">
                 <li class="d-flex align-start gap-2">
-                    <i class="fas fa-check text-success mt-1"></i>
+                    <svg class="icon text-success mt-1" aria-hidden="true"><use href="#icon-check"></use></svg>
                     <span>Comparing multiple poems by the same author</span>
                 </li>
                 <li class="d-flex align-start gap-2">
-                    <i class="fas fa-check text-success mt-1"></i>
+                    <svg class="icon text-success mt-1" aria-hidden="true"><use href="#icon-check"></use></svg>
                     <span>Analyzing different translations</span>
                 </li>
                 <li class="d-flex align-start gap-2">
-                    <i class="fas fa-check text-success mt-1"></i>
+                    <svg class="icon text-success mt-1" aria-hidden="true"><use href="#icon-check"></use></svg>
                     <span>Studying class or workshop submissions</span>
                 </li>
                 <li class="d-flex align-start gap-2">
-                    <i class="fas fa-check text-success mt-1"></i>
+                    <svg class="icon text-success mt-1" aria-hidden="true"><use href="#icon-check"></use></svg>
                     <span>Tracking your writing progress over time</span>
                 </li>
             </ul>
@@ -190,9 +190,8 @@
 </div>
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" class="d-none fixed inset-0 z-[100] align-center justify-center p-4"
-    style="background: rgba(15,23,42,0.8); backdrop-filter: blur(8px);">
-    <div class="card text-center max-w-lg mx-auto w-full border-none shadow-2xl p-10">
+<div id="loadingOverlay" class="d-none fixed inset-0 z-100 align-center justify-center p-4 overlay-dark">
+    <div class="card text-center max-w-lg mx-auto w-full border-0 shadow-2xl p-10">
         <div class="mb-6">
             <div class="spinner border-4 border-secondary border-t-transparent h-16 w-16 mx-auto rounded-full"></div>
         </div>
@@ -236,14 +235,14 @@
                 <h3 class="font-bold text-dark">Text #${textItemCount}</h3>
             </div>
             <button onclick="removeTextItem(this)" class="btn btn-danger px-3 py-2" title="Remove text">
-                <i class="fas fa-trash"></i>
+                <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg>
             </button>
         </div>
         
         <div class="space-y-4">
             <div class="form-group mb-0">
                 <label class="form-label">
-                    <i class="fas fa-tag text-muted mr-2"></i>
+                    <svg class="icon text-muted mr-2" aria-hidden="true"><use href="#icon-tag"></use></svg>
                     Title <span class="text-muted font-normal">(Optional)</span>
                 </label>
                 <input type="text" class="form-control" placeholder="My Poem">
@@ -251,7 +250,7 @@
             
             <div class="form-group mb-0">
                 <label class="form-label">
-                    <i class="fas fa-globe text-muted mr-2"></i>
+                    <svg class="icon text-muted mr-2" aria-hidden="true"><use href="#icon-globe"></use></svg>
                     Language
                 </label>
                 <select class="form-select language-select">
@@ -267,7 +266,7 @@
             
             <div class="form-group mb-0">
                 <label class="form-label">
-                    <i class="fas fa-pen-fancy text-muted mr-2"></i>
+                    <svg class="icon text-muted mr-2" aria-hidden="true"><use href="#icon-pen-fancy"></use></svg>
                     Text <span class="text-danger">*</span>
                 </label>
                 <textarea placeholder="Enter your poem or literary text here..." rows="5" class="form-control font-serif text-input"></textarea>

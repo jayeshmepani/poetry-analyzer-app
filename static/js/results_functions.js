@@ -44,10 +44,10 @@ async function viewResultDetail(uuid) {
                             <h3 class="text-3xl font-bold text-gray-900">${result.title || 'Untitled'}</h3>
                             <div class="flex gap-3 mt-3">
                                 <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-                                    <i class="fas fa-globe mr-1"></i> ${result.language || 'en'}
+                                    <svg class="icon mr-1" aria-hidden="true"><use href="#icon-globe"></use></svg> ${result.language || 'en'}
                                 </span>
                                 <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
-                                    <i class="fas fa-scroll mr-1"></i> ${result.poetic_form || result.form || 'Auto-detected'}
+                                    <svg class="icon mr-1" aria-hidden="true"><use href="#icon-scroll"></use></svg> ${result.poetic_form || result.form || 'Auto-detected'}
                                 </span>
                             </div>
                         </div>
@@ -67,7 +67,7 @@ async function viewResultDetail(uuid) {
                 <!-- Executive Summary -->
                 <div class="bg-blue-50 rounded-xl p-6 border-l-8 border-primary">
                     <h4 class="font-bold text-primary mb-2 flex items-center">
-                        <i class="fas fa-quote-left mr-2"></i> Executive Summary
+                        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-quote-left"></use></svg> Executive Summary
                     </h4>
                     <p class="text-gray-800 text-lg leading-relaxed">${result.executive_summary || evalData.executive_summary || 'Analysis completed.'}</p>
                 </div>
@@ -75,7 +75,7 @@ async function viewResultDetail(uuid) {
                 <!-- Quality Ratings Grid -->
                 <div>
                     <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-star text-yellow-500 mr-2"></i> Quality Assessment
+                        <svg class="icon text-yellow-500 mr-2" aria-hidden="true"><use href="#icon-star"></use></svg> Quality Assessment
                     </h4>
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                         ${renderRatingCard('Technical', ratings.technical)}
@@ -94,7 +94,7 @@ async function viewResultDetail(uuid) {
                     <!-- Quantitative -->
                     <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-calculator text-purple-600 mr-2"></i> Quantitative Metrics
+                            <svg class="icon text-purple-600 mr-2" aria-hidden="true"><use href="#icon-calculator"></use></svg> Quantitative Metrics
                         </h4>
                         <div class="grid grid-cols-2 gap-4">
                             ${renderDetailItem('Total Words', wm.total_words || qm.total_words || result.word_count)}
@@ -109,7 +109,7 @@ async function viewResultDetail(uuid) {
                     <!-- Prosody -->
                     <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-music text-red-600 mr-2"></i> Prosody & Meter
+                            <svg class="icon text-red-600 mr-2" aria-hidden="true"><use href="#icon-music"></use></svg> Prosody & Meter
                         </h4>
                         <div class="grid grid-cols-2 gap-4">
                             ${renderDetailItem('Meter Type', prosody.meter?.detected_meter || prosody.detected_meter || 'Free Verse')}
@@ -128,7 +128,7 @@ async function viewResultDetail(uuid) {
                 ${result.additional?.transformer_analysis?.emotions ? `
                 <div class="bg-white rounded-[2rem] shadow-xl p-8 border border-rose-100 border-l-8 border-l-rose-500">
                     <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                        <i class="fas fa-brain text-rose-500 mr-3"></i> AI Emotional Nuance (Transformer Vectors)
+                        <svg class="icon text-rose-500 mr-3" aria-hidden="true"><use href="#icon-brain"></use></svg> AI Emotional Nuance (Transformer Vectors)
                     </h3>
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                         ${Object.entries(result.additional.transformer_analysis.emotions).map(([emotion, score]) => `
@@ -145,7 +145,7 @@ async function viewResultDetail(uuid) {
                 ${linguistic.text_descriptives ? `
                 <div class="bg-white rounded-[2rem] shadow-xl p-8 border border-indigo-100">
                     <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                        <i class="fas fa-microscope text-indigo-500 mr-3"></i> Deep Linguistic Vectors
+                        <svg class="icon text-indigo-500 mr-3" aria-hidden="true"><use href="#icon-microscope"></use></svg> Deep Linguistic Vectors
                     </h3>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                         ${renderDetailItem('Avg. Dep. Distance', linguistic.text_descriptives.dependency_distance_mean?.toFixed(2))}
@@ -159,7 +159,7 @@ async function viewResultDetail(uuid) {
                 <!-- Literary Devices -->
                 <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
                     <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-palette text-orange-500 mr-2"></i> Literary Devices & Tropes
+                        <svg class="icon text-orange-500 mr-2" aria-hidden="true"><use href="#icon-palette"></use></svg> Literary Devices & Tropes
                     </h4>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         ${renderDetailItem('Metaphors', literary.tropes?.metaphor?.length || 0)}

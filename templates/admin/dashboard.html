@@ -266,8 +266,8 @@
         <h1>User Management</h1>
     </div>
 
-    <!-- Toolbar (injected into ct-topbar via data-toolbar="#toolbar") -->
-    <div id="toolbar" style="display:flex; gap:.5rem; align-items:center;">
+    <!-- Toolbar (injected into table-toolbar via data-toolbar="#toolbar") -->
+    <div id="toolbar" class="d-flex items-center gap-2">
         <button class="btn btn-primary" id="btnCreate">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -320,7 +320,24 @@
             </div>
             <div class="form-group">
                 <label class="form-label" id="passwordLabel">Password</label>
-                <input class="form-control" type="password" id="uPassword">
+                <div class="input-with-toggle">
+                    <input class="form-control" type="password" id="uPassword">
+                    <button type="button" class="toggle-visibility-btn" data-toggle-password="uPassword"
+                        aria-label="Show password" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" data-icon="show">
+                            <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="d-none" data-icon="hide">
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6 0-10-7-10-7a21.76 21.76 0 0 1 5.08-6.12" />
+                            <path d="M1 1l22 22" />
+                            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c6 0 10 7 10 7a21.76 21.76 0 0 1-3.17 4.24" />
+                            <path d="M14.12 14.12a3 3 0 0 1-4.24-4.24" />
+                        </svg>
+                    </button>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Role</label>
@@ -350,6 +367,7 @@
     (function () {
         // admin.pk = internal integer id (for self-protection checks)
         const ADMIN_UUID = "{{ admin.uuid }}";
+        const ADMIN_ID = "{{ admin.id }}";
 
         // ─── Cell Formatters ───────────────────────────────────────────────────────
 
@@ -369,7 +387,7 @@
         };
 
         window.actionsFormatter = function (value, row) {
-            const isMe = row.id === ADMIN_ID;
+            const isMe = String(row.id) === String(ADMIN_ID);
             return `<span style="display:flex;gap:.4rem;">
             <button class="btn-icon edit-btn" data-id="${row.id}" title="Edit">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>

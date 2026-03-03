@@ -18,20 +18,36 @@
             <div class="rounded-box">
                 <h3 class="kpi-label">Transformation Logic</h3>
                 <div class="space-y-3 mt-6">
-                    ${[
-                        ['n_plus_7', 'N + 7', 'Noun Substitution'],
-                        ['lipogram', 'Lipogram', 'Letter Exclusion'],
-                        ['snowball', 'Snowball', 'Incremental Expansion'],
-                        ['pilish', 'Pilish', 'Pi-based Meter'],
-                        ['univocalism', 'Univocalism', 'Vowel Restriction'],
-                        ['sestina', 'Sestina', 'Rotating End-Words']
-                    ].map(([id, name, desc]) => `
-                        <button onclick="selectConstraint('${id}')" id="btn-${id}" 
-                            class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
-                            <div class="font-black text-slate-900 group-hover:text-primary capitalize">${name}</div>
-                            <div class="text-[10px] text-slate-400 uppercase tracking-wider">${desc}</div>
-                        </button>
-                    `).join('')}
+                    <button onclick="selectConstraint('n_plus_7')" id="btn-n_plus_7"
+                        class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
+                        <div class="font-black text-slate-900 group-hover:text-primary capitalize">N + 7</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Noun Substitution</div>
+                    </button>
+                    <button onclick="selectConstraint('lipogram')" id="btn-lipogram"
+                        class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
+                        <div class="font-black text-slate-900 group-hover:text-primary capitalize">Lipogram</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Letter Exclusion</div>
+                    </button>
+                    <button onclick="selectConstraint('snowball')" id="btn-snowball"
+                        class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
+                        <div class="font-black text-slate-900 group-hover:text-primary capitalize">Snowball</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Incremental Expansion</div>
+                    </button>
+                    <button onclick="selectConstraint('pilish')" id="btn-pilish"
+                        class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
+                        <div class="font-black text-slate-900 group-hover:text-primary capitalize">Pilish</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Pi-based Meter</div>
+                    </button>
+                    <button onclick="selectConstraint('univocalism')" id="btn-univocalism"
+                        class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
+                        <div class="font-black text-slate-900 group-hover:text-primary capitalize">Univocalism</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Vowel Restriction</div>
+                    </button>
+                    <button onclick="selectConstraint('sestina')" id="btn-sestina"
+                        class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
+                        <div class="font-black text-slate-900 group-hover:text-primary capitalize">Sestina</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Rotating End-Words</div>
+                    </button>
                 </div>
             </div>
 
@@ -49,11 +65,11 @@
         <div class="lg:col-span-2 space-y-8">
             <div class="rounded-box">
                 <label class="kpi-label">Source Linguistic Vector</label>
-                <textarea id="sourceText" rows="10" class="w-full mt-4 p-8 bg-slate-50 border border-slate-200 rounded-[2.5rem] outline-none font-serif italic text-xl leading-relaxed focus:ring-4 focus:ring-blue-100 transition" placeholder="Paste literary source text for transformation..."></textarea>
+                <textarea id="sourceText" rows="10" class="w-full mt-4 p-8 bg-slate-50 border border-slate-200 rounded-5xl outline-none font-serif italic text-xl leading-relaxed focus:ring-4 focus:ring-blue-100 transition" placeholder="Paste literary source text for transformation..."></textarea>
                 
                 <div class="mt-8 flex justify-end">
                     <button onclick="applyConstraint()" class="btn btn-primary px-12 py-4 rounded-2xl text-lg shadow-xl shadow-blue-500/20">
-                        <i class="fas fa-microchip mr-2"></i> Execute Transformation
+                        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-microchip"></use></svg> Execute Transformation
                     </button>
                 </div>
             </div>
@@ -63,22 +79,22 @@
                 <div class="rounded-box border-l-8 border-l-emerald-500 bg-emerald-50/20">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-2xl font-black text-slate-900 flex items-center">
-                            <i class="fas fa-random text-emerald-500 mr-3"></i>
+                            <svg class="icon text-emerald-500 mr-3" aria-hidden="true"><use href="#icon-random"></use></svg>
                             Transformed Vector
                         </h3>
                         <div id="complianceBadge" class="hidden px-4 py-1 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"></div>
                     </div>
                     
-                    <div id="transformedText" class="p-8 bg-white rounded-[2rem] border border-emerald-100 shadow-sm font-serif text-2xl leading-relaxed italic text-slate-800"></div>
+                    <div id="transformedText" class="p-8 bg-white rounded-4xl border border-emerald-100 shadow-sm font-serif text-2xl leading-relaxed italic text-slate-800"></div>
                     
                     <div class="mt-8 flex justify-between items-center">
                         <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest" id="transformationMeta"></span>
                         <div class="flex gap-3">
                             <button onclick="copyOutput()" class="btn bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">
-                                <i class="fas fa-copy mr-2"></i> Copy
+                                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-copy"></use></svg> Copy
                             </button>
                             <button onclick="downloadOutput()" class="btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
-                                <i class="fas fa-download mr-2"></i> Download
+                                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-download"></use></svg> Download
                             </button>
                         </div>
                     </div>

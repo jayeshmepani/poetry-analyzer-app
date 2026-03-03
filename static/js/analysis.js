@@ -69,10 +69,10 @@ function displayResults(data) {
                         <h3 class="text-2xl font-bold text-gray-800">${result.title || 'Untitled'}</h3>
                         <p class="text-gray-600 mt-1">
                             <span class="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm mr-2">
-                                <i class="fas fa-globe mr-1"></i> ${result.language || 'en'}
+                                <svg class="icon mr-1" aria-hidden="true"><use href="#icon-globe"></use></svg> ${result.language || 'en'}
                             </span>
                             <span class="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 rounded text-sm mr-2">
-                                <i class="fas fa-scroll mr-1"></i> ${result.poetic_form || result.form || 'Auto-detected'}
+                                <svg class="icon mr-1" aria-hidden="true"><use href="#icon-scroll"></use></svg> ${result.poetic_form || result.form || 'Auto-detected'}
                             </span>
                         </p>
                     </div>
@@ -91,7 +91,7 @@ function displayResults(data) {
 
             <!-- Ratings -->
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="font-bold text-lg mb-4 text-gray-800"><i class="fas fa-star text-yellow-500 mr-2"></i>Quality Ratings</h3>
+                <h3 class="font-bold text-lg mb-4 text-gray-800"><svg class="icon text-yellow-500 mr-2" aria-hidden="true"><use href="#icon-star"></use></svg>Quality Ratings</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                     ${renderRatingCard('Technical', ratings.technical_craft || result.technical_craft_score)}
                     ${renderRatingCard('Language', ratings.language_diction || result.language_diction_score)}
@@ -105,7 +105,7 @@ function displayResults(data) {
 
             <!-- Quantitative -->
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="font-bold text-lg mb-4 text-gray-800"><i class="fas fa-calculator text-purple-500 mr-2"></i>Quantitative Metrics</h3>
+                <h3 class="font-bold text-lg mb-4 text-gray-800"><svg class="icon text-purple-500 mr-2" aria-hidden="true"><use href="#icon-calculator"></use></svg>Quantitative Metrics</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     ${renderMetricCard('Words', qm.word_metrics?.total_words || qm.total_words || result.word_count)}
                     ${renderMetricCard('Unique', qm.word_metrics?.unique_words || qm.unique_words || result.unique_words)}
@@ -119,7 +119,7 @@ function displayResults(data) {
 
             <!-- Prosody -->
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="font-bold text-lg mb-4 text-gray-800"><i class="fas fa-music text-red-500 mr-2"></i>Prosody & Meter</h3>
+                <h3 class="font-bold text-lg mb-4 text-gray-800"><svg class="icon text-red-500 mr-2" aria-hidden="true"><use href="#icon-music"></use></svg>Prosody & Meter</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     ${renderMetricCard('Meter', prosody.meter?.detected_meter || prosody.detected_meter || 'Free Verse')}
                     ${renderMetricCard('Foot', prosody.meter?.foot_pattern || prosody.meter?.foot_count || 'N/A')}
@@ -132,7 +132,7 @@ function displayResults(data) {
             ${result.additional?.transformer_analysis?.emotions ? `
             <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-rose-500">
                 <h3 class="font-bold text-lg mb-4 text-gray-800">
-                    <i class="fas fa-brain text-rose-500 mr-2"></i> AI Emotional Nuance
+                    <svg class="icon text-rose-500 mr-2" aria-hidden="true"><use href="#icon-brain"></use></svg> AI Emotional Nuance
                 </h3>
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     ${Object.entries(result.additional.transformer_analysis.emotions).map(([emotion, score]) => `
@@ -154,7 +154,7 @@ function displayResults(data) {
             ${linguistic.text_descriptives ? `
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="font-bold text-lg mb-4 text-gray-800">
-                    <i class="fas fa-microscope text-indigo-500 mr-2"></i> Deep Linguistic Vectors
+                    <svg class="icon text-indigo-500 mr-2" aria-hidden="true"><use href="#icon-microscope"></use></svg> Deep Linguistic Vectors
                 </h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     ${renderMetricCard('Dep. Distance', linguistic.text_descriptives.dependency_distance_mean)}
@@ -167,7 +167,7 @@ function displayResults(data) {
 
             <!-- Literary Devices -->
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="font-bold text-lg mb-4 text-gray-800"><i class="fas fa-palette text-orange-500 mr-2"></i>Literary Devices</h3>
+                <h3 class="font-bold text-lg mb-4 text-gray-800"><svg class="icon text-orange-500 mr-2" aria-hidden="true"><use href="#icon-palette"></use></svg>Literary Devices</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     ${renderMetricCard('Metaphors', literary.tropes?.metaphor?.length || 0)}
                     ${renderMetricCard('Similes', literary.tropes?.simile?.length || 0)}
@@ -179,7 +179,7 @@ function displayResults(data) {
             <!-- Rasa -->
             ${literary.rasa_vector ? `
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="font-bold text-lg mb-4 text-gray-800"><i class="fas fa-spa text-pink-500 mr-2"></i>Navarasa Analysis</h3>
+                <h3 class="font-bold text-lg mb-4 text-gray-800"><svg class="icon text-pink-500 mr-2" aria-hidden="true"><use href="#icon-spa"></use></svg>Navarasa Analysis</h3>
                 <div class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
                     ${Object.entries(literary.rasa_vector.rasa_vector || {}).map(([rasa, score]) => `
                         <div class="p-2 text-center rounded bg-gray-50 border ${rasa === literary.rasa_vector.dominant_rasa ? 'border-primary ring-1 ring-primary' : 'border-gray-100'}">
@@ -199,13 +199,13 @@ function displayResults(data) {
                 <div class="bg-green-50 rounded-xl p-6 border-l-4 border-green-500">
                     <h3 class="font-bold text-green-800 mb-3">Strengths</h3>
                     <ul class="space-y-2 text-sm text-green-700">
-                        ${(evalData.strengths || []).map(s => `<li><i class="fas fa-check mr-2"></i>${s.description || s}</li>`).join('') || '<li>No specific strengths identified</li>'}
+                        ${(evalData.strengths || []).map(s => `<li><svg class="icon mr-2" aria-hidden="true"><use href="#icon-check"></use></svg>${s.description || s}</li>`).join('') || '<li>No specific strengths identified</li>'}
                     </ul>
                 </div>
                 <div class="bg-blue-50 rounded-xl p-6 border-l-4 border-blue-500">
                     <h3 class="font-bold text-blue-800 mb-3">Suggestions</h3>
                     <ul class="space-y-2 text-sm text-blue-700">
-                        ${(evalData.suggestions || []).map(s => `<li><i class="fas fa-lightbulb mr-2"></i>${s.description || s}</li>`).join('') || '<li>No specific suggestions identified</li>'}
+                        ${(evalData.suggestions || []).map(s => `<li><svg class="icon mr-2" aria-hidden="true"><use href="#icon-lightbulb"></use></svg>${s.description || s}</li>`).join('') || '<li>No specific suggestions identified</li>'}
                     </ul>
                 </div>
             </div>
@@ -213,11 +213,11 @@ function displayResults(data) {
             <!-- Footer Actions -->
             <div class="flex justify-between items-center pt-4 border-t">
                 <button onclick="downloadResultsAsJSON()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
-                    <i class="fas fa-download mr-2"></i>Download JSON
+                    <svg class="icon mr-2" aria-hidden="true"><use href="#icon-download"></use></svg>Download JSON
                 </button>
                 <div class="flex gap-4">
                     <a href="${window.AppRoutes?.results || '/results'}" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition">
-                        <i class="fas fa-list mr-2"></i>All Results
+                        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-list"></use></svg>All Results
                     </a>
                     <button onclick="closeResults()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                         Close

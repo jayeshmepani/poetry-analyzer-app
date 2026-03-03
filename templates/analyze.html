@@ -10,7 +10,7 @@
         <div>
             <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-2">Analysis Studio</p>
             <h1 class="page-header-title mb-2">
-                <i class="fas fa-search text-primary mr-2"></i> Analyze Your Text
+                <svg class="icon text-primary mr-2" aria-hidden="true"><use href="#icon-search"></use></svg> Analyze Your Text
             </h1>
             <p class="page-header-subtitle max-w-lg text-pretty text-soft leading-relaxed mt-2">
                 Submit a poem or literary passage to generate quantitative metrics, prosody checks, linguistic
@@ -20,11 +20,10 @@
         </div>
     </div>
 
-    <div class="d-grid gap-8" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));">
+    <div class="analysis-grid">
 
         <!-- Main Form Panel -->
-        <section class="card scroll-reveal"
-            style="grid-column: 1 / -1; @media(min-width: 992px){ grid-column: 1 / 3; }">
+        <section class="card scroll-reveal analysis-main">
             <form id="analysisForm" class="d-flex flex-col gap-6">
 
                 <div class="d-grid gap-4 md:grid-cols-2">
@@ -71,13 +70,13 @@
                         placeholder="Paste your poem or literary text here...&#10;&#10;Example:&#10;Shall I compare thee to a summer's day?&#10;Thou art more lovely and more temperate..."
                         class="form-textarea font-serif text-lg leading-relaxed"></textarea>
                     <p class="form-hint mt-2">
-                        <i class="fas fa-info-circle mr-1"></i>
+                        <svg class="icon mr-1" aria-hidden="true"><use href="#icon-info-circle"></use></svg>
                         The richer the text sample, the more reliable the comparative and prosodic signals.
                     </p>
                 </div>
 
                 <!-- Range Slider Area -->
-                <div class="p-5 rounded-lg border bg-subtle" style="border-color: var(--color-border);">
+                <div class="card card-sm bg-subtle">
                     <div class="d-flex justify-between items-center mb-4">
                         <label for="strictness" class="form-label mb-0">Analysis Strictness</label>
                         <span class="badge badge-primary">
@@ -85,7 +84,7 @@
                         </span>
                     </div>
                     <input type="range" id="strictness" name="strictness" min="1" max="10" value="7"
-                        class="w-full cursor-pointer" style="accent-color: var(--color-primary);">
+                        class="w-full cursor-pointer input-range">
                     <div class="d-flex justify-between text-xs font-medium text-muted mt-2">
                         <span>Lenient</span>
                         <span>Balanced</span>
@@ -94,92 +93,77 @@
                 </div>
 
                 <!-- Checkboxes Area -->
-                <div class="p-5 rounded-lg border bg-subtle" style="border-color: var(--color-border);">
+                <div class="card card-sm bg-subtle">
                     <h2 class="text-lg font-bold mb-4 d-flex items-center gap-2">
-                        <i class="fas fa-cog text-secondary"></i>
+                        <svg class="icon text-secondary" aria-hidden="true"><use href="#icon-cog"></use></svg>
                         Analysis Coverage
                     </h2>
                     <div class="d-grid gap-3 md:grid-cols-2">
-                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0"
-                            style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
-                            <input type="checkbox" checked disabled class="form-checkbox"
-                                style="accent-color: var(--color-primary);">
+                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0">
+                            <input type="checkbox" checked disabled class="form-checkbox">
                             <span class="text-sm font-medium">Quantitative Metrics</span>
                         </label>
-                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0"
-                            style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
-                            <input type="checkbox" checked disabled class="form-checkbox"
-                                style="accent-color: var(--color-primary);">
+                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0">
+                            <input type="checkbox" checked disabled class="form-checkbox">
                             <span class="text-sm font-medium">Prosody Analysis</span>
                         </label>
-                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0"
-                            style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
-                            <input type="checkbox" checked disabled class="form-checkbox"
-                                style="accent-color: var(--color-primary);">
+                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0">
+                            <input type="checkbox" checked disabled class="form-checkbox">
                             <span class="text-sm font-medium">Linguistic Analysis</span>
                         </label>
-                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0"
-                            style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
-                            <input type="checkbox" checked disabled class="form-checkbox"
-                                style="accent-color: var(--color-primary);">
+                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0">
+                            <input type="checkbox" checked disabled class="form-checkbox">
                             <span class="text-sm font-medium">Literary Devices</span>
                         </label>
-                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0"
-                            style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
-                            <input type="checkbox" checked disabled class="form-checkbox"
-                                style="accent-color: var(--color-primary);">
+                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0">
+                            <input type="checkbox" checked disabled class="form-checkbox">
                             <span class="text-sm font-medium">TP-CASTT Method</span>
                         </label>
-                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0"
-                            style="background: var(--color-surface); box-shadow: var(--shadow-sm);">
-                            <input type="checkbox" checked disabled class="form-checkbox"
-                                style="accent-color: var(--color-primary);">
+                        <label class="card card-sm d-flex items-center gap-3 cursor-pointer p-3 mb-0">
+                            <input type="checkbox" checked disabled class="form-checkbox">
                             <span class="text-sm font-medium">11 Theory Frameworks</span>
                         </label>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg w-full mt-2"
-                    style="font-size: var(--text-base); padding: var(--space-4);">
-                    <i class="fas fa-search"></i>
+                <button type="submit" class="btn btn-primary btn-lg w-full mt-2">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
                     Start Comprehensive Analysis
                 </button>
             </form>
         </section>
 
         <!-- Right Aside -->
-        <aside class="d-flex flex-col gap-6"
-            style="grid-column: 1 / -1; @media(min-width: 992px){ grid-column: 3 / 4; }">
+        <aside class="analysis-aside">
 
             <section class="card bg-subtle scroll-reveal">
                 <h2 class="text-lg font-bold mb-4 d-flex items-center gap-2">
-                    <i class="fas fa-gift text-secondary"></i>
+                    <svg class="icon text-secondary" aria-hidden="true"><use href="#icon-gift"></use></svg>
                     What You Will Get
                 </h2>
-                <ul class="d-flex flex-col gap-3 text-sm text-soft leading-relaxed"
-                    style="list-style: none; padding: 0;">
+                <ul class="d-flex flex-col gap-3 text-sm text-soft leading-relaxed">
                     <li class="d-flex items-start gap-3">
-                        <i class="fas fa-check-circle mt-1 text-success flex-shrink-0"></i>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
                         <span><strong class="text-text">15+ quantitative metrics</strong> including lexical diversity
                             and readability.</span>
                     </li>
                     <li class="d-flex items-start gap-3">
-                        <i class="fas fa-check-circle mt-1 text-success flex-shrink-0"></i>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
                         <span><strong class="text-text">Prosody analysis</strong> for meter, rhyme, and scansion
                             patterns.</span>
                     </li>
                     <li class="d-flex items-start gap-3">
-                        <i class="fas fa-check-circle mt-1 text-success flex-shrink-0"></i>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
                         <span><strong class="text-text">Linguistic diagnostics</strong> across syntax, morphology, and
                             semantics.</span>
                     </li>
                     <li class="d-flex items-start gap-3">
-                        <i class="fas fa-check-circle mt-1 text-success flex-shrink-0"></i>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
                         <span><strong class="text-text">Device detection</strong> for imagery, tropes, and rhetorical
                             constructions.</span>
                     </li>
                     <li class="d-flex items-start gap-3">
-                        <i class="fas fa-check-circle mt-1 text-success flex-shrink-0"></i>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
                         <span><strong class="text-text">Theory framing</strong> via 11 literary criticism lenses.</span>
                     </li>
                 </ul>
@@ -187,34 +171,26 @@
 
             <section class="card bg-primary text-white scroll-reveal">
                 <h2 class="text-lg font-bold mb-4 d-flex items-center gap-2 text-white">
-                    <i class="fas fa-shapes text-warning"></i>
+                    <svg class="icon text-warning" aria-hidden="true"><use href="#icon-shapes"></use></svg>
                     Supported Forms
                 </h2>
                 <div class="d-flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider">
-                    <span class="badge"
-                        style="background: oklch(100% 0 0 / 0.15); border: none; color: white;">Sonnet</span>
-                    <span class="badge"
-                        style="background: oklch(100% 0 0 / 0.15); border: none; color: white;">Ghazal</span>
-                    <span class="badge"
-                        style="background: oklch(100% 0 0 / 0.15); border: none; color: white;">Haiku</span>
-                    <span class="badge"
-                        style="background: oklch(100% 0 0 / 0.15); border: none; color: white;">Doha</span>
-                    <span class="badge"
-                        style="background: oklch(100% 0 0 / 0.15); border: none; color: white;">Chaupai</span>
-                    <span class="badge"
-                        style="background: oklch(100% 0 0 / 0.15); border: none; color: white;">Villanelle</span>
-                    <span class="badge" style="background: oklch(100% 0 0 / 0.15); border: none; color: white;">Free
-                        Verse</span>
+                    <span class="badge badge-ghost">Sonnet</span>
+                    <span class="badge badge-ghost">Ghazal</span>
+                    <span class="badge badge-ghost">Haiku</span>
+                    <span class="badge badge-ghost">Doha</span>
+                    <span class="badge badge-ghost">Chaupai</span>
+                    <span class="badge badge-ghost">Villanelle</span>
+                    <span class="badge badge-ghost">Free Verse</span>
                 </div>
             </section>
 
             <section class="card bg-subtle scroll-reveal">
                 <h2 class="text-lg font-bold mb-4 d-flex items-center gap-2">
-                    <i class="fas fa-lightbulb text-warning"></i>
+                    <svg class="icon text-warning" aria-hidden="true"><use href="#icon-lightbulb"></use></svg>
                     Quick Example
                 </h2>
-                <div class="rounded-lg p-5 font-serif text-sm italic leading-relaxed text-soft shadow-sm"
-                    style="background: var(--color-surface); border: 1px solid var(--color-border);">
+                <div class="rounded-lg p-5 font-serif text-sm italic leading-relaxed text-soft shadow-sm bg-surface border">
                     "Shall I compare thee to a summer's day?<br>
                     Thou art more lovely and more temperate..."
                 </div>

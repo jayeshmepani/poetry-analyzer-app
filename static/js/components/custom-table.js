@@ -89,40 +89,48 @@ class CustomTable {
     _build() {
         // Wrap table in a container
         const wrapper = document.createElement('div');
-        wrapper.className = 'ct-wrapper';
+        wrapper.className = 'data-table-wrapper';
         this.table.parentNode.insertBefore(wrapper, this.table);
 
         // Top bar (toolbar + search)
         const topBar = document.createElement('div');
-        topBar.className = 'ct-topbar';
+        topBar.className = 'table-toolbar';
+
+        const toolbarLeft = document.createElement('div');
+        toolbarLeft.className = 'table-toolbar-left';
+        const toolbarRight = document.createElement('div');
+        toolbarRight.className = 'table-toolbar-right';
 
         // Toolbar slot
         this._toolbarSlot = document.createElement('div');
-        this._toolbarSlot.className = 'ct-toolbar-slot';
+        this._toolbarSlot.className = 'table-toolbar-slot';
         if (this.opts.toolbar) {
             const toolbarEl = document.querySelector(this.opts.toolbar);
             if (toolbarEl) this._toolbarSlot.appendChild(toolbarEl);
         }
-        topBar.appendChild(this._toolbarSlot);
+        toolbarLeft.appendChild(this._toolbarSlot);
 
         // Search
         if (this.opts.search) {
             const searchWrap = document.createElement('div');
-            searchWrap.className = 'ct-search';
+            searchWrap.className = 'table-search';
             searchWrap.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                <input type="text" class="ct-search-input" placeholder="Search...">
+                <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+                <input type="text" class="table-search-input" placeholder="Search...">
             `;
-            topBar.appendChild(searchWrap);
+            toolbarRight.appendChild(searchWrap);
         }
 
+        topBar.appendChild(toolbarLeft);
+        topBar.appendChild(toolbarRight);
         wrapper.appendChild(topBar);
 
         // Table itself
-        this.table.className = 'ct-table';
-        wrapper.appendChild(this.table);
+        this.table.classList.add('custom-table');
+        const scrollArea = document.createElement('div');
+        scrollArea.className = 'table-scroll-area';
+        scrollArea.appendChild(this.table);
+        wrapper.appendChild(scrollArea);
 
         // Build thead with sort icons
         this._buildHead();
@@ -136,17 +144,17 @@ class CustomTable {
 
         // Bottom bar (info + pagination)
         const bottomBar = document.createElement('div');
-        bottomBar.className = 'ct-bottombar';
+        bottomBar.className = 'table-footer';
         bottomBar.innerHTML = `
-            <div class="ct-info">Showing <strong class="ct-start">-</strong> to <strong class="ct-end">-</strong> of <strong class="ct-total">-</strong></div>
-            <div class="ct-pagination-wrap">
-                <label class="ct-per-page">
+            <div class="table-info">Showing <strong class="ct-start">-</strong> to <strong class="ct-end">-</strong> of <strong class="ct-total">-</strong></div>
+            <div class="pagination-wrap">
+                <label class="table-per-page">
                     Per page:
                     <select class="ct-limit-select">
                         ${this.opts.pageList.map(n => `<option value="${n}" ${n === this.opts.pageSize ? 'selected' : ''}>${n}</option>`).join('')}
                     </select>
                 </label>
-                <div class="ct-pages"></div>
+                <div class="pagination ct-pages"></div>
             </div>
         `;
         wrapper.appendChild(bottomBar);
@@ -171,15 +179,20 @@ class CustomTable {
             if (col.width) th.style.width = col.width + 'px';
 
             if (col.checkbox) {
-                th.innerHTML = `<input type="checkbox" class="ct-select-all">`;
+                th.innerHTML = `<input type="checkbox" class="table-select-all">`;
             } else if (col.sortable) {
                 th.dataset.sortField = col.field;
-                th.className = 'ct-sortable';
-                const arrow = this.state.sort === col.field
-                    ? (this.state.order === 'asc' ? '↑' : '↓')
-                    : '↕';
-                const arrowClass = this.state.sort === col.field ? 'ct-sort-arrow active' : 'ct-sort-arrow';
-                th.innerHTML = `${col.label} <span class="${arrowClass}">${arrow}</span>`;
+                th.className = 'sortable';
+                if (this.state.sort === col.field) {
+                    th.setAttribute('aria-sort', this.state.order === 'asc' ? 'ascending' : 'descending');
+                } else {
+                    th.setAttribute('aria-sort', 'none');
+                }
+                th.innerHTML = `${col.label}
+                    <span class="sort-icon" aria-hidden="true">
+                        <span class="sort-up"></span>
+                        <span class="sort-down"></span>
+                    </span>`;
             } else {
                 th.textContent = col.label;
             }
@@ -193,7 +206,7 @@ class CustomTable {
     // ------------------------------------
     _bindEvents() {
         // Sort
-        this.table.querySelectorAll('th.ct-sortable').forEach(th => {
+        this.table.querySelectorAll('th.sortable').forEach(th => {
             th.addEventListener('click', () => {
                 const field = th.dataset.sortField;
                 if (this.state.sort === field) {
@@ -210,13 +223,13 @@ class CustomTable {
         });
 
         // Select all
-        const selectAll = this.table.querySelector('.ct-select-all');
+        const selectAll = this.table.querySelector('.table-select-all');
         if (selectAll) {
             selectAll.addEventListener('change', e => {
                 this.state.selectedRows.clear();
-                this._tbody.querySelectorAll('.ct-row-check:not(:disabled)').forEach(cb => {
+                this._tbody.querySelectorAll('.table-row-check:not(:disabled)').forEach(cb => {
                     cb.checked = e.target.checked;
-                    if (e.target.checked) this.state.selectedRows.add(parseInt(cb.value));
+                    if (e.target.checked) this.state.selectedRows.add(cb.value);
                 });
                 this._emitSelectionChange();
             });
@@ -224,7 +237,7 @@ class CustomTable {
 
         // Search
         if (this.opts.search) {
-            const input = this._wrapper.querySelector('.ct-search-input');
+            const input = this._wrapper.querySelector('.table-search-input');
             if (input) {
                 let timer;
                 input.addEventListener('input', () => {
@@ -279,7 +292,7 @@ class CustomTable {
             this._renderPagination();
             this._updateInfo();
         } catch (err) {
-            this._tbody.innerHTML = `<tr><td colspan="${this.columns.length}" class="ct-msg ct-error">Failed to load data</td></tr>`;
+            this._tbody.innerHTML = `<tr class="table-empty"><td colspan="${this.columns.length}"><span class="table-empty-text">Failed to load data</span></td></tr>`;
         } finally {
             this._setLoading(false);
         }
@@ -287,7 +300,7 @@ class CustomTable {
 
     _renderRows(rows) {
         if (!rows.length) {
-            this._tbody.innerHTML = `<tr><td colspan="${this.columns.length}" class="ct-msg">No records found</td></tr>`;
+            this._tbody.innerHTML = `<tr class="table-empty"><td colspan="${this.columns.length}"><span class="table-empty-text">No records found</span></td></tr>`;
             return;
         }
 
@@ -298,7 +311,7 @@ class CustomTable {
                 .filter(col => col.visible)
                 .map(col => {
                     if (col.checkbox) {
-                        return `<td><input type="checkbox" class="ct-row-check" value="${rowId}" ${this.state.selectedRows.has(rowId) ? 'checked' : ''}></td>`;
+                        return `<td><input type="checkbox" class="table-row-check" value="${rowId}" ${this.state.selectedRows.has(rowId) ? 'checked' : ''}></td>`;
                     }
                     let value = row[col.field] ?? '';
                     if (col.formatter && typeof window[col.formatter] === 'function') {
@@ -310,7 +323,7 @@ class CustomTable {
         }).join('');
 
         // Bind row checkboxes — store as UUID strings
-        this._tbody.querySelectorAll('.ct-row-check').forEach(cb => {
+        this._tbody.querySelectorAll('.table-row-check').forEach(cb => {
             cb.addEventListener('change', () => {
                 const id = cb.value; // string (UUID safe)
                 if (cb.checked) this.state.selectedRows.add(id);
@@ -324,7 +337,7 @@ class CustomTable {
             this._tbody.querySelectorAll('tr').forEach(tr => {
                 tr.addEventListener('click', (e) => {
                     if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-                    const cb = tr.querySelector('.ct-row-check');
+                    const cb = tr.querySelector('.table-row-check');
                     if (cb && !cb.disabled) {
                         cb.checked = !cb.checked;
                         cb.dispatchEvent(new Event('change'));
@@ -368,7 +381,7 @@ class CustomTable {
 
         const mk = (label, disabled, active, action) => {
             const btn = document.createElement('button');
-            btn.className = `ct-page-btn${active ? ' active' : ''}`;
+            btn.className = `page-btn${active ? ' active' : ''}`;
             btn.disabled = disabled;
             btn.innerHTML = label;
             btn.addEventListener('click', action);
@@ -381,7 +394,7 @@ class CustomTable {
         pageNums.forEach(p => {
             if (p === '...') {
                 const sp = document.createElement('span');
-                sp.className = 'ct-page-ellipsis';
+                sp.className = 'page-btn page-ellipsis';
                 sp.textContent = '…';
                 pages.appendChild(sp);
             } else {
@@ -420,7 +433,7 @@ class CustomTable {
 
     _setLoading(on) {
         if (on) {
-            this._tbody.innerHTML = `<tr><td colspan="${this.columns.length}" class="ct-msg ct-loading"><span class="ct-spinner"></span> Loading...</td></tr>`;
+            this._tbody.innerHTML = `<tr class="table-empty"><td colspan="${this.columns.length}"><span class="table-empty-text">Loading...</span></td></tr>`;
         }
     }
 
