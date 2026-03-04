@@ -8,82 +8,115 @@
     <div class="flex justify-between items-end">
         <div>
             <h2 class="text-4xl font-black text-slate-900 tracking-tight">Theoretical Deconstruction</h2>
-            <p class="text-slate-500 mt-1 font-medium italic">Apply 11 critical frameworks to reveal the deep structural meaning of literary data</p>
+            <p class="text-slate-500 mt-1 font-medium italic">Apply 11 critical frameworks to reveal the deep structural
+                meaning of literary data</p>
         </div>
     </div>
 
     <!-- Theory Selection Grid (Bento Style - Section 14.1) -->
+    <div class="d-flex flex-wrap items-center gap-3 mb-4">
+        <button type="button" class="btn btn-secondary" onclick="selectAllTheories()" title="Select all available theory lenses">
+            <svg class="icon mr-2" aria-hidden="true"><use href="#icon-check"></use></svg> Select All
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="clearTheorySelection()" title="Clear all selected lenses">
+            <svg class="icon mr-2" aria-hidden="true"><use href="#icon-times"></use></svg> Clear
+        </button>
+        <span id="selectedTheoryCount" class="badge badge-neutral">0 selected</span>
+    </div>
+
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <button onclick="selectTheory('new_criticism')" id="theory-new_criticism"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-blue-600 group-hover:text-primary transition-colors">New Criticism</div>
+        <button type="button" onclick="selectTheory('new_criticism')" id="theory-new_criticism"
+            class="theory-card" title="Close reading lens: tension, irony, unity, internal coherence">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">New Criticism</div>
         </button>
-        <button onclick="selectTheory('structuralism')" id="theory-structuralism"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-emerald-600 group-hover:text-primary transition-colors">Structuralism</div>
+        <button type="button" onclick="selectTheory('structuralism')" id="theory-structuralism"
+            class="theory-card" title="Find deep structures: binaries, pattern systems, formal relations">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Structuralism
+            </div>
         </button>
-        <button onclick="selectTheory('deconstruction')" id="theory-deconstruction"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-amber-600 group-hover:text-primary transition-colors">Deconstruction</div>
+        <button type="button" onclick="selectTheory('deconstruction')" id="theory-deconstruction"
+            class="theory-card" title="Probe instability: contradictions, suppressed meaning, textual slippage">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Deconstruction
+            </div>
         </button>
-        <button onclick="selectTheory('feminist')" id="theory-feminist"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-rose-600 group-hover:text-primary transition-colors">Feminist</div>
+        <button type="button" onclick="selectTheory('feminist')" id="theory-feminist"
+            class="theory-card" title="Gender-power lens: voice, agency, representation, patriarchy critique">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Feminist</div>
         </button>
-        <button onclick="selectTheory('marxist')" id="theory-marxist"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-red-600 group-hover:text-primary transition-colors">Marxist</div>
+        <button type="button" onclick="selectTheory('marxist')" id="theory-marxist"
+            class="theory-card" title="Material lens: class, labor, ideology, socio-economic conflict">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Marxist</div>
         </button>
-        <button onclick="selectTheory('psychoanalytic')" id="theory-psychoanalytic"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-purple-600 group-hover:text-primary transition-colors">Psychoanalytic</div>
+        <button type="button" onclick="selectTheory('psychoanalytic')" id="theory-psychoanalytic"
+            class="theory-card" title="Psychic lens: desire, repression, symbolism, unconscious drives">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Psychoanalytic
+            </div>
         </button>
-        <button onclick="selectTheory('reader_response')" id="theory-reader_response"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-cyan-600 group-hover:text-primary transition-colors">Reader Response</div>
+        <button type="button" onclick="selectTheory('reader_response')" id="theory-reader_response"
+            class="theory-card" title="Reader-centered lens: meaning emerges through reading experience">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Reader Response
+            </div>
         </button>
-        <button onclick="selectTheory('ecocriticism')" id="theory-ecocriticism"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-green-600 group-hover:text-primary transition-colors">Ecocriticism</div>
+        <button type="button" onclick="selectTheory('ecocriticism')" id="theory-ecocriticism"
+            class="theory-card" title="Environmental lens: nature, ecology, human-nonhuman relation">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Ecocriticism</div>
         </button>
-        <button onclick="selectTheory('postcolonial')" id="theory-postcolonial"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-orange-600 group-hover:text-primary transition-colors">Postcolonial</div>
+        <button type="button" onclick="selectTheory('postcolonial')" id="theory-postcolonial"
+            class="theory-card" title="Empire lens: colonial power, identity, language hierarchy, resistance">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Postcolonial
+            </div>
         </button>
-        <button onclick="selectTheory('formalism')" id="theory-formalism"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-indigo-600 group-hover:text-primary transition-colors">Formalism</div>
+        <button type="button" onclick="selectTheory('formalism')" id="theory-formalism"
+            class="theory-card" title="Technique lens: craft mechanics, form constraints, stylistic devices">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Formalism</div>
         </button>
-        <button onclick="selectTheory('archetypal')" id="theory-archetypal"
-            class="theory-card group rounded-2xl border-2 border-white bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary mb-2">Vector</div>
-            <div class="text-sm font-black text-teal-600 group-hover:text-primary transition-colors">Archetypal</div>
+        <button type="button" onclick="selectTheory('archetypal')" id="theory-archetypal"
+            class="theory-card" title="Mythic lens: archetypes, recurring symbolic patterns, collective motifs">
+            <div class="theory-kicker">
+                Vector</div>
+            <div class="theory-title">Archetypal</div>
         </button>
     </div>
 
     <!-- Input Area -->
     <div class="rounded-box">
         <h3 class="kpi-label">Target Text Vector</h3>
-        <textarea id="poemText" rows="10" placeholder="Paste literary source code for deconstruction..." 
+        <textarea id="poemText" rows="10" placeholder="Paste literary source code for deconstruction..."
             class="w-full mt-4 p-8 bg-slate-50 border border-slate-200 rounded-5xl outline-none font-serif italic text-xl leading-relaxed focus:ring-4 focus:ring-blue-100 transition"></textarea>
-        
+
         <div class="mt-8 flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <span class="text-xs font-black text-slate-400 uppercase">Active Theory:</span>
-                <span id="activeTheoryLabel" class="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest">None Selected</span>
+                <span id="activeTheoryLabel"
+                    class="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest">None
+                    Selected</span>
             </div>
-            <button onclick="analyzeWithTheory()" class="btn btn-primary px-12 py-4 rounded-2xl text-lg shadow-xl shadow-blue-500/20">
-                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-microscope"></use></svg> Execute Deconstruction
+            <button type="button" onclick="analyzeWithTheory()"
+                class="btn btn-primary px-12 py-4 rounded-2xl text-lg shadow-xl shadow-blue-500/20"
+                title="Run analysis for all currently selected theory lenses">
+                <svg class="icon mr-2" aria-hidden="true">
+                    <use href="#icon-microscope"></use>
+                </svg> Execute Deconstruction
             </button>
         </div>
     </div>
@@ -92,7 +125,9 @@
     <div id="theoryResults" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div class="rounded-box border-l-8 border-l-primary bg-blue-50/30">
             <h3 class="text-2xl font-black text-slate-900 mb-6 flex items-center">
-                <svg class="icon text-primary mr-3" aria-hidden="true"><use href="#icon-brain"></use></svg>
+                <svg class="icon text-primary mr-3" aria-hidden="true">
+                    <use href="#icon-brain"></use>
+                </svg>
                 Critical Synthesis
             </h3>
             <div id="resultsContent" class="space-y-8">
@@ -104,65 +139,338 @@
 {% endblock %}
 
 {% block page_js %}
+<style>
+    #theoryResults .rounded-box {
+        border: 1px solid var(--color-border);
+        border-left-width: 4px;
+        border-left-color: var(--color-primary);
+        border-radius: 1.25rem;
+        background: color-mix(in oklch, var(--color-surface) 90%, var(--color-primary-subtle) 10%);
+        padding: 1.25rem;
+    }
+    .theory-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .theory-results-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 1fr;
+    }
+    @media (min-width: 1024px) {
+        .theory-results-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+    .theory-summary-panel {
+        grid-column: 1 / -1;
+        border: 1px solid var(--color-border);
+        border-radius: 1rem;
+        background: color-mix(in oklch, var(--color-surface) 84%, var(--color-primary-subtle) 16%);
+        padding: 1.1rem 1.2rem;
+    }
+    .theory-summary-text {
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: var(--color-text);
+    }
+    .framework-card {
+        border: 1px solid var(--color-border);
+        border-radius: 1rem;
+        background: color-mix(in oklch, var(--color-surface) 94%, var(--color-primary-subtle) 6%);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .framework-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+    .framework-title {
+        margin: 0;
+        font-size: 0.98rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-text);
+    }
+    .framework-analysis {
+        margin: 0;
+        font-size: 0.92rem;
+        line-height: 1.55;
+        color: var(--color-text-muted);
+    }
+    .framework-findings {
+        margin: 0;
+        padding-left: 1rem;
+        display: grid;
+        gap: 0.3rem;
+    }
+    .framework-findings li {
+        color: var(--color-text);
+        line-height: 1.5;
+    }
+    .framework-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+    .evidence-box {
+        border: 1px solid var(--color-border);
+        border-radius: 0.8rem;
+        background: color-mix(in oklch, var(--color-subtle) 65%, var(--color-surface));
+        padding: 0.75rem 0.85rem;
+    }
+    .evidence-title {
+        margin: 0 0 0.45rem 0;
+        font-size: 0.68rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+        font-weight: 800;
+    }
+    .evidence-list {
+        margin: 0;
+        padding-left: 0.95rem;
+        display: grid;
+        gap: 0.28rem;
+    }
+    .evidence-list li {
+        font-size: 0.78rem;
+        color: var(--color-text-muted);
+        line-height: 1.45;
+    }
+</style>
 <script>
-let selectedTheory = null;
+    const THEORY_ORDER = [
+        'new_criticism',
+        'structuralism',
+        'deconstruction',
+        'feminist',
+        'marxist',
+        'psychoanalytic',
+        'reader_response',
+        'ecocriticism',
+        'postcolonial',
+        'formalism',
+        'archetypal'
+    ];
+    const selectedTheories = new Set();
 
-function selectTheory(theory) {
-    selectedTheory = theory;
-    document.querySelectorAll('.theory-card').forEach(c => c.classList.remove('border-primary', 'bg-blue-50'));
-    document.getElementById(`theory-${theory}`).classList.add('border-primary', 'bg-blue-50');
-    document.getElementById('activeTheoryLabel').textContent = theory.replace('_', ' ').toUpperCase();
-    showToast(`Theory Vector Locked: ${theory.replace('_', ' ').toUpperCase()}`, 'info');
-}
+    function normalizeTheoryLabel(theory) {
+        return String(theory || '').replace(/_/g, ' ').toUpperCase();
+    }
+    function titleCaseTheory(theory) {
+        return String(theory || '')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (m) => m.toUpperCase());
+    }
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    function cleanFinding(raw) {
+        let text = String(raw || '').trim();
+        if (!text) return '';
+        text = text.replace(/^\[[^\]]+\]\s*/g, '');
+        text = text.replace(/_/g, ' ');
+        text = text.replace(/^([A-Za-z ]+):\s*\1:\s*/i, '$1: ');
+        text = text.replace(/\s+/g, ' ').trim();
+        return text;
+    }
+    function isLowSignalFinding(text) {
+        return /(?:\b0\b.*(?:paradox|irony|ambigu|opposition|marker|theme|content|instance|representation|male|female|working|upper))/i.test(text);
+    }
+    function buildSynthesis(applied, frameworkResults) {
+        if (!applied.length) {
+            return 'No framework output was produced for this run.';
+        }
+        const scored = applied
+            .map((id) => ({ id, score: Number(frameworkResults[id]?.score) }))
+            .filter((x) => Number.isFinite(x.score));
+        const avg = scored.length ? (scored.reduce((a, b) => a + b.score, 0) / scored.length) : null;
+        const top = scored.length ? [...scored].sort((a, b) => b.score - a.score)[0] : null;
+        const low = scored.length ? [...scored].sort((a, b) => a.score - b.score)[0] : null;
+        return [
+            `Combined reading across ${applied.length} framework${applied.length > 1 ? 's' : ''}.`,
+            avg !== null ? `Average framework score: ${avg.toFixed(1)}/10.` : '',
+            top ? `Strongest lens: ${titleCaseTheory(top.id)} (${top.score.toFixed(1)}).` : '',
+            low ? `Weakest lens: ${titleCaseTheory(low.id)} (${low.score.toFixed(1)}).` : '',
+            'Use high-scoring lenses for interpretation depth and low-scoring lenses for revision direction.'
+        ].filter(Boolean).join(' ');
+    }
 
-async function analyzeWithTheory() {
-    if (!selectedTheory) {
-        showToast('System Protocol: Please lock a critical framework first', 'warning');
-        return;
+    function updateSelectionUi() {
+        document.querySelectorAll('.theory-card').forEach(card => card.classList.remove('is-active'));
+        selectedTheories.forEach(theory => {
+            const el = document.getElementById(`theory-${theory}`);
+            if (el) el.classList.add('is-active');
+        });
+
+        const count = selectedTheories.size;
+        const countEl = document.getElementById('selectedTheoryCount');
+        if (countEl) {
+            countEl.textContent = `${count} selected`;
+        }
+
+        const activeLabel = document.getElementById('activeTheoryLabel');
+        if (activeLabel) {
+            if (!count) {
+                activeLabel.textContent = 'NONE SELECTED';
+            } else if (count === 1) {
+                activeLabel.textContent = normalizeTheoryLabel([...selectedTheories][0]);
+            } else {
+                activeLabel.textContent = `${count} THEORIES SELECTED`;
+            }
+        }
     }
-    
-    const poem = document.getElementById('poemText').value;
-    if (!poem) {
-        showToast('Source Vector Required', 'warning');
-        return;
+
+    function selectTheory(theory) {
+        if (selectedTheories.has(theory)) {
+            selectedTheories.delete(theory);
+        } else {
+            selectedTheories.add(theory);
+        }
+        updateSelectionUi();
     }
-    
-    showLoading('Executing critical synthesis...');
-    try {
-        const response = await axios.post('/api/analysis/theory', { poem: poem, theory: selectedTheory });
-        const result = response.data.success ? response.data.data : response.data;
-        
-        document.getElementById('resultsContent').innerHTML = `
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <div class="space-y-6">
-                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Primary Insights</h4>
-                    <ul class="space-y-4">
-                        ${result.insights.map(i => `
-                            <li class="flex items-start gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[10px] text-blue-600 font-black">
-                                    <svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg>
-                                </span>
-                                <span class="text-slate-700 font-medium">${i}</span>
-                            </li>
-                        `).join('')}
-                    </ul>
+
+    function selectAllTheories() {
+        THEORY_ORDER.forEach(t => selectedTheories.add(t));
+        updateSelectionUi();
+        showToast('All theory vectors selected', 'info');
+    }
+
+    function clearTheorySelection() {
+        selectedTheories.clear();
+        updateSelectionUi();
+        showToast('Theory selection cleared', 'info');
+    }
+
+    async function analyzeWithTheory() {
+        if (!selectedTheories.size) {
+            showToast('System Protocol: Please select at least one critical framework first', 'warning');
+            return;
+        }
+
+        const poem = document.getElementById('poemText').value;
+        if (!poem) {
+            showToast('Source Vector Required', 'warning');
+            return;
+        }
+
+        if (typeof showLoading === 'function') {
+            showLoading('Running theoretical analysis...');
+        }
+        try {
+            const theories = THEORY_ORDER.filter(t => selectedTheories.has(t));
+            const response = await axios.post('/theory-analyze', { poem: poem, theories });
+            const result = response.data.success ? response.data.data : response.data;
+            const frameworkResults = result.framework_results || {};
+            const applied = Array.isArray(result.frameworks_applied) ? result.frameworks_applied : [];
+            const synthesisText = buildSynthesis(applied, frameworkResults);
+            const hasFrameworkCards = applied.length > 0;
+            const sections = [];
+            let totalFindings = 0;
+
+            sections.push(`
+                <div class="theory-summary-panel">
+                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Synthesis Summary</h4>
+                    <p class="theory-summary-text">${escapeHtml(synthesisText)}</p>
                 </div>
-                <div class="space-y-6">
-                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Theoretical Interpretation</h4>
-                    <div class="p-8 bg-white rounded-4xl border border-slate-100 shadow-sm font-serif italic text-xl text-slate-800 leading-loose">
-                        "${result.interpretation}"
+            `);
+
+            if (hasFrameworkCards) {
+                sections.push(`
+                    <div class="space-y-6" style="grid-column: 1 / -1;">
+                        <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Framework Cards</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${applied.map((frameworkId) => {
+                                const f = frameworkResults[frameworkId] || {};
+                                const score = (typeof f.score === 'number') ? f.score.toFixed(1) : '-';
+                                let findingItems = Array.isArray(f.key_findings) ? f.key_findings.map(cleanFinding).filter(Boolean) : [];
+                                const highSignal = findingItems.filter((x) => !isLowSignalFinding(x));
+                                findingItems = (highSignal.length ? highSignal : findingItems).slice(0, 4);
+                                totalFindings += findingItems.length;
+                                const analysis = cleanFinding(f.descriptive_summary || f.analysis || '');
+                                const evidence = Array.isArray(f.evidence_points) ? f.evidence_points.slice(0, 2).map(cleanFinding).filter(Boolean) : [];
+                                const diagnostics = f.diagnostics || {};
+                                const confidence = diagnostics.confidence || '';
+                                const scoreBand = diagnostics.score_band || '';
+                                const scriptProfile = diagnostics.script_profile || '';
+                                return `
+                                    <article class="framework-card">
+                                        <div class="framework-head">
+                                            <h5 class="framework-title">${escapeHtml(titleCaseTheory(frameworkId))}</h5>
+                                            <span class="badge badge-primary">Score: ${score}</span>
+                                        </div>
+                                        ${analysis ? `<p class="framework-analysis">${escapeHtml(analysis)}</p>` : ''}
+                                        <div class="framework-meta-row">
+                                            ${confidence ? `<span class="badge badge-neutral">Confidence: ${escapeHtml(confidence)}</span>` : ''}
+                                            ${scoreBand ? `<span class="badge badge-neutral">Band: ${escapeHtml(scoreBand)}</span>` : ''}
+                                            ${scriptProfile ? `<span class="badge badge-neutral">Script: ${escapeHtml(scriptProfile)}</span>` : ''}
+                                        </div>
+                                        ${findingItems.length ? `
+                                            <ul class="framework-findings">
+                                                ${findingItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                                            </ul>
+                                        ` : `<p class="text-sm text-slate-500 m-0">No strong markers detected for this lens in this input.</p>`}
+                                        ${evidence.length ? `
+                                            <div class="evidence-box">
+                                                <p class="evidence-title">Evidence Cues</p>
+                                                <ul class="evidence-list">
+                                                    ${evidence.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+                                                </ul>
+                                            </div>
+                                        ` : ''}
+                                    </article>
+                                `;
+                            }).join('')}
+                        </div>
                     </div>
-                </div>
+                `);
+            }
+
+            if (!sections.length && !hasFrameworkCards) {
+                sections.push(`
+                    <div class="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                        <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Analysis Status</h4>
+                        <p class="text-slate-700 m-0">No synthesis output was returned for this input and theory combination.</p>
+                    </div>
+                `);
+            }
+
+            document.getElementById('resultsContent').innerHTML = `
+            <div class="theory-meta-row">
+                <span class="badge badge-primary">${applied.length || theories.length} FRAMEWORKS</span>
+                <span class="badge badge-neutral">Findings: ${totalFindings}</span>
+                <span class="badge badge-neutral">Summary: Available</span>
+            </div>
+            <div class="theory-results-grid">
+                ${sections.join('')}
             </div>
         `;
-        document.getElementById('theoryResults').classList.remove('hidden');
-        showToast('Deconstruction successful', 'success');
-    } catch (error) {
-        console.error('Synthesis failure:', error);
-        showToast('Critical engine error', 'error');
-    } finally {
-        hideLoading();
+            document.getElementById('theoryResults').classList.remove('hidden');
+            showToast('Deconstruction successful', 'success');
+        } catch (error) {
+            console.error('Synthesis failure:', error);
+            showToast('Critical engine error', 'error');
+        } finally {
+            if (typeof hideLoading === 'function') {
+                hideLoading();
+            }
+        }
     }
-}
+
+    document.addEventListener('DOMContentLoaded', updateSelectionUi);
 </script>
 {% endblock %}

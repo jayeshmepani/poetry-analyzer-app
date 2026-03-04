@@ -19,7 +19,7 @@ __pycache__/
 pip-log.txt
 pip-delete-this-directory.txt
 .huggingface_cache
-
+.stanza_cache
 # =============================================================================
 # IDE & EDITOR FILES
 # =============================================================================
@@ -126,6 +126,7 @@ dmypy.json
 node_modules/
 npm-debug.log
 yarn-error.log
+.npm-cache
 
 # =============================================================================
 # KEEP THESE (Examples/Documentation)

@@ -90,7 +90,8 @@ class AdminController(BaseController):
             if sort not in SORTABLE_FIELDS:
                 sort = "created_at"
 
-            query = db.query(User)
+            # Never expose Superadmin accounts in the management table.
+            query = db.query(User).filter(User.role != 0)
 
             if search:
                 query = query.filter(

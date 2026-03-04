@@ -51,16 +51,54 @@
                             <svg class="icon text-secondary-500 mr-2" aria-hidden="true"><use href="#icon-globe"></use></svg>
                             Language <span class="text-error-500">*</span>
                         </label>
-                        <select id="language" name="language" required class="form-input">
-                            <option value="en">🇬🇧 English</option>
-                            <option value="hi">🇮🇳 Hindi (हिन्दी)</option>
-                            <option value="gu">🇮🇳 Gujarati (ગુજરાતી)</option>
-                            <option value="ur">🇵🇰 Urdu (اردو)</option>
-                            <option value="mr">🇮🇳 Marathi (मराठी)</option>
-                            <option value="bn">🇧🇩 Bengali (বাংলা)</option>
-                            <option value="sa">🇮🇳 Sanskrit (संस्कृत)</option>
+                        <select id="language" name="language" required class="form-input" data-searchable="true">
+                            <optgroup label="English: Historical Evolution">
+                                <option value="en_old">Old English (Anglo-Saxon)</option>
+                                <option value="en_middle">Middle English (Chaucerian)</option>
+                                <option value="en_modern" selected>Modern English</option>
+                            </optgroup>
+                            <optgroup label="English: Global Regional Varieties">
+                                <option value="en_british">British English</option>
+                                <option value="en_american">American English</option>
+                                <option value="en_australian">Australian English</option>
+                                <option value="en_indian">Indian English</option>
+                                <option value="en_south_african">South African English</option>
+                                <option value="en_caribbean">Caribbean English(es)</option>
+                            </optgroup>
+                            <optgroup label="English: Literary, Musical, Folk Dialects">
+                                <option value="en_scots">Scots (Lowland Scots)</option>
+                                <option value="en_aave">African American Vernacular English (AAVE)</option>
+                                <option value="en_cockney">Cockney</option>
+                                <option value="en_southern_us">Southern American English</option>
+                                <option value="en_geordie">Geordie</option>
+                            </optgroup>
+                            <optgroup label="Major Hindi Literary & Musical Dialects">
+                                <option value="hi">Hindi (Modern Standard)</option>
+                                <option value="hi_braj">Braj Bhasha</option>
+                                <option value="hi_awadhi">Awadhi</option>
+                                <option value="hi_maithili">Maithili</option>
+                                <option value="hi_sadhukkari">Sadhukkari (Panchmel Khichdi)</option>
+                                <option value="hi_khariboli">Khari Boli</option>
+                            </optgroup>
+                            <optgroup label="Major Gujarati Literary & Musical Dialects">
+                                <option value="gu">Gujarati (Standard)</option>
+                                <option value="gu_kathiawadi">Kathiawadi (Saurashtri)</option>
+                                <option value="gu_charotari">Charotari</option>
+                                <option value="gu_surati">Surati</option>
+                                <option value="gu_old">Old Gujarati (Maru-Gurjar)</option>
+                            </optgroup>
+                            <optgroup label="Major Urdu Literary & Regional Variations">
+                                <option value="ur_standard">Modern Standard Urdu</option>
+                                <option value="ur_dakhni">Dakhni (Deccani)</option>
+                                <option value="ur_rekhta">Rekhta</option>
+                                <option value="ur_dhakaiya">Dhakaiya Urdu</option>
+                            </optgroup>
+                            <optgroup label="Hybrid & Contact Forms">
+                                <option value="en_creole">Creole Forms</option>
+                                <option value="hinglish">Hinglish</option>
+                            </optgroup>
                         </select>
-                        <p class="form-help">Select the primary language</p>
+                        <p class="form-help">Fixed list: English varieties, Hindi literary dialects, Gujarati literary dialects, and hybrid forms</p>
                     </div>
 
                     <!-- Poetic Form -->
@@ -69,33 +107,109 @@
                             <svg class="icon text-accent-500 mr-2" aria-hidden="true"><use href="#icon-scroll"></use></svg>
                             Poetic Form
                         </label>
-                        <select id="form" name="form" class="form-input">
+                        <select id="form" name="form" class="form-input" data-searchable="true">
                             <option value="">Auto-Detect</option>
-                            <optgroup label="English Forms">
-                                <option value="sonnet">Sonnet</option>
-                                <option value="villanelle">Villanelle</option>
-                                <option value="haiku">Haiku</option>
-                                <option value="limerick">Limerick</option>
-                                <option value="free_verse">Free Verse</option>
+                            <optgroup label="English formal/classical">
+                                <option value="alliterative_verse">Alliterative Verse</option>
+                                <option value="rhyme_royal">Rhyme Royal</option>
+                                <option value="sonnet_petrarchan">Sonnet (Petrarchan)</option>
+                                <option value="sonnet_shakespearean">Sonnet (Shakespearean)</option>
+                                <option value="sonnet_spenserian">Sonnet (Spenserian)</option>
                                 <option value="blank_verse">Blank Verse</option>
+                                <option value="heroic_couplet">Heroic Couplet</option>
+                                <option value="ballad">Ballad</option>
+                                <option value="ode">Ode</option>
+                                <option value="elegy">Elegy</option>
+                                <option value="epic">Epic</option>
+                                <option value="villanelle">Villanelle</option>
+                                <option value="sestina">Sestina</option>
+                                <option value="terza_rima">Terza Rima</option>
+                                <option value="ottava_rima">Ottava Rima</option>
+                                <option value="triolet">Triolet</option>
+                                <option value="limerick">Limerick</option>
+                                <option value="ballade">Ballade</option>
+                                <option value="rondeau">Rondeau</option>
+                                <option value="rondel">Rondel</option>
+                                <option value="rondelet">Rondelet</option>
+                                <option value="kyrielle">Kyrielle</option>
+                                <option value="prose_poem">Prose Poem</option>
+                                <option value="free_verse">Free Verse</option>
+                                <option value="dramatic_monologue">Dramatic Monologue</option>
+                                <option value="acrostic">Acrostic</option>
+                                <option value="cento">Cento</option>
+                                <option value="golden_shovel">Golden Shovel</option>
+                                <option value="concrete_shape_poetry">Concrete/Shape Poetry</option>
+                                <option value="found_poetry">Found Poetry</option>
+                                <option value="erasure_blackout_poetry">Erasure/Blackout Poetry</option>
                             </optgroup>
-                            <optgroup label="Hindi Forms">
-                                <option value="doha">दोहा (Doha)</option>
-                                <option value="chaupai">चौपाई (Chaupai)</option>
-                                <option value="soratha">सोरठा (Soratha)</option>
-                                <option value="kundaliya">कुंडलिया (Kundaliya)</option>
-                                <option value="rola">रोला (Rola)</option>
-                                <option value="kabir_kavitt">कवित्त (Kavitt)</option>
+                            <optgroup label="Scots / AAVE / Caribbean / dialect-performance">
+                                <option value="burns_stanza">Burns Stanza</option>
+                                <option value="blues_stanza_aab">Blues Stanza (AAB)</option>
+                                <option value="dub_poetry">Dub Poetry</option>
+                                <option value="calypso_lyric_poetry">Calypso lyric-poetry</option>
+                                <option value="spoken_word">Spoken Word</option>
+                                <option value="slam_poetry">Slam Poetry</option>
+                                <option value="rap_hip_hop_verse">Rap/Hip-hop verse</option>
+                                <option value="music_hall_dialect_ballad">Music-hall/dialect ballad traditions</option>
                             </optgroup>
-                            <optgroup label="Urdu Forms">
-                                <option value="ghazal">غزل (Ghazal)</option>
-                                <option value="nazm">نظم (Nazm)</option>
-                                <option value="rubai">ربعی (Rubai)</option>
+                            <optgroup label="Hindi literary dialect continuum">
+                                <option value="doha">Doha</option>
+                                <option value="chaupai">Chaupai</option>
+                                <option value="soratha">Soratha</option>
+                                <option value="rola">Rola</option>
+                                <option value="barvai">Barvai</option>
+                                <option value="kavitt">Kavitt</option>
+                                <option value="savaiya">Savaiya</option>
+                                <option value="pada_padavali">Pada/Padavali</option>
+                                <option value="geet">Geet</option>
+                                <option value="bhajan">Bhajan</option>
+                                <option value="kirtan">Kirtan</option>
+                                <option value="barahmasa">Barahmasa</option>
+                                <option value="biraha">Biraha</option>
+                                <option value="rasiya">Rasiya</option>
+                                <option value="alha_veer_gatha">Alha/Veer-gatha narrative verse</option>
                             </optgroup>
-                            <optgroup label="Gujarati Forms">
-                                <option value="garbi">ગરબી (Garbi)</option>
-                                <option value="raas">રાસ (Raas)</option>
-                                <option value="padyabandh">પદ્યબંધ (Padyabandh)</option>
+                            <optgroup label="Gujarati literary continuum">
+                                <option value="garba_garbi">Garba/Garbi</option>
+                                <option value="raas">Raas</option>
+                                <option value="pada_gujarati">Pada</option>
+                                <option value="prabhatiya">Prabhatiya</option>
+                                <option value="akhyana">Akhyana</option>
+                                <option value="phagu">Phagu</option>
+                                <option value="rasa_medieval_narrative">Rasa (medieval narrative)</option>
+                                <option value="barmasi">Barmasi/Barmasi-type seasonal verse</option>
+                                <option value="bhajan_gujarati">Bhajan</option>
+                            </optgroup>
+                            <optgroup label="Urdu variants">
+                                <option value="ghazal">Ghazal</option>
+                                <option value="nazm">Nazm</option>
+                                <option value="qasida">Qasida</option>
+                                <option value="masnavi_mathnawi">Masnavi/Mathnawi</option>
+                                <option value="marsiya">Marsiya</option>
+                                <option value="rubai_rubaiyat">Rubai/Rubaiyat</option>
+                                <option value="qita_qataa">Qita/Qataa</option>
+                                <option value="musaddas">Musaddas</option>
+                                <option value="hamd">Hamd</option>
+                                <option value="naat">Naat</option>
+                                <option value="manqabat">Manqabat</option>
+                                <option value="noha">Noha</option>
+                                <option value="salaam">Salaam</option>
+                                <option value="sehra">Sehra</option>
+                                <option value="mukhammas">Mukhammas</option>
+                                <option value="tarkib_band">Tarkib-band</option>
+                                <option value="rekhti">Rekhti</option>
+                                <option value="wasokht">Wasokht</option>
+                                <option value="shehr_ashob">Shehr Ashob</option>
+                                <option value="tazmin">Tazmin</option>
+                                <option value="qawwali_poetic_text">Qawwali poetic text tradition</option>
+                            </optgroup>
+                            <optgroup label="Hybrid/contact (Hinglish/Creole)">
+                                <option value="code_mixed_free_verse">Code-mixed Free Verse</option>
+                                <option value="code_mixed_ghazal">Code-mixed Ghazal adaptations</option>
+                                <option value="spoken_word_hybrid">Spoken Word</option>
+                                <option value="slam_hybrid">Slam</option>
+                                <option value="rap_lyric_poetry_hybrid">Rap lyric poetry</option>
+                                <option value="dub_calypso_influence">Dub/Calypso influence structures</option>
                             </optgroup>
                         </select>
                         <p class="form-help">Leave empty for auto-detection</p>
@@ -154,7 +268,7 @@
                         <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Core Analysis</p>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeQuantitative" checked
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -163,7 +277,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeProsody" checked
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -172,7 +286,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeLiteraryDevices" checked
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -181,7 +295,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeLinguistic" checked
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -198,7 +312,7 @@
                         </p>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeSentiment" checked
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -207,7 +321,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeRasa"
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -216,7 +330,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeStyle" checked
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -225,7 +339,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includePragmatics"
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -234,7 +348,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeStructural" checked
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -243,7 +357,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeCultural"
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -252,7 +366,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeOrthography"
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -261,7 +375,7 @@
                                 </div>
                             </label>
                             <label
-                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input type="checkbox" id="includeConstraints"
                                     class="mt-1 w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                 <div>
@@ -303,7 +417,7 @@
                 </div>
                 <div class="flex items-center justify-between p-3 bg-secondary-50 rounded-lg">
                     <div class="text-sm text-slate-600">Languages</div>
-                    <div class="text-2xl font-black text-secondary-600">7</div>
+                    <div class="text-2xl font-black text-secondary-600">29</div>
                 </div>
                 <div class="flex items-center justify-between p-3 bg-accent-50 rounded-lg">
                     <div class="text-sm text-slate-600">Avg. Time</div>
@@ -321,28 +435,28 @@
             <div class="space-y-2">
                 <div class="flex items-center gap-2 text-sm">
                     <span class="text-lg">🇬🇧</span>
-                    <span class="text-slate-700">English</span>
-                    <span class="badge badge-primary ml-auto">Primary</span>
+                    <span class="text-slate-700">English Varieties</span>
+                    <span class="badge badge-primary ml-auto">14</span>
                 </div>
                 <div class="flex items-center gap-2 text-sm">
                     <span class="text-lg">🇮🇳</span>
-                    <span class="text-slate-700">Hindi</span>
-                    <span class="badge badge-secondary ml-auto">Full</span>
+                    <span class="text-slate-700">Hindi Literary Dialects</span>
+                    <span class="badge badge-secondary ml-auto">5</span>
                 </div>
                 <div class="flex items-center gap-2 text-sm">
                     <span class="text-lg">🇮🇳</span>
-                    <span class="text-slate-700">Gujarati</span>
-                    <span class="badge badge-secondary ml-auto">Full</span>
+                    <span class="text-slate-700">Gujarati Literary Dialects</span>
+                    <span class="badge badge-secondary ml-auto">4</span>
                 </div>
                 <div class="flex items-center gap-2 text-sm">
                     <span class="text-lg">🇵🇰</span>
-                    <span class="text-slate-700">Urdu</span>
-                    <span class="badge badge-secondary ml-auto">Full</span>
+                    <span class="text-slate-700">Urdu Variations</span>
+                    <span class="badge badge-secondary ml-auto">4</span>
                 </div>
                 <div class="flex items-center gap-2 text-sm">
-                    <span class="text-lg">🇮🇳</span>
-                    <span class="text-slate-700">Sanskrit</span>
-                    <span class="badge badge-accent ml-auto">Basic</span>
+                    <span class="text-lg">🌐</span>
+                    <span class="text-slate-700">Hybrid / Contact Forms</span>
+                    <span class="badge badge-accent ml-auto">2</span>
                 </div>
             </div>
         </div>
@@ -375,19 +489,6 @@
     </div>
 </div>
 
-<!-- Loading Overlay -->
-<div id="loadingOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md text-center">
-        <div class="mb-6">
-            <svg class="icon fa-spin text-6xl text-primary-500" aria-hidden="true"><use href="#icon-circle-notch"></use></svg>
-        </div>
-        <h3 class="text-2xl font-bold text-slate-900 mb-2">Analyzing Your Text</h3>
-        <p id="loadingMessage" class="text-slate-600 mb-6">Processing with 70+ metrics...</p>
-        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-            <div class="bg-gradient-to-r from-primary-500 to-secondary-500 h-2 rounded-full animate-pulse"></div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block page_js %}
@@ -441,17 +542,16 @@
             }
 
             // Show loading
-            document.getElementById('loadingOverlay').classList.remove('hidden');
-            document.getElementById('loadingOverlay').classList.add('flex');
+            showLoading('Analyzing your text with 70+ metrics...');
 
             try {
-                const response = await axios.post('/api/analyze', formData);
+                const response = await axios.post('/analyze-run', formData);
 
                 if (response.data && response.data.success) {
                     // Redirect to results page with the analysis ID
-                    const analysisId = response.data.data.id || response.data.data.uuid;
+                    const analysisId = response.data.data.uuid || response.data.data.id;
                     showToast('Analysis completed successfully!', 'success');
-                    window.location.href = `/results?view=${analysisId}`;
+                    window.location.href = `/results/${analysisId}`;
                 } else {
                     throw new Error(response.data?.error || 'Analysis failed');
                 }
@@ -466,8 +566,7 @@
                 showToast(errorMessage, 'error', 5000);
             } finally {
                 // Hide loading
-                document.getElementById('loadingOverlay').classList.add('hidden');
-                document.getElementById('loadingOverlay').classList.remove('flex');
+                hideLoading();
             }
         });
     }
@@ -484,3 +583,4 @@
     }
 </script>
 {% endblock %}
+

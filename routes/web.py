@@ -211,8 +211,8 @@ def register_web_routes(app: FastAPI, templates: Jinja2Templates):
     route.get('/analyze', workspace.analyze, name='analyze', protected=True)
     route.get('/batch', workspace.batch, name='batch', protected=True)
     route.get('/results', workspace.results, name='results', protected=True)
+    route.get('/results/{result_id}', workspace.result_report, name='results.detail', protected=True)
     route.get('/database', workspace.database_status, name='database', protected=True)
-    route.get('/visualize', workspace.visualize, name='visualize', protected=True)
     route.get('/forms', workspace.forms, name='forms', protected=True)
     route.get('/meters', workspace.meters, name='meters', protected=True)
     route.get('/rasas', workspace.rasas, name='rasas', protected=True)
@@ -226,34 +226,33 @@ def register_web_routes(app: FastAPI, templates: Jinja2Templates):
 
     # ==================== DATA ROUTES (AJAX) ====================
     # These are used by AJAX calls from frontend but operate monolithically
-    route.post('/analyze/submit', workspace.analyze_post, name='analyze.submit', protected=True)
-    route.post('/analyze/batch/submit', workspace.batch_analyze_post, name='analyze.batch.submit', protected=True)
-    route.get('/stats', workspace.stats, name='stats', protected=True)
-    route.get('/results/list', workspace.list_results, name='results.list', protected=True)
-    route.get('/result/{result_id}', workspace.get_result, name='result.get', protected=True)
-    route.get('/visualize/{result_id}/data', workspace.get_visualization, name='visualize.data', protected=True)
-    route.delete('/result/{result_id}', workspace.delete_result, name='result.delete', protected=True)
-    route.post('/results/clear', workspace.clear_results, name='results.clear', protected=True)
+    route.post('/analyze-run', workspace.analyze_post, name='data.analyze', protected=True)
+    route.post('/batch-run', workspace.batch_analyze_post, name='data.analyze.batch', protected=True)
+    route.get('/stats', workspace.stats, name='data.stats', protected=True)
+    route.get('/results-data', workspace.list_results, name='data.results.list', protected=True)
+    route.get('/result/{result_id}', workspace.get_result, name='data.result.get', protected=True)
+    route.delete('/result/{result_id}', workspace.delete_result, name='data.result.delete', protected=True)
+    route.post('/results-clear', workspace.clear_results, name='data.results.clear', protected=True)
     
     # ⭐ Advanced Tools
-    route.post('/constraints/apply', workspace.apply_constraint_api, name='constraints.apply', protected=True)
-    route.get('/theory/recommendations', workspace.get_theory_recommendations, name='theory.recommendations', protected=True)
-    route.post('/analysis/theory', workspace.analyze_with_theory_api, name='theory.analyze', protected=True)
-    route.post('/analysis/touchstone', workspace.analyze_touchstone_api, name='touchstone.analyze', protected=True)
-    route.post('/analysis/performance', workspace.analyze_performance_api, name='performance.analyze', protected=True)
-    route.post('/analysis/versions', workspace.generate_versions_api, name='versions.generate', protected=True)
+    route.post('/constraints-apply', workspace.apply_constraint_api, name='data.constraints.apply', protected=True)
+    route.get('/theory-recommendations', workspace.get_theory_recommendations, name='data.theory.recommendations', protected=True)
+    route.post('/theory-analyze', workspace.analyze_with_theory_api, name='data.theory.analyze', protected=True)
+    route.post('/touchstone-analyze', workspace.analyze_touchstone_api, name='data.touchstone.analyze', protected=True)
+    route.post('/performance-analyze', workspace.analyze_performance_api, name='data.performance.analyze', protected=True)
+    route.post('/versions-generate', workspace.generate_versions_api, name='data.versions.generate', protected=True)
     
     # ⭐ Database 
-    route.get('/database/status/api', workspace.database_status_api, name='database.status.api', protected=True)
-    route.post('/database/initialize', workspace.database_init, name='database.init', protected=True)
+    route.get('/database-status', workspace.database_status_api, name='data.database.status', protected=True)
+    route.post('/database-init', workspace.database_init, name='data.database.init', protected=True)
     
     # ⭐ Settings 
-    route.get('/settings/get', workspace.get_settings, name='settings.get', protected=True)
-    route.post('/settings/save', workspace.save_settings, name='settings.save', protected=True)
+    route.get('/settings-data', workspace.get_settings, name='data.settings.get', protected=True)
+    route.post('/settings-data', workspace.save_settings, name='data.settings.save', protected=True)
     
     # ==================== REFERENCE ROUTES ====================
-    route.get('/forms/data', workspace.get_forms, name='forms.data', protected=True)
-    route.get('/meters/data', workspace.get_meters, name='meters.data', protected=True)
-    route.get('/rasas/data', workspace.get_rasas, name='rasas.data', protected=True)
-    
+    route.get('/forms-data', workspace.get_forms, name='data.forms', protected=True)
+    route.get('/meters-data', workspace.get_meters, name='data.meters', protected=True)
+    route.get('/rasas-data', workspace.get_rasas, name='data.rasas', protected=True)
+
     return route

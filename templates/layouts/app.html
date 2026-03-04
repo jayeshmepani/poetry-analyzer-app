@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Poetry Analyzer{% endblock %} — Poetry Analyzer</title>
     {% include "layouts/partials/head.html" %}
-    {% block page_css %}{% endblock %}
 </head>
 
 <body class="app-body">
@@ -22,9 +21,8 @@
 
             <main class="app-main" id="main-content">
                 {% block content %}{% endblock %}
+                {% include "layouts/partials/footer.html" %}
             </main>
-
-            {% include "layouts/partials/footer.html" %}
 
         </div>
     </div>

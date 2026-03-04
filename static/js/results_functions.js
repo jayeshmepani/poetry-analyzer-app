@@ -193,8 +193,10 @@ async function viewResultDetail(uuid) {
         `;
 
         hideLoading();
-        document.getElementById('viewModal').classList.remove('hidden');
-        document.getElementById('viewModal').classList.add('flex');
+        const modal = document.getElementById('viewModal');
+        if (modal && !modal.open) {
+            modal.showModal();
+        }
 
     } catch (error) {
         console.error('Error loading result:', error);

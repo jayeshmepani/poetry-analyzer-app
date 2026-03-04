@@ -6,8 +6,11 @@
 <!-- Page Hero -->
 <section class="card mb-8 scroll-reveal fade-in">
     <div class="d-flex items-start gap-4">
-        <div class="d-flex items-center justify-center rounded-xl bg-primary-subtle text-3xl text-primary size-64 flex-shrink-0">
-            <svg class="icon" aria-hidden="true"><use href="#icon-file-alt"></use></svg>
+        <div
+            class="d-flex items-center justify-center rounded-xl bg-primary-subtle text-3xl text-primary size-64 flex-shrink-0">
+            <svg class="icon" aria-hidden="true">
+                <use href="#icon-file-alt"></use>
+            </svg>
         </div>
         <div class="flex-1">
             <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-2">Analysis History</p>
@@ -22,10 +25,13 @@
 <!-- Results Container -->
 <div class="card p-0 overflow-hidden scroll-reveal">
     <!-- Header Actions -->
-    <div class="p-6 border-b rounded-t-xl d-flex flex-col sm-flex-row justify-between items-start sm-items-center gap-4 bg-subtle">
+    <div
+        class="p-6 border-b rounded-t-xl d-flex flex-col sm-flex-row justify-between items-start sm-items-center gap-4 bg-subtle">
         <div class="d-flex items-center gap-3">
             <div class="d-flex items-center justify-center rounded-lg bg-primary text-white size-40 text-lg">
-                <svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg>
+                <svg class="icon" aria-hidden="true">
+                    <use href="#icon-database"></use>
+                </svg>
             </div>
             <div>
                 <h2 class="text-xl font-bold text-text mb-0">Saved Analyses</h2>
@@ -34,11 +40,15 @@
             </div>
         </div>
         <div class="d-flex gap-3">
-            <button onclick="loadResults()" class="btn btn-secondary">
-                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg> Refresh
+            <button type="button" onclick="loadResults()" class="btn btn-secondary">
+                <svg class="icon mr-2" aria-hidden="true">
+                    <use href="#icon-sync-alt"></use>
+                </svg> Refresh
             </button>
-            <button onclick="clearAllResults()" class="btn btn-danger">
-                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-trash"></use></svg> Clear All
+            <button type="button" onclick="clearAllResults()" class="btn btn-danger">
+                <svg class="icon mr-2" aria-hidden="true">
+                    <use href="#icon-trash"></use>
+                </svg> Clear All
             </button>
         </div>
     </div>
@@ -60,7 +70,9 @@
             <tbody id="resultsTable">
                 <tr>
                     <td colspan="7" class="p-12 text-center">
-                        <svg class="icon fa-spin text-3xl text-muted mb-4" aria-hidden="true"><use href="#icon-circle-notch"></use></svg>
+                        <svg class="icon fa-spin text-3xl text-muted mb-4" aria-hidden="true">
+                            <use href="#icon-circle-notch"></use>
+                        </svg>
                         <p class="text-soft font-medium">Loading results from database...</p>
                     </td>
                 </tr>
@@ -71,46 +83,21 @@
     <!-- Empty State (hidden by default) -->
     <div id="emptyState" class="d-none text-center p-12">
         <div class="d-flex items-center justify-center rounded-full bg-subtle text-muted mx-auto mb-6 size-80 text-3xl">
-            <svg class="icon" aria-hidden="true"><use href="#icon-inbox"></use></svg>
+            <svg class="icon" aria-hidden="true">
+                <use href="#icon-inbox"></use>
+            </svg>
         </div>
         <h3 class="text-2xl font-bold text-text mb-2">No analyses yet</h3>
         <p class="text-soft mb-6 max-w-sm mx-auto">Start by analyzing your first poem or literary text. Get
             comprehensive insights with 70+ metrics.</p>
         <a href="{{ route('analyze') }}" class="btn btn-primary btn-lg">
-            <svg class="icon mr-2" aria-hidden="true"><use href="#icon-search"></use></svg> Start Your First Analysis
+            <svg class="icon mr-2" aria-hidden="true">
+                <use href="#icon-search"></use>
+            </svg> Start Your First Analysis
         </a>
     </div>
 </div>
 
-<!-- View Result Modal -->
-<div id="viewModal" class="d-none position-fixed inset-0 z-50 items-center justify-center p-4 bg-overlay backdrop-blur">
-    <div class="card p-0 d-flex flex-col overflow-hidden w-full m-auto bounce-in max-w-xl max-h-90vh border shadow-xl">
-
-        <!-- Modal Header -->
-        <div class="p-6 border-b d-flex justify-between items-center bg-surface sticky top-0">
-            <div>
-                <h2 class="text-2xl font-bold text-text mb-1">Analysis Details</h2>
-                <p class="text-sm text-soft m-0">Comprehensive metrics and insights</p>
-            </div>
-            <button onclick="closeModal()" class="btn btn-outline size-40 p-0 rounded-full">
-                <svg class="icon text-lg" aria-hidden="true"><use href="#icon-times"></use></svg>
-            </button>
-        </div>
-
-        <!-- Modal Content -->
-        <div id="modalContent" class="overflow-y-auto p-6 flex-1">
-            <!-- Content loaded dynamically -->
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="p-4 border-t bg-subtle d-flex justify-end gap-3 sticky bottom-0">
-            <button onclick="closeModal()" class="btn btn-secondary">Close</button>
-            <button onclick="exportResult()" class="btn btn-primary">
-                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-download"></use></svg> Export
-            </button>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block page_js %}
@@ -122,7 +109,7 @@
         showLoading('Loading results from database...');
 
         try {
-            const response = await axios.get('/api/results?limit=50');
+            const response = await axios.get('/results-data?limit=50');
             const data = response.data;
 
             const tbody = document.getElementById('resultsTable');
@@ -179,13 +166,15 @@
                     <td class="text-sm text-soft font-medium">
                         ${formatDate(r.created_at)}
                     </td>
-                    <td class="text-right d-flex justify-end gap-2 pr-4">
-                        <button onclick="viewResultDetail('${r.uuid}')" class="btn btn-secondary" style="padding: 0.5rem;" title="View Details">
-                            <svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>
-                        </button>
-                        <button onclick="deleteResult('${r.uuid}')" class="btn btn-danger" style="padding: 0.5rem;" title="Delete">
-                            <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg>
-                        </button>
+                    <td class="text-right pr-4">
+                        <div class="d-flex justify-end gap-2">
+                            <button type="button" onclick="window.location.href='/results/${r.uuid}'" class="btn btn-secondary" style="padding: 0.5rem;" title="View Details">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>
+                            </button>
+                            <button type="button" onclick="deleteResult('${r.uuid}')" class="btn btn-danger" style="padding: 0.5rem;" title="Delete">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -197,7 +186,9 @@
             const urlParams = new URLSearchParams(window.location.search);
             const viewId = urlParams.get('view');
             if (viewId) {
-                viewResultDetail(viewId);
+                const matched = results.find((r) => String(r.uuid) === String(viewId) || String(r.id) === String(viewId));
+                const resolvedUuid = matched?.uuid || viewId;
+                window.location.href = `/results/${resolvedUuid}`;
             }
 
         } catch (error) {
@@ -214,107 +205,12 @@
                     </div>
                     <h3 class="text-xl font-bold text-text mb-2">Failed to Load Results</h3>
                     <p class="text-soft mb-4">Unable to connect to the database. Please ensure the backend is running.</p>
-                    <button onclick="loadResults()" class="btn btn-primary">
+                    <button type="button" onclick="loadResults()" class="btn btn-primary">
                         <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg> Try Again
                     </button>
                 </td>
             </tr>
         `;
-        }
-    }
-
-    async function viewResultDetail(uuid) {
-        showLoading('Loading analysis details...');
-
-        try {
-            const response = await axios.get(`/api/result/${uuid}`);
-            const result = response.data.success ? response.data.data : response.data;
-
-            const modalContent = document.getElementById('modalContent');
-            modalContent.innerHTML = `
-            <div class="d-flex flex-col gap-8">
-                <!-- Header -->
-                <div class="d-grid gap-6 grid-cols-1 md-grid-cols-2 p-6 rounded-xl isolate" style="background: linear-gradient(135deg, var(--color-primary-subtle), var(--color-secondary-subtle));">
-                    <div>
-                        <h3 class="text-2xl font-bold text-text mb-2">${result.title || 'Untitled'}</h3>
-                        <div class="d-flex flex-wrap gap-2 mt-3">
-                            <span class="badge badge-primary">${getLanguageName(result.language || 'en')}</span>
-                            <span class="badge badge-secondary">${result.poetic_form || 'Free Verse'}</span>
-                            <span class="badge" style="background: var(--color-surface); opacity: 0.8;">ID: ${result.uuid?.substring(0, 8)}...</span>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-5xl font-black mb-2" style="color: ${getScoreColorHex(result.overall_score)}">${result.overall_score ? result.overall_score.toFixed(1) : '-'}</div>
-                        <div class="text-sm font-bold text-muted uppercase tracking-widest">Overall Score</div>
-                    </div>
-                </div>
-
-                <!-- Text -->
-                <div class="card p-0 overflow-hidden">
-                    <h4 class="text-lg font-bold text-text mb-0 p-4 border-b d-flex items-center" style="border-color: var(--color-border); background: var(--color-subtle);">
-                        <svg class="icon text-primary mr-3" aria-hidden="true"><use href="#icon-quote-left"></use></svg> Original Text
-                    </h4>
-                    <div class="p-6 font-serif text-lg leading-relaxed text-text whitespace-pre-line bg-surface">
-                        ${result.text || ''}
-                    </div>
-                </div>
-
-                <!-- Quality Scores -->
-                <div>
-                    <h4 class="text-lg font-bold text-text mb-4 d-flex items-center">
-                        <svg class="icon text-warning mr-3" aria-hidden="true"><use href="#icon-star"></use></svg> Quality Scores
-                    </h4>
-                    <div class="d-grid gap-4 grid-auto-md">
-                        ${renderScoreCard('Overall', result.overall_score)}
-                        ${renderScoreCard('Technical', result.technical_craft_score)}
-                        ${renderScoreCard('Language', result.language_diction_score)}
-                        ${renderScoreCard('Imagery', result.imagery_voice_score)}
-                        ${renderScoreCard('Emotional', result.emotional_impact_score)}
-                        ${renderScoreCard('Cultural', result.cultural_fidelity_score)}
-                        ${renderScoreCard('Originality', result.originality_score)}
-                    </div>
-                </div>
-
-                <!-- Executive Summary -->
-                ${result.executive_summary ? `
-                <div class="card border border-primary-subtle" style="background: linear-gradient(135deg, var(--color-surface), var(--color-primary-subtle));">
-                    <h4 class="text-lg font-bold text-text mb-4 d-flex items-center">
-                        <svg class="icon text-primary mr-3" aria-hidden="true"><use href="#icon-file-alt"></use></svg> Executive Summary
-                    </h4>
-                    <p class="text-text leading-relaxed m-0">${result.executive_summary}</p>
-                </div>
-                ` : ''}
-
-                <!-- Statistics -->
-                <div class="d-grid gap-4 grid-auto-md">
-                    <div class="stat-card text-center items-center justify-center p-4">
-                        <div class="text-3xl font-black text-primary mb-1">${result.word_count || 0}</div>
-                        <div class="text-sm font-bold text-muted uppercase tracking-widest">Words</div>
-                    </div>
-                    <div class="stat-card text-center items-center justify-center p-4">
-                        <div class="text-3xl font-black text-secondary mb-1">${result.line_count || 0}</div>
-                        <div class="text-sm font-bold text-muted uppercase tracking-widest">Lines</div>
-                    </div>
-                    <div class="stat-card text-center items-center justify-center p-4">
-                        <div class="text-3xl font-black text-accent mb-1">${result.strictness_level || 7}</div>
-                        <div class="text-sm font-bold text-muted uppercase tracking-widest">Strictness</div>
-                    </div>
-                    <div class="stat-card text-center items-center justify-center p-4">
-                        <div class="text-xl font-bold text-text mb-1 mt-2">${formatDate(result.created_at, true)}</div>
-                        <div class="text-sm font-bold text-muted uppercase tracking-widest mt-2">Analyzed</div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-            hideLoading();
-            document.getElementById('viewModal').classList.remove('d-none');
-            document.getElementById('viewModal').classList.add('d-flex');
-
-        } catch (error) {
-            console.error('Error loading result:', error);
-            hideLoading();
-            showToast('Failed to load analysis details', 'error');
         }
     }
 
@@ -340,13 +236,45 @@
 
     function getLanguageName(code) {
         const languages = {
-            'en': 'English',
-            'hi': 'Hindi',
-            'gu': 'Gujarati',
-            'ur': 'Urdu',
-            'mr': 'Marathi',
-            'bn': 'Bengali',
-            'sa': 'Sanskrit'
+            en_old: 'Old English (Anglo-Saxon)',
+            en_middle: 'Middle English (Chaucerian)',
+            en_modern: 'Modern English',
+            en_british: 'British English',
+            en_american: 'American English',
+            en_australian: 'Australian English',
+            en_indian: 'Indian English',
+            en_south_african: 'South African English',
+            en_caribbean: 'Caribbean English(es)',
+            en_scots: 'Scots (Lowland Scots)',
+            en_aave: 'African American Vernacular English (AAVE)',
+            en_cockney: 'Cockney',
+            en_southern_us: 'Southern American English',
+            en_geordie: 'Geordie',
+            hi_braj: 'Braj Bhasha',
+            hi_awadhi: 'Awadhi',
+            hi_maithili: 'Maithili',
+            hi_sadhukkari: 'Sadhukkari (Panchmel Khichdi)',
+            hi_khariboli: 'Khari Boli',
+            gu_kathiawadi: 'Kathiawadi (Saurashtri)',
+            gu_charotari: 'Charotari',
+            gu_surati: 'Surati',
+            gu_old: 'Old Gujarati (Maru-Gurjar)',
+            ur_standard: 'Modern Standard Urdu',
+            ur_dakhni: 'Dakhni (Deccani)',
+            ur_rekhta: 'Rekhta',
+            ur_dhakaiya: 'Dhakaiya Urdu',
+            en_creole: 'Creole Forms',
+            hinglish: 'Hinglish',
+            // Legacy values
+            en: 'Modern English',
+            hi: 'Hindi (Modern Standard)',
+            gu: 'Gujarati (Standard)',
+            ur: 'Modern Standard Urdu',
+            ur_deva: 'Modern Standard Urdu',
+            brj_deva: 'Braj Bhasha',
+            mr: 'Khari Boli',
+            bn: 'Khari Boli',
+            sa: 'Khari Boli'
         };
         return languages[code] || code;
     }
@@ -372,7 +300,7 @@
         showLoading('Deleting analysis...');
 
         try {
-            await axios.delete(`/api/result/${uuid}`);
+            await axios.delete(`/result/${uuid}`);
             hideLoading();
             showToast('Analysis deleted successfully', 'success');
             loadResults();
@@ -389,7 +317,7 @@
         showLoading('Clearing all analyses...');
 
         try {
-            const response = await axios.post('/api/clear-results');
+            const response = await axios.post('/results-clear');
             hideLoading();
             showToast(`Successfully cleared ${response.data.data?.count || response.data.data?.deleted || 0} analyses`, 'success');
             loadResults();
@@ -399,23 +327,5 @@
         }
     }
 
-    function closeModal() {
-        document.getElementById('viewModal').classList.add('d-none');
-        document.getElementById('viewModal').classList.remove('d-flex');
-    }
-
-    function exportResult() {
-        showToast('Export feature coming soon', 'info');
-    }
-
-    // Close modal on outside click
-    document.getElementById('viewModal')?.addEventListener('click', function (e) {
-        if (e.target === this) closeModal();
-    });
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeModal();
-    });
 </script>
 {% endblock %}

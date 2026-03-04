@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
             showLoading('Analyzing your text with 70+ metrics...');
 
             try {
-                const response = await axios.post('/analyze/submit', formData);
+                const response = await axios.post('/analyze-run', formData);
                 hideLoading();
 
                 if (response.data && response.data.success) {
@@ -227,8 +227,9 @@ function displayResults(data) {
         </div>
     `;
 
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    if (!modal.open) {
+        modal.showModal();
+    }
 }
 
 function renderRatingCard(name, score) {
@@ -268,8 +269,10 @@ function formatScansion(scansion) {
 }
 
 function closeResults() {
-    document.getElementById('resultsModal').classList.add('hidden');
-    document.getElementById('resultsModal').classList.remove('flex');
+    const modal = document.getElementById('resultsModal');
+    if (modal && modal.open) {
+        modal.close();
+    }
 }
 
 function downloadResultsAsJSON() {

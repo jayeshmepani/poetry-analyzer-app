@@ -55,6 +55,12 @@
             display var(--dur-slow) allow-discrete,
             overlay var(--dur-slow) allow-discrete;
 
+        /* Make toast position relative for progress bar */
+        &:has(.toast-progress) {
+            position: relative;
+            overflow: hidden;
+        }
+
         /* ---- Active state ---- */
         &.toast-show {
             display: flex;
@@ -73,14 +79,12 @@
             border-inline-start: 4px solid var(--color-success);
             background: color-mix(in oklch, var(--color-surface) 95%, var(--color-success));
 
-            /* no & needed — .toast-icon is a descendant, not joined */
             .toast-icon {
                 color: var(--color-success);
             }
         }
 
-        &.toast-danger,
-        &.toast-error {
+        &:is(.toast-danger, .toast-error) {
             border-inline-start: 4px solid var(--color-danger);
             background: color-mix(in oklch, var(--color-surface) 95%, var(--color-danger));
 
@@ -106,77 +110,76 @@
                 color: var(--color-info);
             }
         }
-    }
 
-    /* ---- Toast Icon ---- */
-    .toast-icon {
-        flex-shrink: 0;
-        width: 1.25rem;
-        height: 1.25rem;
-        color: var(--color-text-muted);
-        margin-block-start: 1px;
-    }
-
-    /* ---- Toast Body ---- */
-    .toast-body {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-1);
-    }
-
-    .toast-title {
-        font-size: var(--text-sm);
-        font-weight: 600;
-        color: var(--color-text);
-        line-height: var(--leading-tight);
-        /* text-box-trim where supported */
-        text-box: trim-both cap alphabetic;
-    }
-
-    .toast-message {
-        font-size: var(--text-xs);
-        color: var(--color-text-soft);
-        line-height: var(--leading-normal);
-        /* text-wrap: pretty for multi-line readability */
-        text-wrap: pretty;
-    }
-
-    /* ---- Close Button ---- */
-    .toast-close {
-        flex-shrink: 0;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--color-text-muted);
-        padding: var(--space-1);
-        border-radius: var(--radius-sm);
-        line-height: 1;
-        transition: color var(--dur-fast), background var(--dur-fast);
-        margin-block-start: -2px;
-
-        &:hover {
-            color: var(--color-text);
-            background: var(--color-bg-subtle);
+        /* ---- Nested Sub-Components ---- */
+        .toast-icon {
+            flex-shrink: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+            color: var(--color-text-muted);
+            margin-block-start: 1px;
         }
-    }
 
-    /* ---- Progress Bar (auto-dismiss countdown) ---- */
-    .toast-progress {
-        position: absolute;
-        inset-block-end: 0;
-        inset-inline: 0;
-        height: 3px;
-        background: currentColor;
-        opacity: 0.3;
-        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-        transform-origin: left;
-        width: 100%;
-    }
+        .toast-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
 
-    .toast-progress-run {
-        animation: toast-progress-shrink var(--toast-duration, 4000ms) linear forwards;
+            .toast-title {
+                font-size: var(--text-sm);
+                font-weight: 600;
+                color: var(--color-text);
+                line-height: var(--leading-tight);
+                /* text-box-trim where supported */
+                text-box-trim: both;
+                text-box-edge: cap alphabetic;
+            }
+
+            .toast-message {
+                font-size: var(--text-xs);
+                color: var(--color-text-soft);
+                line-height: var(--leading-normal);
+                /* text-wrap: pretty for multi-line readability */
+                text-wrap: pretty;
+            }
+        }
+
+        .toast-close {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-text-muted);
+            padding: var(--space-1);
+            border-radius: var(--radius-sm);
+            line-height: 1;
+            transition: color var(--dur-fast), background var(--dur-fast);
+            margin-block-start: -2px;
+
+            &:hover {
+                color: var(--color-text);
+                background: var(--color-bg-subtle);
+            }
+        }
+
+        /* ---- Progress Bar (auto-dismiss countdown) ---- */
+        .toast-progress {
+            position: absolute;
+            inset-block-end: 0;
+            inset-inline: 0;
+            height: 3px;
+            background: currentColor;
+            opacity: 0.3;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            transform-origin: left;
+            width: 100%;
+
+            &.toast-progress-run {
+                animation: toast-progress-shrink var(--toast-duration, 4000ms) linear forwards;
+            }
+        }
     }
 
     @keyframes toast-progress-shrink {
@@ -187,12 +190,6 @@
         to {
             transform: scaleX(0);
         }
-    }
-
-    /* Make toast position relative for progress bar */
-    .toast:has(.toast-progress) {
-        position: relative;
-        overflow: hidden;
     }
 
     /* ---- Mobile: bottom-center ---- */

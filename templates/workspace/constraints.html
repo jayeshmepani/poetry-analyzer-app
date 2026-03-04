@@ -18,32 +18,32 @@
             <div class="rounded-box">
                 <h3 class="kpi-label">Transformation Logic</h3>
                 <div class="space-y-3 mt-6">
-                    <button onclick="selectConstraint('n_plus_7')" id="btn-n_plus_7"
+                    <button type="button" onclick="selectConstraint('n_plus_7')" id="btn-n_plus_7"
                         class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
                         <div class="font-black text-slate-900 group-hover:text-primary capitalize">N + 7</div>
                         <div class="text-[10px] text-slate-400 uppercase tracking-wider">Noun Substitution</div>
                     </button>
-                    <button onclick="selectConstraint('lipogram')" id="btn-lipogram"
+                    <button type="button" onclick="selectConstraint('lipogram')" id="btn-lipogram"
                         class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
                         <div class="font-black text-slate-900 group-hover:text-primary capitalize">Lipogram</div>
                         <div class="text-[10px] text-slate-400 uppercase tracking-wider">Letter Exclusion</div>
                     </button>
-                    <button onclick="selectConstraint('snowball')" id="btn-snowball"
+                    <button type="button" onclick="selectConstraint('snowball')" id="btn-snowball"
                         class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
                         <div class="font-black text-slate-900 group-hover:text-primary capitalize">Snowball</div>
                         <div class="text-[10px] text-slate-400 uppercase tracking-wider">Incremental Expansion</div>
                     </button>
-                    <button onclick="selectConstraint('pilish')" id="btn-pilish"
+                    <button type="button" onclick="selectConstraint('pilish')" id="btn-pilish"
                         class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
                         <div class="font-black text-slate-900 group-hover:text-primary capitalize">Pilish</div>
                         <div class="text-[10px] text-slate-400 uppercase tracking-wider">Pi-based Meter</div>
                     </button>
-                    <button onclick="selectConstraint('univocalism')" id="btn-univocalism"
+                    <button type="button" onclick="selectConstraint('univocalism')" id="btn-univocalism"
                         class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
                         <div class="font-black text-slate-900 group-hover:text-primary capitalize">Univocalism</div>
                         <div class="text-[10px] text-slate-400 uppercase tracking-wider">Vowel Restriction</div>
                     </button>
-                    <button onclick="selectConstraint('sestina')" id="btn-sestina"
+                    <button type="button" onclick="selectConstraint('sestina')" id="btn-sestina"
                         class="constraint-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-primary transition group bg-white">
                         <div class="font-black text-slate-900 group-hover:text-primary capitalize">Sestina</div>
                         <div class="text-[10px] text-slate-400 uppercase tracking-wider">Rotating End-Words</div>
@@ -68,7 +68,7 @@
                 <textarea id="sourceText" rows="10" class="w-full mt-4 p-8 bg-slate-50 border border-slate-200 rounded-5xl outline-none font-serif italic text-xl leading-relaxed focus:ring-4 focus:ring-blue-100 transition" placeholder="Paste literary source text for transformation..."></textarea>
                 
                 <div class="mt-8 flex justify-end">
-                    <button onclick="applyConstraint()" class="btn btn-primary px-12 py-4 rounded-2xl text-lg shadow-xl shadow-blue-500/20">
+                    <button type="button" onclick="applyConstraint()" class="btn btn-primary px-12 py-4 rounded-2xl text-lg shadow-xl shadow-blue-500/20">
                         <svg class="icon mr-2" aria-hidden="true"><use href="#icon-microchip"></use></svg> Execute Transformation
                     </button>
                 </div>
@@ -90,10 +90,10 @@
                     <div class="mt-8 flex justify-between items-center">
                         <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest" id="transformationMeta"></span>
                         <div class="flex gap-3">
-                            <button onclick="copyOutput()" class="btn bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">
+                            <button type="button" onclick="copyOutput()" class="btn bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">
                                 <svg class="icon mr-2" aria-hidden="true"><use href="#icon-copy"></use></svg> Copy
                             </button>
-                            <button onclick="downloadOutput()" class="btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
+                            <button type="button" onclick="downloadOutput()" class="btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
                                 <svg class="icon mr-2" aria-hidden="true"><use href="#icon-download"></use></svg> Download
                             </button>
                         </div>
@@ -145,7 +145,7 @@ function selectConstraint(type) {
                 <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Vowel Constraint</label>
                 <div class="flex gap-2">
                     ${['a','e','i','o','u'].map(v => `
-                        <button onclick="setVowel('${v}')" class="vowel-btn flex-1 h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-600 transition font-black uppercase">${v}</button>
+                        <button type="button" onclick="setVowel('${v}')" class="vowel-btn flex-1 h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-600 transition font-black uppercase">${v}</button>
                     `).join('')}
                 </div>
                 <input type="hidden" id="param_vowel" value="e">
@@ -180,7 +180,7 @@ async function applyConstraint() {
                    activeConstraint === 'univocalism' ? {vowel: document.getElementById('param_vowel').value} : {}
         };
 
-        const response = await axios.post('/api/constraints/apply', payload);
+        const response = await axios.post('/constraints-apply', payload);
         const result = response.data.success ? response.data.data : response.data;
 
         const outText = result.transformed_text || result.result || result.text;

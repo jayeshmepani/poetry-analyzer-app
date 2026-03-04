@@ -14,15 +14,15 @@
     <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
         <h3 class="text-xl font-bold mb-4">Select Rubric</h3>
         <div class="grid md:grid-cols-3 gap-4">
-            <button onclick="selectRubric('poetry_out_loud')" class="p-4 border-2 border-primary bg-blue-50 rounded-lg">
+            <button type="button" onclick="selectRubric('poetry_out_loud')" class="p-4 border-2 border-primary bg-blue-50 rounded-lg">
                 <div class="font-bold">Poetry Out Loud</div>
                 <div class="text-xs">25 points, 5 categories</div>
             </button>
-            <button onclick="selectRubric('poetry_slam')" class="p-4 border-2 border-secondary bg-teal-50 rounded-lg">
+            <button type="button" onclick="selectRubric('poetry_slam')" class="p-4 border-2 border-secondary bg-teal-50 rounded-lg">
                 <div class="font-bold">Poetry Slam</div>
                 <div class="text-xs">0-10 scale</div>
             </button>
-            <button onclick="selectRubric('hundred_point')" class="p-4 border-2 border-accent bg-green-50 rounded-lg">
+            <button type="button" onclick="selectRubric('hundred_point')" class="p-4 border-2 border-accent bg-green-50 rounded-lg">
                 <div class="font-bold">100-Point System</div>
                 <div class="text-xs">10 categories × 10 pts</div>
             </button>
@@ -41,10 +41,10 @@
         <div id="criteriaContainer" class="space-y-4"></div>
         
         <div class="grid grid-cols-2 gap-4 mt-8">
-            <button onclick="calculateScore()" class="gradient-bg text-white py-4 rounded-lg font-bold text-lg">
+            <button type="button" onclick="calculateScore()" class="gradient-bg text-white py-4 rounded-lg font-bold text-lg">
                 <svg class="icon mr-2" aria-hidden="true"><use href="#icon-calculator"></use></svg>Calculate Score
             </button>
-            <button onclick="analyzePerformance()" class="bg-blue-600 text-white py-4 rounded-lg font-bold text-lg">
+            <button type="button" onclick="analyzePerformance()" class="bg-blue-600 text-white py-4 rounded-lg font-bold text-lg">
                 <svg class="icon mr-2" aria-hidden="true"><use href="#icon-microphone"></use></svg>Performance Check
             </button>
         </div>
@@ -138,7 +138,7 @@ async function analyzePerformance() {
     
     showLoading('Analyzing for performance...');
     try {
-        const response = await fetch('/api/analysis/performance', {
+        const response = await fetch('/performance-analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ poem: poem })

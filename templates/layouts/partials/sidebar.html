@@ -9,13 +9,6 @@
             </svg>
             <span class="sidebar-logo-text">Poetry Analyzer</span>
         </a>
-        <button class="sidebar-collapse-btn" id="desktopCollapseBtn" title="Collapse sidebar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-        </button>
     </div>
 
     <!-- Nav -->
@@ -52,7 +45,7 @@
             </li>
 
             <li
-                class="sidebar-item sidebar-has-sub {% if '/workspace/results' in request.url.path or '/workspace/visualize' in request.url.path or '/workspace/database' in request.url.path %}active{% endif %}">
+                class="sidebar-item sidebar-has-sub {% if '/results' in request.url.path or '/database' in request.url.path %}active{% endif %}">
                 <a href="#" class="sidebar-link sidebar-toggle-sub">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="8" y1="6" x2="21" y2="6" />
@@ -69,14 +62,13 @@
                     </svg>
                 </a>
                 <ul class="sidebar-submenu">
-                    <li><a href="/workspace/results" class="sidebar-sublink">View Results</a></li>
-                    <li><a href="/workspace/visualize" class="sidebar-sublink">Visualize</a></li>
-                    <li><a href="/workspace/database" class="sidebar-sublink">History</a></li>
+                    <li><a href="/results" class="sidebar-sublink">View Results</a></li>
+                    <li><a href="/database" class="sidebar-sublink">History</a></li>
                 </ul>
             </li>
 
-            <li class="sidebar-item {% if '/workspace/batch' in request.url.path %}active{% endif %}">
-                <a href="/workspace/batch" class="sidebar-link">
+            <li class="sidebar-item {% if '/batch' in request.url.path %}active{% endif %}">
+                <a href="/batch" class="sidebar-link">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                         <polyline points="13 2 13 9 20 9" />
@@ -85,8 +77,8 @@
                 </a>
             </li>
 
-            <li class="sidebar-item {% if '/workspace/comparator' in request.url.path %}active{% endif %}">
-                <a href="/workspace/comparator" class="sidebar-link">
+            <li class="sidebar-item {% if '/comparator' in request.url.path %}active{% endif %}">
+                <a href="/comparator" class="sidebar-link">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="20" x2="18" y2="10" />
                         <line x1="12" y1="20" x2="12" y2="4" />
@@ -100,8 +92,8 @@
         <!-- Tools -->
         <p class="sidebar-section-label">Tools</p>
         <ul class="sidebar-menu">
-            <li class="sidebar-item {% if '/workspace/meters' in request.url.path %}active{% endif %}">
-                <a href="/workspace/meters" class="sidebar-link">
+            <li class="sidebar-item {% if '/meters' in request.url.path %}active{% endif %}">
+                <a href="/meters" class="sidebar-link">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
@@ -109,8 +101,8 @@
                     <span class="sidebar-link-text">Meters</span>
                 </a>
             </li>
-            <li class="sidebar-item {% if '/workspace/rasas' in request.url.path %}active{% endif %}">
-                <a href="/workspace/rasas" class="sidebar-link">
+            <li class="sidebar-item {% if '/rasas' in request.url.path %}active{% endif %}">
+                <a href="/rasas" class="sidebar-link">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10" />
                         <path d="M8 14s1.5 2 4 2 4-2 4-2" />
@@ -120,8 +112,8 @@
                     <span class="sidebar-link-text">Rasas</span>
                 </a>
             </li>
-            <li class="sidebar-item {% if '/workspace/theory' in request.url.path %}active{% endif %}">
-                <a href="/workspace/theory" class="sidebar-link">
+            <li class="sidebar-item {% if '/theory' in request.url.path %}active{% endif %}">
+                <a href="/theory" class="sidebar-link">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
@@ -129,8 +121,8 @@
                     <span class="sidebar-link-text">Theory</span>
                 </a>
             </li>
-            <li class="sidebar-item {% if '/workspace/settings' in request.url.path %}active{% endif %}">
-                <a href="/workspace/settings" class="sidebar-link">
+            <li class="sidebar-item {% if '/settings' in request.url.path %}active{% endif %}">
+                <a href="/settings" class="sidebar-link">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3" />
                         <path

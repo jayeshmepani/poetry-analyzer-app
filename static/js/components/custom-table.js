@@ -150,9 +150,23 @@ class CustomTable {
             <div class="pagination-wrap">
                 <label class="table-per-page">
                     Per page:
-                    <select class="ct-limit-select">
-                        ${this.opts.pageList.map(n => `<option value="${n}" ${n === this.opts.pageSize ? 'selected' : ''}>${n}</option>`).join('')}
-                    </select>
+                    <div class="ct-select" data-open="false">
+                        <button type="button" class="ct-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span class="ct-select-value">${this.opts.pageSize}</span>
+                            <svg class="ct-select-caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M6 8l4 4 4-4"></path>
+                            </svg>
+                        </button>
+                        <ul class="ct-select-menu" role="listbox" tabindex="-1">
+                            ${this.opts.pageList.map(n => `
+                                <li role="option" aria-selected="${n === this.opts.pageSize ? 'true' : 'false'}">
+                                    <button type="button" class="ct-select-option ${n === this.opts.pageSize ? 'is-selected' : ''}" data-value="${n}">
+                                        ${n}
+                                    </button>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
                 </label>
                 <div class="pagination ct-pages"></div>
             </div>
@@ -252,13 +266,112 @@ class CustomTable {
         }
 
         // Limit
-        const limitSel = this._bottomBar.querySelector('.ct-limit-select');
-        if (limitSel) {
-            limitSel.addEventListener('change', () => {
-                this.state.limit = parseInt(limitSel.value);
+        const selectRoot = this._bottomBar.querySelector('.ct-select');
+        const selectTrigger = this._bottomBar.querySelector('.ct-select-trigger');
+        const selectMenu = this._bottomBar.querySelector('.ct-select-menu');
+        const selectValue = this._bottomBar.querySelector('.ct-select-value');
+        const optionButtons = [...this._bottomBar.querySelectorAll('.ct-select-option')];
+
+        if (selectRoot && selectTrigger && selectMenu && selectValue && optionButtons.length) {
+            const placeSelectMenu = () => {
+                if (selectRoot.dataset.open !== 'true') return;
+
+                const triggerRect = selectTrigger.getBoundingClientRect();
+                const viewportPadding = 8;
+                const gap = 6;
+
+                selectMenu.classList.add('is-floating');
+                selectMenu.style.visibility = 'hidden';
+                selectMenu.style.display = 'block';
+                selectMenu.style.position = 'fixed';
+                selectMenu.style.inset = 'auto';
+                selectMenu.style.minWidth = `${Math.round(triggerRect.width)}px`;
+
+                const menuRect = selectMenu.getBoundingClientRect();
+                const menuWidth = menuRect.width || triggerRect.width;
+                const menuHeight = menuRect.height || 180;
+
+                const availableBelow = window.innerHeight - triggerRect.bottom - viewportPadding;
+                const availableAbove = triggerRect.top - viewportPadding;
+                const openUp = availableBelow < menuHeight + gap && availableAbove > availableBelow;
+
+                let top = openUp
+                    ? Math.max(viewportPadding, triggerRect.top - menuHeight - gap)
+                    : Math.min(window.innerHeight - menuHeight - viewportPadding, triggerRect.bottom + gap);
+
+                let left = triggerRect.left;
+                left = Math.max(viewportPadding, Math.min(left, window.innerWidth - menuWidth - viewportPadding));
+
+                selectMenu.style.top = `${Math.round(top)}px`;
+                selectMenu.style.left = `${Math.round(left)}px`;
+                selectMenu.style.visibility = '';
+            };
+
+            const resetSelectMenuPlacement = () => {
+                selectMenu.classList.remove('is-floating');
+                selectMenu.style.position = '';
+                selectMenu.style.inset = '';
+                selectMenu.style.top = '';
+                selectMenu.style.left = '';
+                selectMenu.style.minWidth = '';
+                selectMenu.style.visibility = '';
+                selectMenu.style.display = '';
+            };
+
+            const closeSelect = () => {
+                selectRoot.dataset.open = 'false';
+                selectTrigger.setAttribute('aria-expanded', 'false');
+                resetSelectMenuPlacement();
+            };
+
+            const openSelect = () => {
+                selectRoot.dataset.open = 'true';
+                selectTrigger.setAttribute('aria-expanded', 'true');
+                requestAnimationFrame(placeSelectMenu);
+            };
+
+            const setLimit = (nextLimit) => {
+                this.state.limit = nextLimit;
                 this.state.offset = 0;
+                selectValue.textContent = String(nextLimit);
+
+                optionButtons.forEach(btn => {
+                    const isActive = parseInt(btn.dataset.value, 10) === nextLimit;
+                    btn.classList.toggle('is-selected', isActive);
+                    btn.parentElement?.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+
+                closeSelect();
                 this._refresh();
+            };
+
+            selectTrigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isOpen = selectRoot.dataset.open === 'true';
+                if (isOpen) closeSelect();
+                else openSelect();
             });
+
+            optionButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const nextLimit = parseInt(btn.dataset.value, 10);
+                    if (!Number.isNaN(nextLimit)) setLimit(nextLimit);
+                });
+            });
+
+            selectTrigger.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeSelect();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!selectRoot.contains(e.target)) closeSelect();
+            });
+
+            window.addEventListener('resize', placeSelectMenu);
+            window.addEventListener('scroll', placeSelectMenu, true);
         }
     }
 

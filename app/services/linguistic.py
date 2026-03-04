@@ -14,6 +14,8 @@ Uses ALL libraries from requirements.txt:
 """
 
 import re
+import os
+from pathlib import Path
 from typing import Dict, List, Tuple, Set, Optional, Any
 from collections import Counter
 import logging
@@ -92,11 +94,16 @@ class LinguisticAnalyzer:
             try:
                 import stanza
 
+                from app.config import settings
                 lang_code = self._get_stanza_lang_code()
+                resources_dir = Path(settings.stanza.resources_dir).resolve()
+                resources_dir.mkdir(parents=True, exist_ok=True)
+                os.environ["STANZA_RESOURCES_DIR"] = str(resources_dir)
                 self.stanza_nlp = stanza.Pipeline(
                     lang=lang_code,
                     processors="tokenize,pos,lemma,depparse",
                     verbose=False,
+                    dir=str(resources_dir),
                 )
                 logger.info(f"Loaded Stanza pipeline for {lang_code}")
             except Exception as e:
@@ -215,15 +222,26 @@ class LinguisticAnalyzer:
             }
 
         # === SPACY: Noun Chunks with details ===
+        # NOTE:
+        # spaCy multilingual "xx" models do not implement language-specific
+        # noun_chunks iterator and raise NotImplementedError [E894].
         noun_chunks = []
-        for chunk in doc.noun_chunks:
-            noun_chunks.append(
-                {
-                    "text": chunk.text,
-                    "root": chunk.root.text,
-                    "root_dep": chunk.root.dep_,
-                }
+        try:
+            for chunk in doc.noun_chunks:
+                noun_chunks.append(
+                    {
+                        "text": chunk.text,
+                        "root": chunk.root.text,
+                        "root_dep": chunk.root.dep_,
+                    }
+                )
+        except (NotImplementedError, ValueError) as e:
+            logger.info(
+                "spaCy noun_chunks unavailable for language '%s' (%s). Using fallback noun phrase heuristic.",
+                self.language,
+                e,
             )
+            noun_chunks = self._fallback_noun_chunks(doc)
 
         # === SPACY: Dependency Tree Analysis ===
         dep_tree = []
@@ -304,6 +322,56 @@ class LinguisticAnalyzer:
             "text_metrics": text_metrics,
             "sentiment": sentiment_analysis,
         }
+
+    def _fallback_noun_chunks(self, doc) -> List[Dict[str, str]]:
+        """
+        Fallback noun-phrase extraction for models without noun_chunks support
+        (e.g., spaCy multilingual xx_* pipelines).
+        Groups contiguous NOUN/PROPN/ADJ tokens as lightweight NP candidates.
+        """
+        chunks: List[Dict[str, str]] = []
+        current_tokens = []
+
+        allowed_pos = {"NOUN", "PROPN", "ADJ"}
+        for token in doc:
+            if token.is_space or token.is_punct:
+                if current_tokens:
+                    root = current_tokens[-1]
+                    chunks.append(
+                        {
+                            "text": " ".join(t.text for t in current_tokens),
+                            "root": root.text,
+                            "root_dep": root.dep_ or "dep",
+                        }
+                    )
+                    current_tokens = []
+                continue
+
+            if token.pos_ in allowed_pos:
+                current_tokens.append(token)
+            else:
+                if current_tokens:
+                    root = current_tokens[-1]
+                    chunks.append(
+                        {
+                            "text": " ".join(t.text for t in current_tokens),
+                            "root": root.text,
+                            "root_dep": root.dep_ or "dep",
+                        }
+                    )
+                    current_tokens = []
+
+        if current_tokens:
+            root = current_tokens[-1]
+            chunks.append(
+                {
+                    "text": " ".join(t.text for t in current_tokens),
+                    "root": root.text,
+                    "root_dep": root.dep_ or "dep",
+                }
+            )
+
+        return chunks
 
     def _analyze_with_stanza(self) -> Dict[str, Any]:
         """Analyze using Stanza"""

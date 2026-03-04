@@ -40,13 +40,51 @@
                         <svg class="icon text-muted" aria-hidden="true"><use href="#icon-globe"></use></svg> Default Language
                     </label>
                     <select id="defaultLanguage" class="form-select">
-                        <option value="en">🇬🇧 English</option>
-                        <option value="hi">🇮🇳 Hindi (हिन्दी)</option>
-                        <option value="gu">🇮🇳 Gujarati (ગુજરાતી)</option>
-                        <option value="ur">🇵🇰 Urdu (اردو)</option>
-                        <option value="mr">🇮🇳 Marathi (मराठी)</option>
-                        <option value="bn">🇧🇩 Bengali (বাংলা)</option>
-                        <option value="sa">🇮🇳 Sanskrit (संस्कृत)</option>
+                        <optgroup label="English: Historical Evolution">
+                            <option value="en_old">Old English (Anglo-Saxon)</option>
+                            <option value="en_middle">Middle English (Chaucerian)</option>
+                            <option value="en_modern" selected>Modern English</option>
+                        </optgroup>
+                        <optgroup label="English: Global Regional Varieties">
+                            <option value="en_british">British English</option>
+                            <option value="en_american">American English</option>
+                            <option value="en_australian">Australian English</option>
+                            <option value="en_indian">Indian English</option>
+                            <option value="en_south_african">South African English</option>
+                            <option value="en_caribbean">Caribbean English(es)</option>
+                        </optgroup>
+                        <optgroup label="English: Literary, Musical, Folk Dialects">
+                            <option value="en_scots">Scots (Lowland Scots)</option>
+                            <option value="en_aave">African American Vernacular English (AAVE)</option>
+                            <option value="en_cockney">Cockney</option>
+                            <option value="en_southern_us">Southern American English</option>
+                            <option value="en_geordie">Geordie</option>
+                        </optgroup>
+                        <optgroup label="Major Hindi Literary & Musical Dialects">
+                            <option value="hi">Hindi (Modern Standard)</option>
+                            <option value="hi_braj">Braj Bhasha</option>
+                            <option value="hi_awadhi">Awadhi</option>
+                            <option value="hi_maithili">Maithili</option>
+                            <option value="hi_sadhukkari">Sadhukkari (Panchmel Khichdi)</option>
+                            <option value="hi_khariboli">Khari Boli</option>
+                        </optgroup>
+                        <optgroup label="Major Gujarati Literary & Musical Dialects">
+                            <option value="gu">Gujarati (Standard)</option>
+                            <option value="gu_kathiawadi">Kathiawadi (Saurashtri)</option>
+                            <option value="gu_charotari">Charotari</option>
+                            <option value="gu_surati">Surati</option>
+                            <option value="gu_old">Old Gujarati (Maru-Gurjar)</option>
+                        </optgroup>
+                        <optgroup label="Major Urdu Literary & Regional Variations">
+                            <option value="ur_standard">Modern Standard Urdu</option>
+                            <option value="ur_dakhni">Dakhni (Deccani)</option>
+                            <option value="ur_rekhta">Rekhta</option>
+                            <option value="ur_dhakaiya">Dhakaiya Urdu</option>
+                        </optgroup>
+                        <optgroup label="Hybrid & Contact Forms">
+                            <option value="en_creole">Creole Forms</option>
+                            <option value="hinglish">Hinglish</option>
+                        </optgroup>
                     </select>
                     <p class="form-hint">This language will be pre-selected in the analysis form</p>
                 </div>
@@ -166,14 +204,14 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="d-flex gap-4 mt-8 pt-6 border-t flex-wrap">
-                <button onclick="saveSettings()" class="btn btn-primary btn-lg flex-1">
+            <div class="d-flex gap-4 mt-8 pt-6 flex-wrap">
+                <button type="button" onclick="saveSettings()" class="btn btn-primary btn-lg flex-1">
                     <svg class="icon mr-2" aria-hidden="true"><use href="#icon-save"></use></svg> Save Settings
                 </button>
-                <button onclick="loadSettings()" class="btn btn-secondary btn-lg">
+                <button type="button" onclick="loadSettings()" class="btn btn-secondary btn-lg">
                     <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg> Reload
                 </button>
-                <button onclick="resetToDefaults()" class="btn btn-danger btn-lg">
+                <button type="button" onclick="resetToDefaults()" class="btn btn-danger btn-lg">
                     <svg class="icon mr-2" aria-hidden="true"><use href="#icon-undo"></use></svg> Reset
                 </button>
             </div>
@@ -284,6 +322,25 @@
 
 {% block page_js %}
 <script>
+    function normalizeLanguageValue(value) {
+        const map = {
+            en: 'en_modern',
+            hi: 'hi',
+            gu: 'gu',
+            ur: 'ur_standard',
+            ur_deva: 'ur_standard',
+            brj_deva: 'hi_braj',
+            mr: 'hi_khariboli',
+            bn: 'hi_khariboli',
+            sa: 'hi_khariboli',
+            ur_standard: 'ur_standard',
+            ur_dakhni: 'ur_dakhni',
+            ur_rekhta: 'ur_rekhta',
+            ur_dhakaiya: 'ur_dhakaiya'
+        };
+        return map[value] || value || 'en_modern';
+    }
+
     // JS logic remains identical but wrapped correctly
     document.addEventListener('DOMContentLoaded', function () {
         loadSettings();
@@ -302,12 +359,12 @@
         showLoading('Loading settings from database...');
 
         try {
-            const response = await axios.get('/settings/get');
+            const response = await axios.get('/settings-data');
             const settings = response.data.data?.settings || response.data.settings || {};
 
             // Apply settings to form
             if (settings.default_language) {
-                document.getElementById('defaultLanguage').value = settings.default_language;
+                document.getElementById('defaultLanguage').value = normalizeLanguageValue(settings.default_language);
             }
             if (settings.default_strictness) {
                 document.getElementById('strictness').value = settings.default_strictness;
@@ -349,7 +406,7 @@
         };
 
         try {
-            const response = await axios.post('/settings/save', { settings });
+            const response = await axios.post('/settings-data', { settings });
             hideLoading();
 
             document.getElementById('settingsStatus').innerHTML = '<span class="text-success"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-check-circle"></use></svg>Saved</span>';
@@ -379,7 +436,7 @@
         if (!confirm('Are you sure you want to reset all settings to defaults?')) return;
 
         // Reset to defaults
-        document.getElementById('defaultLanguage').value = 'en';
+        document.getElementById('defaultLanguage').value = 'en_modern';
         document.getElementById('strictness').value = 8;
         document.getElementById('strictnessValue').textContent = '8';
         document.getElementById('enableProsody').checked = true;

@@ -1,0 +1,670 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Analysis Report - PoetryMaster{% endblock %}
+
+{% block content %}
+<section class="card mb-6">
+    <div class="d-flex flex-col sm-flex-row justify-between items-start sm-items-center gap-4">
+        <div>
+            <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-2">Analysis Report</p>
+            <h1 class="text-3xl font-black text-text mb-2">Complete Result View</h1>
+            <p class="text-soft">Full analysis report with all sections, charts, metrics, and raw payload.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/results" class="btn btn-secondary">
+                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-arrow-left"></use></svg> Back
+            </a>
+            <button type="button" class="btn btn-primary" onclick="downloadResult()">
+                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-download"></use></svg> Export JSON
+            </button>
+        </div>
+    </div>
+</section>
+
+<div id="reportContainer" class="d-flex flex-col gap-6">
+    <div class="card p-12 text-center">
+        <svg class="icon fa-spin text-3xl text-muted mb-4" aria-hidden="true"><use href="#icon-circle-notch"></use></svg>
+        <p class="text-soft font-medium">Loading complete report...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<style>
+    .report-wrap {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-break: anywhere;
+    }
+    .report-value {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-break: anywhere;
+        line-height: 1.5;
+        min-width: 0;
+    }
+    .report-scroll {
+        max-height: 420px;
+        overflow: auto;
+    }
+    .report-table-wrap {
+        overflow: auto;
+        border: 1px solid var(--color-border);
+        border-radius: 0.75rem;
+    }
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+    }
+    .report-table th,
+    .report-table td {
+        border-bottom: 1px solid var(--color-border);
+        padding: 0.55rem 0.7rem;
+        vertical-align: top;
+    }
+    .report-table th {
+        text-align: left;
+        font-weight: 700;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+    .report-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid var(--color-border);
+        font-size: 0.75rem;
+        margin: 0.15rem 0.25rem 0.15rem 0;
+        color: var(--color-text);
+        background: var(--color-subtle);
+    }
+    .report-node-grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .report-node-grid > * {
+        min-width: 0;
+    }
+    .report-node-card {
+        border: 1px solid var(--color-border);
+        border-radius: 0.75rem;
+        background: var(--color-surface);
+        overflow: visible;
+        min-width: 0;
+    }
+    .report-node-head {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-text-muted);
+        padding: 0.65rem 0.8rem;
+        border-bottom: 1px solid var(--color-border);
+        background: color-mix(in srgb, var(--color-subtle) 70%, transparent);
+    }
+    .report-node-body {
+        padding: 0.75rem 0.8rem;
+        min-width: 0;
+        overflow-x: auto;
+    }
+    .report-node-list {
+        display: grid;
+        gap: 0.55rem;
+    }
+    .report-node-list-item {
+        border: 1px solid var(--color-border);
+        border-radius: 0.65rem;
+        padding: 0.65rem;
+        background: color-mix(in srgb, var(--color-subtle) 45%, transparent);
+    }
+    .report-kv {
+        display: grid;
+        gap: 0.2rem;
+    }
+    .report-kv-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted);
+    }
+    .report-metric-meta {
+        margin-top: 0.45rem;
+        font-size: 0.72rem;
+        color: var(--color-text-muted);
+        line-height: 1.35;
+    }
+</style>
+<script>
+    const RESULT_ID = '{{ result_id }}';
+    let currentResult = null;
+    const INTERNAL_FIELD_KEYS = new Set([
+        'error',
+        'errors',
+        'fallback_used',
+        'fallback',
+        'exception',
+        'traceback',
+        'stack',
+        'debug',
+        'debug_info',
+        'internal',
+        'warning_internal',
+    ]);
+
+    function isInternalFieldName(name) {
+        const key = String(name || '').toLowerCase();
+        if (!key) return false;
+        if (INTERNAL_FIELD_KEYS.has(key)) return true;
+        return [
+            'error',
+            'fallback',
+            'trace',
+            'stack',
+            'debug',
+            'exception',
+            'internal'
+        ].some((token) => key.includes(token));
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function scoreColor(score) {
+        const s = Number(score ?? 0);
+        if (s >= 8) return 'var(--color-success)';
+        if (s >= 6) return 'var(--color-warning)';
+        return 'var(--color-danger)';
+    }
+
+    function toTitle(key) {
+        return String(key || '')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (m) => m.toUpperCase());
+    }
+
+    function isPrimitive(v) {
+        return v === null || v === undefined || typeof v !== 'object';
+    }
+
+    function isPlainObject(v) {
+        return !!v && typeof v === 'object' && !Array.isArray(v);
+    }
+
+    function formatNumeric(n) {
+        if (!Number.isFinite(n)) return '';
+        if (Number.isInteger(n)) return n.toString();
+        const fixed = n.toFixed(4);
+        return fixed.replace(/\.?0+$/, '');
+    }
+
+    function inferMetricMeta(keyPath, value) {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+        const k = String(keyPath || '').toLowerCase();
+        const chunks = [];
+
+        let unit = 'Unitless';
+        let ref = 'Reference range not fixed';
+        let better = '';
+        let note = '';
+
+        if (k.includes('percent') || k.includes('percentage')) {
+            unit = '%';
+            ref = '0-100';
+            better = 'Higher is usually better';
+        } else if (k.includes('ratio') || k.includes('density') || k.includes('ttr') || k.includes('mattr') || k.includes('herdans') || k.includes('sichels')) {
+            unit = 'Unitless ratio';
+            ref = 'Typically 0-1';
+            better = 'Context dependent';
+        } else if (k.includes('score') && !k.includes('dale') && !k.includes('flesch')) {
+            unit = 'Points';
+            ref = 'Often 0-10';
+            better = 'Higher is usually better';
+        } else if (k.includes('ease')) {
+            unit = 'Readability points';
+            ref = '0-100+';
+            better = 'Higher means easier text';
+        } else if (k.includes('grade') || k.includes('index') || k.includes('fog') || k.includes('smog') || k.includes('ari') || k.includes('linsear') || k.includes('chall') || k.includes('spache') || k.includes('raygor') || k.includes('fry')) {
+            unit = 'Grade/Index';
+            ref = 'No strict upper cap';
+            better = 'Lower often means easier text';
+        } else if (k.includes('count') || k.includes('total') || k.includes('words') || k.includes('lines') || k.includes('syllable') || k.includes('occurrence') || k.includes('frequency')) {
+            unit = 'Count';
+            ref = '0+';
+            better = '';
+        } else if (k.includes('avg') || k.includes('average') || k.includes('mean')) {
+            unit = 'Average value';
+            ref = 'Depends on base metric';
+            better = 'Context dependent';
+        } else if (k.includes('mtld') || k.includes('yules') || k.includes('honore') || k.includes('kuraszkiewicz') || k.includes('somers')) {
+            unit = 'Lexical index';
+            ref = 'Model-specific scale';
+            better = 'Context dependent';
+        }
+
+        if (k.includes('flesch_kincaid')) {
+            unit = 'US grade level';
+            ref = 'Approx. 1-16+';
+            better = 'Lower means easier text';
+        } else if (k.includes('flesch_reading_ease')) {
+            unit = 'Readability points';
+            ref = '0-100+';
+            better = 'Higher means easier text';
+        } else if (k.includes('lexical_density')) {
+            unit = '%';
+            ref = '0-100';
+            better = 'Context dependent';
+            note = 'Higher can indicate information-dense language';
+        } else if (k.includes('type_token_ratio') || k.endsWith('.ttr')) {
+            unit = 'Unitless ratio';
+            ref = '0-1';
+            better = 'Higher means higher lexical variety';
+        }
+
+        chunks.push(`Unit: ${unit}`);
+        chunks.push(`Range: ${ref}`);
+        if (better) chunks.push(`Interpretation: ${better}`);
+        if (note) chunks.push(note);
+        chunks.push('Ref type: heuristic');
+        return chunks.join(' | ');
+    }
+
+    function formatPrimitive(v, keyPath = '') {
+        if (v === null || v === undefined) return '';
+        if (typeof v === 'number') return Number.isFinite(v) ? escapeHtml(formatNumeric(v)) : '';
+        if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+        const text = String(v).trim();
+        if (!text || text === '-') return '';
+        return escapeHtml(text);
+    }
+
+    function renderArrayAsChips(arr) {
+        if (!arr.length) return '';
+        const chips = arr
+            .filter((item) => hasMeaningfulData(item))
+            .map((item) => {
+                const value = formatPrimitive(item);
+                return value ? `<span class="report-chip">${value}</span>` : '';
+            })
+            .filter(Boolean);
+        return chips.join('');
+    }
+
+    function numericArrayStats(arr) {
+        const nums = arr.filter((v) => typeof v === 'number' && Number.isFinite(v));
+        if (!nums.length) return '';
+        const min = Math.min(...nums);
+        const max = Math.max(...nums);
+        const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
+        return `Min: ${formatNumeric(min)} | Max: ${formatNumeric(max)} | Mean: ${formatNumeric(mean)} | Count: ${nums.length}`;
+    }
+
+    function renderNodeCard(title, content) {
+        return `
+            <section class="report-node-card">
+                <div class="report-node-head">${escapeHtml(title)}</div>
+                <div class="report-node-body report-wrap">${content}</div>
+            </section>
+        `;
+    }
+
+    function renderPrimitiveBlock(value, keyPath = '') {
+        const formatted = formatPrimitive(value, keyPath);
+        if (!formatted || !String(formatted).trim()) return '';
+        const meta = inferMetricMeta(keyPath, value);
+        return `
+            <div class="report-value">${formatted}</div>
+            ${meta ? `<div class="report-metric-meta">${escapeHtml(meta)}</div>` : ''}
+        `;
+    }
+
+    function renderArrayNode(arr, depth = 0, path = '') {
+        if (!arr.length) return '';
+        const meaningful = arr.filter((item) => hasMeaningfulData(item));
+        if (!meaningful.length) return '';
+        if (meaningful.every(isPrimitive)) {
+            const chipHtml = renderArrayAsChips(meaningful);
+            const stats = numericArrayStats(meaningful);
+            return chipHtml ? `
+                <div class="report-wrap">${chipHtml}</div>
+                ${stats ? `<div class="report-metric-meta">${escapeHtml(stats)}</div>` : ''}
+            ` : '';
+        }
+
+        const maxItems = 120;
+        const visibleItems = meaningful.slice(0, maxItems);
+        const hiddenCount = meaningful.length - visibleItems.length;
+
+        return `
+            <div class="report-node-list">
+                ${visibleItems.map((item, idx) => `
+                    <div class="report-node-list-item">
+                        <div class="report-kv">
+                            <span class="report-kv-label">Item ${idx + 1}</span>
+                            <div>${renderNode(item, depth + 1, `${path}[${idx}]`)}</div>
+                        </div>
+                    </div>
+                `).join('')}
+                ${hiddenCount > 0 ? `<p class="text-soft text-sm m-0">+ ${hiddenCount} more items</p>` : ''}
+            </div>
+        `;
+    }
+
+    function renderObjectNode(obj, depth = 0, path = '') {
+        const entries = Object.entries(obj || {}).filter(([, v]) => hasMeaningfulData(v));
+        if (!entries.length) return '';
+
+        return `
+            <div class="report-node-grid">
+                ${entries.map(([k, v]) => {
+                    const nextPath = path ? `${path}.${k}` : k;
+                    const content = isPrimitive(v) ? renderPrimitiveBlock(v, nextPath) : renderNode(v, depth + 1, nextPath);
+                    if (!content || !content.trim()) return '';
+                    return renderNodeCard(toTitle(k), content);
+                }).filter(Boolean).join('')}
+            </div>
+        `;
+    }
+
+    function renderNode(node, depth = 0, path = '') {
+        if (isPrimitive(node)) {
+            if (!hasMeaningfulData(node)) return '';
+            const value = renderPrimitiveBlock(node, path);
+            return value && value.trim() ? value : '';
+        }
+        if (Array.isArray(node)) return renderArrayNode(node, depth, path);
+        if (isPlainObject(node)) return renderObjectNode(node, depth, path);
+        return `<div class="report-value">${escapeHtml(String(node))}</div>`;
+    }
+
+    function hasMeaningfulData(node) {
+        if (node === null || node === undefined) return false;
+        if (typeof node === 'string') {
+            const text = node.trim();
+            return text.length > 0 && text !== '-';
+        }
+        if (typeof node === 'number') return Number.isFinite(node);
+        if (typeof node === 'boolean') return true;
+        if (Array.isArray(node)) return node.some((item) => hasMeaningfulData(item));
+        if (isPlainObject(node)) return Object.values(node).some((value) => hasMeaningfulData(value));
+        return false;
+    }
+
+    function sectionCard(title, content) {
+        if (!hasMeaningfulData(content)) return '';
+        const body = renderNode(content);
+        if (!body || !body.trim()) return '';
+        return `
+            <div class="card">
+                <h3 class="text-lg font-bold text-text mb-4">${escapeHtml(title)}</h3>
+                ${body}
+            </div>
+        `;
+    }
+
+    function sanitizeForDisplay(node, parentKey = '') {
+        if (isPrimitive(node)) return node;
+        if (Array.isArray(node)) {
+            const cleanedItems = node
+                .map((item) => sanitizeForDisplay(item, parentKey))
+                .filter((item) => !(item === null || item === undefined));
+            return cleanedItems.length ? cleanedItems : null;
+        }
+        if (!isPlainObject(node)) return node;
+
+        const out = {};
+        Object.entries(node).forEach(([k, v]) => {
+            if (!String(k || '').trim()) return;
+            if (isInternalFieldName(k)) return;
+            const cleaned = sanitizeForDisplay(v, k);
+            if (cleaned === null || cleaned === undefined) return;
+            if (isPlainObject(cleaned) && Object.keys(cleaned).length === 0) return;
+            if (Array.isArray(cleaned) && cleaned.length === 0) return;
+            out[k] = cleaned;
+        });
+        return Object.keys(out).length ? out : null;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+    }
+
+    function getLanguageName(code) {
+        const languages = {
+            en_old: 'Old English (Anglo-Saxon)', en_middle: 'Middle English (Chaucerian)', en_modern: 'Modern English',
+            en_british: 'British English', en_american: 'American English', en_australian: 'Australian English',
+            en_indian: 'Indian English', en_south_african: 'South African English', en_caribbean: 'Caribbean English(es)',
+            en_scots: 'Scots (Lowland Scots)', en_aave: 'African American Vernacular English (AAVE)', en_cockney: 'Cockney',
+            en_southern_us: 'Southern American English', en_geordie: 'Geordie',
+            hi_braj: 'Braj Bhasha', hi_awadhi: 'Awadhi', hi_maithili: 'Maithili', hi_sadhukkari: 'Sadhukkari (Panchmel Khichdi)', hi_khariboli: 'Khari Boli',
+            gu_kathiawadi: 'Kathiawadi (Saurashtri)', gu_charotari: 'Charotari', gu_surati: 'Surati', gu_old: 'Old Gujarati (Maru-Gurjar)',
+            ur_standard: 'Modern Standard Urdu', ur_dakhni: 'Dakhni (Deccani)', ur_rekhta: 'Rekhta', ur_dhakaiya: 'Dhakaiya Urdu',
+            en_creole: 'Creole Forms', hinglish: 'Hinglish',
+            en: 'Modern English', hi: 'Hindi (Modern Standard)', gu: 'Gujarati (Standard)', ur: 'Modern Standard Urdu'
+        };
+        return languages[code] || code;
+    }
+
+    function scoreCard(name, score) {
+        const s = Number(score ?? 0);
+        return `
+            <div class="stat-card text-center p-5">
+                <div class="text-sm font-bold text-muted uppercase tracking-widest mb-3">${escapeHtml(name)}</div>
+                <div class="text-4xl font-black mb-1" style="color:${scoreColor(s)}">${s ? s.toFixed(2) : '-'}</div>
+                <div class="w-full rounded-full mt-4 overflow-hidden bg-subtle" style="height: 6px;">
+                    <div class="h-full rounded-full" style="width:${Math.max(0, Math.min(s, 10)) * 10}%; background:${scoreColor(s)}"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderCharts(result) {
+        const ratings = {
+            overall: Number(result.overall_score || 0),
+            technical: Number(result.technical_craft_score || result.evaluation?.ratings?.technical_craft || 0),
+            language: Number(result.language_diction_score || result.evaluation?.ratings?.language_diction || 0),
+            imagery: Number(result.imagery_voice_score || result.evaluation?.ratings?.imagery_voice || 0),
+            emotional: Number(result.emotional_impact_score || result.evaluation?.ratings?.emotional_impact || 0),
+            cultural: Number(result.cultural_fidelity_score || result.evaluation?.ratings?.cultural_fidelity || 0),
+            originality: Number(result.originality_score || result.evaluation?.ratings?.originality || 0),
+        };
+
+        if (typeof ApexCharts !== 'undefined') {
+            const radarEl = document.querySelector('#ratingsRadar');
+            if (radarEl) {
+                radarEl.innerHTML = '';
+                const chart = new ApexCharts(radarEl, {
+                    chart: { type: 'radar', height: 320, toolbar: { show: false }, background: 'transparent' },
+                    series: [{ name: 'Score', data: [ratings.technical, ratings.language, ratings.imagery, ratings.emotional, ratings.cultural, ratings.originality, ratings.overall] }],
+                    labels: ['Technical', 'Language', 'Imagery', 'Emotional', 'Cultural', 'Originality', 'Overall'],
+                    stroke: { width: 2, colors: ['#C6A14A'] },
+                    fill: { opacity: 0.22, colors: ['#C6A14A'] },
+                    markers: { size: 4, colors: ['#0EA5E9'] },
+                    yaxis: { min: 0, max: 10, tickAmount: 5 },
+                    xaxis: { labels: { style: { colors: '#94A3B8' } } },
+                    theme: { mode: 'dark' }
+                });
+                chart.render();
+            }
+        }
+
+        if (typeof Plotly !== 'undefined') {
+            const emotions = result.additional?.transformer_analysis?.emotions || {};
+            const rasa = result.literary_devices?.rasa_vector?.rasa_vector || {};
+            const lex = result.quantitative_metrics?.lexical_metrics || {};
+
+            const mkBar = (id, dataObj, color) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const labels = Object.keys(dataObj || {});
+                const values = labels.map((k) => Number(dataObj[k] || 0));
+                Plotly.react(el, [{
+                    x: labels.map((k) => toTitle(k)),
+                    y: values,
+                    type: 'bar',
+                    marker: { color }
+                }], {
+                    margin: { l: 48, r: 12, t: 20, b: 60 },
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    xaxis: { tickangle: -20 },
+                    yaxis: { rangemode: 'tozero' }
+                }, { displayModeBar: false, responsive: true });
+            };
+
+            mkBar('emotionBar', emotions, '#0EA5E9');
+            mkBar('rasaBar', rasa, '#C6A14A');
+            mkBar('lexicalBar', {
+                lexical_density: Number(lex.lexical_density || 0),
+                type_token_ratio: Number(lex.type_token_ratio || 0),
+                avg_word_length: Number(lex.average_word_length || 0)
+            }, '#22C55E');
+        }
+    }
+
+    function buildReport(result) {
+        const displayResult = sanitizeForDisplay(result);
+        const qm = displayResult.quantitative_metrics || displayResult.quantitative || {};
+        const prosody = displayResult.prosody_analysis || displayResult.prosody || {};
+        const ling = displayResult.linguistic_analysis || displayResult.linguistic || {};
+        const lit = displayResult.literary_devices || {};
+        const sentiment = displayResult.sentiment_analysis || {};
+        const evaluation = displayResult.evaluation || {};
+
+        const container = document.getElementById('reportContainer');
+        container.innerHTML = `
+            <div class="card p-6">
+                <div class="d-grid gap-6 grid-cols-1 md-grid-cols-2 p-6 rounded-xl" style="background: linear-gradient(135deg, var(--color-primary-subtle), var(--color-secondary-subtle));">
+                    <div>
+                        <h2 class="text-2xl font-black text-text mb-2">${escapeHtml(result.title || 'Untitled')}</h2>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <span class="badge badge-primary">${escapeHtml(getLanguageName(result.language || 'en'))}</span>
+                            <span class="badge badge-secondary">${escapeHtml(result.poetic_form || 'Auto-detected')}</span>
+                            <span class="badge badge-neutral">ID: ${escapeHtml((result.uuid || '').substring(0, 8))}...</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-5xl font-black mb-2" style="color:${scoreColor(result.overall_score)}">${result.overall_score ? Number(result.overall_score).toFixed(2) : '-'}</div>
+                        <div class="text-sm font-bold text-muted uppercase tracking-widest">Overall Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-0 overflow-hidden">
+                <h3 class="text-lg font-bold text-text mb-0 p-4 border-b bg-subtle">
+                    <svg class="icon text-primary mr-2" aria-hidden="true"><use href="#icon-quote-left"></use></svg> Original Text
+                </h3>
+                <div class="p-6 font-serif text-lg leading-relaxed text-text report-value">${escapeHtml(result.text || '')}</div>
+            </div>
+
+            ${displayResult.executive_summary ? `
+            <div class="card border border-primary-subtle" style="background: linear-gradient(135deg, var(--color-surface), var(--color-primary-subtle));">
+                <h3 class="text-lg font-bold text-text mb-4">
+                    <svg class="icon text-primary mr-2" aria-hidden="true"><use href="#icon-file-alt"></use></svg> Executive Summary
+                </h3>
+                <p class="text-text leading-relaxed m-0 report-value">${escapeHtml(displayResult.executive_summary)}</p>
+            </div>` : ''}
+
+            <div>
+                <h3 class="text-lg font-bold text-text mb-4">
+                    <svg class="icon text-warning mr-2" aria-hidden="true"><use href="#icon-star"></use></svg> Quality Scores
+                </h3>
+                <div class="d-grid gap-4 grid-auto-md">
+                    ${scoreCard('Overall', result.overall_score)}
+                    ${scoreCard('Technical', result.technical_craft_score || evaluation?.ratings?.technical_craft)}
+                    ${scoreCard('Language', result.language_diction_score || evaluation?.ratings?.language_diction)}
+                    ${scoreCard('Imagery', result.imagery_voice_score || evaluation?.ratings?.imagery_voice)}
+                    ${scoreCard('Emotional', result.emotional_impact_score || evaluation?.ratings?.emotional_impact)}
+                    ${scoreCard('Cultural', result.cultural_fidelity_score || evaluation?.ratings?.cultural_fidelity)}
+                    ${scoreCard('Originality', result.originality_score || evaluation?.ratings?.originality)}
+                </div>
+            </div>
+
+            <div class="d-grid gap-4 grid-auto-md">
+                <div class="stat-card text-center p-4"><div class="text-3xl font-black text-primary mb-1">${result.word_count || 0}</div><div class="text-sm font-bold text-muted uppercase tracking-widest">Words</div></div>
+                <div class="stat-card text-center p-4"><div class="text-3xl font-black text-secondary mb-1">${result.line_count || 0}</div><div class="text-sm font-bold text-muted uppercase tracking-widest">Lines</div></div>
+                <div class="stat-card text-center p-4"><div class="text-3xl font-black text-accent mb-1">${result.strictness_level || 7}</div><div class="text-sm font-bold text-muted uppercase tracking-widest">Strictness</div></div>
+                <div class="stat-card text-center p-4"><div class="text-xl font-bold text-text mb-1 mt-2">${escapeHtml(formatDate(result.created_at))}</div><div class="text-sm font-bold text-muted uppercase tracking-widest mt-2">Analyzed</div></div>
+            </div>
+
+            <div class="d-grid gap-6 grid-cols-1 lg:grid-cols-2">
+                <div class="card">
+                    <h3 class="text-lg font-bold text-text mb-4">Ratings Radar</h3>
+                    <div id="ratingsRadar" style="width:100%; min-height:320px;"></div>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-bold text-text mb-4">Transformer Emotions</h3>
+                    <div id="emotionBar" style="width:100%; min-height:320px;"></div>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-bold text-text mb-4">Rasa Distribution</h3>
+                    <div id="rasaBar" style="width:100%; min-height:320px;"></div>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-bold text-text mb-4">Lexical Snapshot</h3>
+                    <div id="lexicalBar" style="width:100%; min-height:320px;"></div>
+                </div>
+            </div>
+
+            ${sectionCard('Quantitative Metrics', qm)}
+            ${sectionCard('Prosody Analysis', prosody)}
+            ${sectionCard('Linguistic Analysis', ling)}
+            ${sectionCard('Literary Devices', lit)}
+            ${sectionCard('Sentiment Analysis', sentiment)}
+            ${sectionCard('Evaluation Object', evaluation)}
+            ${sectionCard('Complete Structured Report', displayResult)}
+        `;
+
+        renderCharts(result);
+    }
+
+    async function loadReport() {
+        try {
+            const response = await axios.get(`/result/${RESULT_ID}`);
+            currentResult = response.data.success ? response.data.data : response.data;
+            buildReport(currentResult);
+        } catch (error) {
+            console.error('Error loading report:', error);
+            document.getElementById('reportContainer').innerHTML = `
+                <div class="card p-12 text-center">
+                    <div class="text-danger text-3xl mb-4"><svg class="icon" aria-hidden="true"><use href="#icon-exclamation-triangle"></use></svg></div>
+                    <h3 class="text-xl font-bold text-text mb-2">Failed to load report</h3>
+                    <p class="text-soft mb-4">The requested result could not be loaded.</p>
+                    <a href="/results" class="btn btn-primary">Back to Results</a>
+                </div>
+            `;
+        }
+    }
+
+    function downloadResult() {
+        if (!currentResult) return;
+        const blob = new Blob([JSON.stringify(currentResult, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `analysis-${currentResult.uuid || 'result'}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadReport);
+</script>
+{% endblock %}

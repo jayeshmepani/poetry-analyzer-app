@@ -59,7 +59,7 @@
             <svg class="icon text-primary" aria-hidden="true"><use href="#icon-chart-line"></use></svg> Analysis Trends
         </h3>
         <div class="chart-panel">
-            <canvas id="analysesChart"></canvas>
+            <div id="analysesChart" style="width: 100%; height: 100%; min-height: 320px;"></div>
         </div>
     </div>
 
@@ -68,7 +68,7 @@
             <svg class="icon text-accent" aria-hidden="true"><use href="#icon-chart-pie"></use></svg> Languages
         </h3>
         <div class="chart-panel">
-            <canvas id="languageChart"></canvas>
+            <div id="languageChart" style="width: 100%; height: 100%; min-height: 320px;"></div>
         </div>
     </div>
 </div>
@@ -102,7 +102,7 @@
 <script>
     async function fetchDashboardData() {
         try {
-            const response = await axios.get('/api/stats');
+            const response = await axios.get('/stats');
             const data = response.data.success ? response.data.data : response.data;
             updateDashboard(data);
         } catch (e) {
@@ -121,55 +121,49 @@
     }
 
     function initCharts(dayData, langs) {
-        new Chart(document.getElementById('analysesChart'), {
-            type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    data: dayData,
-                    borderColor: 'var(--color-primary)',
-                    backgroundColor: 'color-mix(in oklch, var(--color-primary) 10%, transparent)',
-                    borderWidth: 4,
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 4,
-                    pointHoverRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'var(--color-border)' }, border: { display: false } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
+        const lineHost = document.getElementById('analysesChart');
+        const pieHost = document.getElementById('languageChart');
+        if (!lineHost || !pieHost || typeof Plotly === 'undefined') return;
 
-        const colors = [
-            'var(--color-primary)', 'var(--color-accent)', 'var(--color-success)',
-            'var(--color-warning)', 'var(--color-danger)'
-        ];
+        const lineTrace = {
+            x: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            y: dayData,
+            type: 'scatter',
+            mode: 'lines+markers',
+            line: { width: 4, color: '#C6A14A', shape: 'spline', smoothing: 1.2 },
+            marker: { size: 8, color: '#0EA5E9' },
+            fill: 'tozeroy',
+            fillcolor: 'rgba(198,161,74,0.18)',
+            name: 'Analyses'
+        };
 
-        new Chart(document.getElementById('languageChart'), {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(langs).map(l => l.toUpperCase()),
-                datasets: [{
-                    data: Object.values(langs),
-                    backgroundColor: colors,
-                    borderWidth: 0,
-                    hoverOffset: 20
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 30, font: { weight: 'bold', family: 'var(--font-sans)' } } } },
-                cutout: '75%'
-            }
-        });
+        Plotly.react(lineHost, [lineTrace], {
+            margin: { l: 40, r: 16, t: 12, b: 36 },
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent',
+            xaxis: { gridcolor: 'rgba(148,163,184,0.15)', zeroline: false },
+            yaxis: { gridcolor: 'rgba(148,163,184,0.15)', zeroline: false, rangemode: 'tozero' },
+            showlegend: false
+        }, { displayModeBar: false, responsive: true });
+
+        const labels = Object.keys(langs).map((l) => l.toUpperCase());
+        const values = Object.values(langs);
+        const colors = ['#C6A14A', '#0EA5E9', '#22C55E', '#F59E0B', '#EF4444', '#7C3AED', '#14B8A6'];
+
+        Plotly.react(pieHost, [{
+            labels,
+            values,
+            type: 'pie',
+            hole: 0.62,
+            marker: { colors },
+            textinfo: 'label+percent',
+            textposition: 'outside',
+            automargin: true
+        }], {
+            margin: { l: 8, r: 8, t: 8, b: 8 },
+            paper_bgcolor: 'transparent',
+            showlegend: false
+        }, { displayModeBar: false, responsive: true });
     }
 
     function renderRecentAnalyses(analyses) {
@@ -193,9 +187,9 @@
             </td>
             <td class="text-sm font-medium text-soft">${formatDate(a.created_at)}</td>
             <td class="text-right">
-                <button onclick="viewResultDetail('${a.uuid}')" class="btn btn-outline size-40 p-0 d-flex items-center justify-center rounded-lg">
+                <a href="/results/${a.uuid}" class="btn btn-outline size-40 p-0 d-flex items-center justify-center rounded-lg">
                     <svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>
-                </button>
+                </a>
             </td>
         </tr>
     `).join('');

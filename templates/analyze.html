@@ -10,7 +10,9 @@
         <div>
             <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-2">Analysis Studio</p>
             <h1 class="page-header-title mb-2">
-                <svg class="icon text-primary mr-2" aria-hidden="true"><use href="#icon-search"></use></svg> Analyze Your Text
+                <svg class="icon text-primary mr-2" aria-hidden="true">
+                    <use href="#icon-search"></use>
+                </svg> Analyze Your Text
             </h1>
             <p class="page-header-subtitle max-w-lg text-pretty text-soft leading-relaxed mt-2">
                 Submit a poem or literary passage to generate quantitative metrics, prosody checks, linguistic
@@ -34,30 +36,162 @@
                     </div>
                     <div class="form-group">
                         <label for="language" class="form-label">Language</label>
-                        <select id="language" name="language" class="form-select">
-                            <option value="en">English</option>
-                            <option value="hi">हिन्दी (Hindi)</option>
-                            <option value="gu">ગુજરાતી (Gujarati)</option>
-                            <option value="ur">اردو (Urdu)</option>
-                            <option value="mr">मराठी (Marathi)</option>
-                            <option value="bn">বাংলা (Bengali)</option>
+                        <select id="language" name="language" class="form-select" data-searchable="true">
+                            <optgroup label="English: Historical Evolution">
+                                <option value="en_old">Old English (Anglo-Saxon)</option>
+                                <option value="en_middle">Middle English (Chaucerian)</option>
+                                <option value="en_modern" selected>Modern English</option>
+                            </optgroup>
+                            <optgroup label="English: Global Regional Varieties">
+                                <option value="en_british">British English</option>
+                                <option value="en_american">American English</option>
+                                <option value="en_australian">Australian English</option>
+                                <option value="en_indian">Indian English</option>
+                                <option value="en_south_african">South African English</option>
+                                <option value="en_caribbean">Caribbean English(es)</option>
+                            </optgroup>
+                            <optgroup label="English: Literary, Musical, Folk Dialects">
+                                <option value="en_scots">Scots (Lowland Scots)</option>
+                                <option value="en_aave">African American Vernacular English (AAVE)</option>
+                                <option value="en_cockney">Cockney</option>
+                                <option value="en_southern_us">Southern American English</option>
+                                <option value="en_geordie">Geordie</option>
+                            </optgroup>
+                            <optgroup label="Major Hindi Literary & Musical Dialects">
+                                <option value="hi">Hindi (Modern Standard)</option>
+                                <option value="hi_braj">Braj Bhasha</option>
+                                <option value="hi_awadhi">Awadhi</option>
+                                <option value="hi_maithili">Maithili</option>
+                                <option value="hi_sadhukkari">Sadhukkari (Panchmel Khichdi)</option>
+                                <option value="hi_khariboli">Khari Boli</option>
+                            </optgroup>
+                            <optgroup label="Major Gujarati Literary & Musical Dialects">
+                                <option value="gu">Gujarati (Standard)</option>
+                                <option value="gu_kathiawadi">Kathiawadi (Saurashtri)</option>
+                                <option value="gu_charotari">Charotari</option>
+                                <option value="gu_surati">Surati</option>
+                                <option value="gu_old">Old Gujarati (Maru-Gurjar)</option>
+                            </optgroup>
+                            <optgroup label="Major Urdu Literary & Regional Variations">
+                                <option value="ur_standard">Modern Standard Urdu</option>
+                                <option value="ur_dakhni">Dakhni (Deccani)</option>
+                                <option value="ur_rekhta">Rekhta</option>
+                                <option value="ur_dhakaiya">Dhakaiya Urdu</option>
+                            </optgroup>
+                            <optgroup label="Hybrid & Contact Forms">
+                                <option value="en_creole">Creole Forms</option>
+                                <option value="hinglish">Hinglish</option>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="form" class="form-label">Poetic Form (Optional)</label>
-                    <select id="form" name="form" class="form-select">
+                    <select id="form" name="form" class="form-select" data-searchable="true">
                         <option value="">Auto-detect</option>
-                        <option value="free_verse">Free Verse</option>
-                        <option value="sonnet">Sonnet</option>
-                        <option value="ghazal">Ghazal</option>
-                        <option value="nazm">Nazm</option>
-                        <option value="haiku">Haiku</option>
-                        <option value="villanelle">Villanelle</option>
-                        <option value="doha">Doha (दोहा)</option>
-                        <option value="chaupai">Chaupai (चौपाई)</option>
-                        <option value="blank_verse">Blank Verse</option>
+                        <optgroup label="English formal/classical">
+                            <option value="alliterative_verse">Alliterative Verse</option>
+                            <option value="rhyme_royal">Rhyme Royal</option>
+                            <option value="sonnet_petrarchan">Sonnet (Petrarchan)</option>
+                            <option value="sonnet_shakespearean">Sonnet (Shakespearean)</option>
+                            <option value="sonnet_spenserian">Sonnet (Spenserian)</option>
+                            <option value="blank_verse">Blank Verse</option>
+                            <option value="heroic_couplet">Heroic Couplet</option>
+                            <option value="ballad">Ballad</option>
+                            <option value="ode">Ode</option>
+                            <option value="elegy">Elegy</option>
+                            <option value="epic">Epic</option>
+                            <option value="villanelle">Villanelle</option>
+                            <option value="sestina">Sestina</option>
+                            <option value="terza_rima">Terza Rima</option>
+                            <option value="ottava_rima">Ottava Rima</option>
+                            <option value="triolet">Triolet</option>
+                            <option value="limerick">Limerick</option>
+                            <option value="ballade">Ballade</option>
+                            <option value="rondeau">Rondeau</option>
+                            <option value="rondel">Rondel</option>
+                            <option value="rondelet">Rondelet</option>
+                            <option value="kyrielle">Kyrielle</option>
+                            <option value="prose_poem">Prose Poem</option>
+                            <option value="free_verse">Free Verse</option>
+                            <option value="dramatic_monologue">Dramatic Monologue</option>
+                            <option value="acrostic">Acrostic</option>
+                            <option value="cento">Cento</option>
+                            <option value="golden_shovel">Golden Shovel</option>
+                            <option value="concrete_shape_poetry">Concrete/Shape Poetry</option>
+                            <option value="found_poetry">Found Poetry</option>
+                            <option value="erasure_blackout_poetry">Erasure/Blackout Poetry</option>
+                        </optgroup>
+                        <optgroup label="Scots / AAVE / Caribbean / dialect-performance">
+                            <option value="burns_stanza">Burns Stanza</option>
+                            <option value="blues_stanza_aab">Blues Stanza (AAB)</option>
+                            <option value="dub_poetry">Dub Poetry</option>
+                            <option value="calypso_lyric_poetry">Calypso lyric-poetry</option>
+                            <option value="spoken_word">Spoken Word</option>
+                            <option value="slam_poetry">Slam Poetry</option>
+                            <option value="rap_hip_hop_verse">Rap/Hip-hop verse</option>
+                            <option value="music_hall_dialect_ballad">Music-hall/dialect ballad traditions</option>
+                        </optgroup>
+                        <optgroup label="Hindi literary dialect continuum">
+                            <option value="doha">Doha</option>
+                            <option value="chaupai">Chaupai</option>
+                            <option value="soratha">Soratha</option>
+                            <option value="rola">Rola</option>
+                            <option value="barvai">Barvai</option>
+                            <option value="kavitt">Kavitt</option>
+                            <option value="savaiya">Savaiya</option>
+                            <option value="pada_padavali">Pada/Padavali</option>
+                            <option value="geet">Geet</option>
+                            <option value="bhajan">Bhajan</option>
+                            <option value="kirtan">Kirtan</option>
+                            <option value="barahmasa">Barahmasa</option>
+                            <option value="biraha">Biraha</option>
+                            <option value="rasiya">Rasiya</option>
+                            <option value="alha_veer_gatha">Alha/Veer-gatha narrative verse</option>
+                        </optgroup>
+                        <optgroup label="Gujarati literary continuum">
+                            <option value="garba_garbi">Garba/Garbi</option>
+                            <option value="raas">Raas</option>
+                            <option value="pada_gujarati">Pada</option>
+                            <option value="prabhatiya">Prabhatiya</option>
+                            <option value="akhyana">Akhyana</option>
+                            <option value="phagu">Phagu</option>
+                            <option value="rasa_medieval_narrative">Rasa (medieval narrative)</option>
+                            <option value="barmasi">Barmasi/Barmasi-type seasonal verse</option>
+                            <option value="bhajan_gujarati">Bhajan</option>
+                        </optgroup>
+                        <optgroup label="Urdu variants">
+                            <option value="ghazal">Ghazal</option>
+                            <option value="nazm">Nazm</option>
+                            <option value="qasida">Qasida</option>
+                            <option value="masnavi_mathnawi">Masnavi/Mathnawi</option>
+                            <option value="marsiya">Marsiya</option>
+                            <option value="rubai_rubaiyat">Rubai/Rubaiyat</option>
+                            <option value="qita_qataa">Qita/Qataa</option>
+                            <option value="musaddas">Musaddas</option>
+                            <option value="hamd">Hamd</option>
+                            <option value="naat">Naat</option>
+                            <option value="manqabat">Manqabat</option>
+                            <option value="noha">Noha</option>
+                            <option value="salaam">Salaam</option>
+                            <option value="sehra">Sehra</option>
+                            <option value="mukhammas">Mukhammas</option>
+                            <option value="tarkib_band">Tarkib-band</option>
+                            <option value="rekhti">Rekhti</option>
+                            <option value="wasokht">Wasokht</option>
+                            <option value="shehr_ashob">Shehr Ashob</option>
+                            <option value="tazmin">Tazmin</option>
+                            <option value="qawwali_poetic_text">Qawwali poetic text tradition</option>
+                        </optgroup>
+                        <optgroup label="Hybrid/contact (Hinglish/Creole)">
+                            <option value="code_mixed_free_verse">Code-mixed Free Verse</option>
+                            <option value="code_mixed_ghazal">Code-mixed Ghazal adaptations</option>
+                            <option value="spoken_word_hybrid">Spoken Word</option>
+                            <option value="slam_hybrid">Slam</option>
+                            <option value="rap_lyric_poetry_hybrid">Rap lyric poetry</option>
+                            <option value="dub_calypso_influence">Dub/Calypso influence structures</option>
+                        </optgroup>
                     </select>
                 </div>
 
@@ -70,7 +204,9 @@
                         placeholder="Paste your poem or literary text here...&#10;&#10;Example:&#10;Shall I compare thee to a summer's day?&#10;Thou art more lovely and more temperate..."
                         class="form-textarea font-serif text-lg leading-relaxed"></textarea>
                     <p class="form-hint mt-2">
-                        <svg class="icon mr-1" aria-hidden="true"><use href="#icon-info-circle"></use></svg>
+                        <svg class="icon mr-1" aria-hidden="true">
+                            <use href="#icon-info-circle"></use>
+                        </svg>
                         The richer the text sample, the more reliable the comparative and prosodic signals.
                     </p>
                 </div>
@@ -95,7 +231,9 @@
                 <!-- Checkboxes Area -->
                 <div class="card card-sm bg-subtle">
                     <h2 class="text-lg font-bold mb-4 d-flex items-center gap-2">
-                        <svg class="icon text-secondary" aria-hidden="true"><use href="#icon-cog"></use></svg>
+                        <svg class="icon text-secondary" aria-hidden="true">
+                            <use href="#icon-cog"></use>
+                        </svg>
                         Analysis Coverage
                     </h2>
                     <div class="d-grid gap-3 md:grid-cols-2">
@@ -127,7 +265,9 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-lg w-full mt-2">
-                    <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+                    <svg class="icon" aria-hidden="true">
+                        <use href="#icon-search"></use>
+                    </svg>
                     Start Comprehensive Analysis
                 </button>
             </form>
@@ -138,32 +278,44 @@
 
             <section class="card bg-subtle scroll-reveal">
                 <h2 class="text-lg font-bold mb-4 d-flex items-center gap-2">
-                    <svg class="icon text-secondary" aria-hidden="true"><use href="#icon-gift"></use></svg>
+                    <svg class="icon text-secondary" aria-hidden="true">
+                        <use href="#icon-gift"></use>
+                    </svg>
                     What You Will Get
                 </h2>
                 <ul class="d-flex flex-col gap-3 text-sm text-soft leading-relaxed">
                     <li class="d-flex items-start gap-3">
-                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true">
+                            <use href="#icon-check-circle"></use>
+                        </svg>
                         <span><strong class="text-text">15+ quantitative metrics</strong> including lexical diversity
                             and readability.</span>
                     </li>
                     <li class="d-flex items-start gap-3">
-                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true">
+                            <use href="#icon-check-circle"></use>
+                        </svg>
                         <span><strong class="text-text">Prosody analysis</strong> for meter, rhyme, and scansion
                             patterns.</span>
                     </li>
                     <li class="d-flex items-start gap-3">
-                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true">
+                            <use href="#icon-check-circle"></use>
+                        </svg>
                         <span><strong class="text-text">Linguistic diagnostics</strong> across syntax, morphology, and
                             semantics.</span>
                     </li>
                     <li class="d-flex items-start gap-3">
-                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true">
+                            <use href="#icon-check-circle"></use>
+                        </svg>
                         <span><strong class="text-text">Device detection</strong> for imagery, tropes, and rhetorical
                             constructions.</span>
                     </li>
                     <li class="d-flex items-start gap-3">
-                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+                        <svg class="icon mt-1 text-success flex-shrink-0" aria-hidden="true">
+                            <use href="#icon-check-circle"></use>
+                        </svg>
                         <span><strong class="text-text">Theory framing</strong> via 11 literary criticism lenses.</span>
                     </li>
                 </ul>
@@ -171,7 +323,9 @@
 
             <section class="card bg-primary text-white scroll-reveal">
                 <h2 class="text-lg font-bold mb-4 d-flex items-center gap-2 text-white">
-                    <svg class="icon text-warning" aria-hidden="true"><use href="#icon-shapes"></use></svg>
+                    <svg class="icon text-warning" aria-hidden="true">
+                        <use href="#icon-shapes"></use>
+                    </svg>
                     Supported Forms
                 </h2>
                 <div class="d-flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider">
@@ -187,10 +341,13 @@
 
             <section class="card bg-subtle scroll-reveal">
                 <h2 class="text-lg font-bold mb-4 d-flex items-center gap-2">
-                    <svg class="icon text-warning" aria-hidden="true"><use href="#icon-lightbulb"></use></svg>
+                    <svg class="icon text-warning" aria-hidden="true">
+                        <use href="#icon-lightbulb"></use>
+                    </svg>
                     Quick Example
                 </h2>
-                <div class="rounded-lg p-5 font-serif text-sm italic leading-relaxed text-soft shadow-sm bg-surface border">
+                <div
+                    class="rounded-lg p-5 font-serif text-sm italic leading-relaxed text-soft shadow-sm bg-surface border">
                     "Shall I compare thee to a summer's day?<br>
                     Thou art more lovely and more temperate..."
                 </div>
@@ -203,8 +360,12 @@
 
     </div>
 </div>
-
-<div id="resultsSection" class="mt-8 d-none"></div>
+<!-- Native Dialog Modal for Results -->
+<dialog class="native-modal" id="resultsModal" style="max-width: 900px;">
+    <div class="modal-box p-0 bg-transparent border-0 shadow-none">
+        <div id="resultsContent" class="w-full"></div>
+    </div>
+</dialog>
 {% endblock %}
 
 {% block page_js %}

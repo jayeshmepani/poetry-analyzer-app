@@ -60,11 +60,22 @@ python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
 
-### 4. Download Core NLP Models
+### 4. Download NLP Models
 
-You must download the foundational language weights for spaCy and NLTK.
+Run the **one-step setup script** which reads your `.env` (or `.env.example` fallback) and downloads everything automatically:
+- spaCy models
+- NLTK data
+- Stanza resources (`STANZA_RESOURCES_DIR`, `STANZA_LANGUAGES`, `STANZA_PROCESSORS`)
+- HuggingFace transformer bundles (English / Indic / multilingual / generalist)
 
-_(Note: The flagship HuggingFace Transformer models like `siebert/sentiment-roberta-large-english` and `duelker/samo-goemotions-deberta-v3-large` will automatically download on their first run via the transformers pipeline)._
+```bash
+python setup_models.py
+```
+
+This ensures downloaded assets always match the exact model names configured in your environment file. You can re-run this script any time you change model settings.
+
+<details>
+<summary>Manual alternative (if you prefer)</summary>
 
 ```bash
 python -m spacy download en_core_web_trf
@@ -72,6 +83,10 @@ python -m spacy download xx_sent_ud_sm
 
 python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger')"
 ```
+
+_(The HuggingFace transformer models will auto-download on first analysis run.)_
+
+</details>
 
 ---
 
@@ -168,5 +183,6 @@ poetry-analyzer-app/
 ├── static/                 # CSS/JS assets
 ├── templates/              # Jinja2 HTML templates
 ├── requirements.txt        # Strictly pinned dependencies
+├── setup_models.py         # Post-install model downloader (reads .env)
 └── verify_app.py           # Integration test suite
 ```

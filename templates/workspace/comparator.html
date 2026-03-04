@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% block title %}Version Comparator{% endblock %}
 {% block content %}
-<div class="max-w-6xl mx-auto">
+<div class="max-w-6xl mx-auto w-full">
     <div class="mb-8">
         <h1 class="text-4xl font-bold text-gray-800 mb-2">
             <svg class="icon text-primary mr-3" aria-hidden="true"><use href="#icon-copy"></use></svg>
@@ -10,17 +10,17 @@
         <p class="text-gray-600">Compare minimal corrected version vs polished version side-by-side</p>
     </div>
 
-    <div class="grid lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <!-- Original -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="card min-w-0">
             <h3 class="text-xl font-bold mb-4 text-gray-800">
                 <svg class="icon text-gray-600 mr-2" aria-hidden="true"><use href="#icon-file-alt"></use></svg>Original
             </h3>
-            <textarea id="originalText" rows="16" placeholder="Paste original poem..." class="w-full px-4 py-3 border rounded-lg font-serif"></textarea>
+            <textarea id="originalText" rows="16" placeholder="Paste original poem..." class="form-textarea w-full font-serif"></textarea>
         </div>
 
         <!-- Minimal Corrected -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="card min-w-0">
             <h3 class="text-xl font-bold mb-4 text-green-700">
                 <svg class="icon text-green-600 mr-2" aria-hidden="true"><use href="#icon-check-circle"></use></svg>Minimal Corrected
             </h3>
@@ -30,7 +30,7 @@
         </div>
 
         <!-- Polished Version -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="card min-w-0">
             <h3 class="text-xl font-bold mb-4 text-secondary">
                 <svg class="icon text-secondary mr-2" aria-hidden="true"><use href="#icon-magic"></use></svg>Polished Version
             </h3>
@@ -42,13 +42,14 @@
 
     <!-- Action Button -->
     <div class="mt-8 text-center">
-        <button onclick="generateVersions()" class="gradient-bg text-white px-12 py-4 rounded-full font-bold text-lg hover:opacity-90 transition shadow-lg">
-            <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg>Generate Versions
+        <button id="generateVersionsBtn" type="button" onclick="generateVersions()" class="btn btn-primary btn-lg px-12">
+            <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg>
+            <span class="btn-label">Generate Versions</span>
         </button>
     </div>
 
     <!-- Diff View -->
-    <div id="diffView" class="mt-8 bg-white rounded-2xl shadow-xl p-8 hidden">
+    <div id="diffView" class="mt-8 card hidden">
         <h3 class="text-2xl font-bold mb-6">Changes Summary</h3>
         <div id="changesList" class="space-y-3"></div>
     </div>
@@ -59,13 +60,18 @@
 <script>
 async function generateVersions() {
     const original = document.getElementById('originalText').value;
+    const submitBtn = document.getElementById('generateVersionsBtn');
+    const submitLabel = submitBtn?.querySelector('.btn-label');
     if (!original) {
         alert('Please enter original poem');
         return;
     }
 
+    if (submitBtn) submitBtn.disabled = true;
+    if (submitLabel) submitLabel.textContent = 'Generating...';
+
     try {
-        const response = await fetch('/api/analysis/generate-versions', {
+        const response = await fetch('/versions-generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ poem: original })
@@ -94,6 +100,12 @@ async function generateVersions() {
         }
     } catch (error) {
         console.error('Generation failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Version generation failed. Please try again.', 'error');
+        }
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
+        if (submitLabel) submitLabel.textContent = 'Generate Versions';
     }
 }
 </script>

@@ -2,311 +2,15 @@
 
 {% block title %}Home - Ultimate Literary Master System{% endblock %}
 
-{% block page_css %}
-<style>
-    /* Page-specific overrides for a premium aesthetic */
-    .home-hero {
-        position: relative;
-        padding: clamp(4rem, 6vw, 6rem) var(--space-6);
-        background:
-            radial-gradient(circle at 15% 0%, color-mix(in oklch, var(--color-primary) 18%, transparent), transparent 55%),
-            radial-gradient(circle at 85% 20%, color-mix(in oklch, var(--color-success) 16%, transparent), transparent 60%),
-            linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-subtle) 100%);
-        overflow: hidden;
-        border-bottom: 1px solid var(--color-border);
-    }
-
-    .home-hero::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: url('data:image/svg+xml;utf8,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1.5" fill="%2300000010"/></svg>') repeat;
-        opacity: 0.4;
-        z-index: 0;
-    }
-
-    [data-theme="dark"] .home-hero::before {
-        background: url('data:image/svg+xml;utf8,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1.5" fill="%23ffffff10"/></svg>') repeat;
-    }
-
-    .home-hero-content {
-        position: relative;
-        z-index: 10;
-        max-width: var(--container-max);
-        margin: 0 auto;
-        display: grid;
-        gap: var(--space-10);
-        align-items: center;
-        text-align: center;
-    }
-
-    @media (min-width: 1024px) {
-        .home-hero-content {
-            grid-template-columns: 1.1fr 0.9fr;
-            text-align: left;
-        }
-    }
-
-    .title-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2);
-        padding: var(--space-2) var(--space-4);
-        background: color-mix(in oklch, var(--color-surface) 60%, transparent);
-        border: 1px solid var(--color-border);
-        backdrop-filter: blur(8px);
-        border-radius: var(--radius-full);
-        font-size: var(--text-2xs);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: var(--tracking-widest);
-        color: var(--color-text-soft);
-        margin-bottom: var(--space-6);
-        box-shadow: var(--shadow-sm);
-    }
-
-    .hero-heading {
-        font-family: var(--font-display);
-        font-size: clamp(2.6rem, 6vw, 4.6rem);
-        font-weight: 800;
-        line-height: 1.05;
-        color: var(--color-text);
-        text-wrap: balance;
-        margin-bottom: var(--space-6);
-        letter-spacing: -0.02em;
-    }
-
-    .hero-heading-sm {
-        font-size: clamp(2rem, 5vw, 3rem);
-    }
-
-    .hero-desc {
-        font-size: var(--text-md);
-        color: var(--color-text-soft);
-        max-width: 46ch;
-        margin: 0 auto var(--space-8);
-        line-height: var(--leading-relaxed);
-        text-wrap: pretty;
-    }
-
-    @media (min-width: 1024px) {
-        .hero-desc {
-            margin: 0 0 var(--space-8);
-        }
-    }
-
-    .hero-actions {
-        display: flex;
-        gap: var(--space-4);
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    @media (min-width: 1024px) {
-        .hero-actions {
-            justify-content: flex-start;
-        }
-    }
-
-    .hero-badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3);
-        justify-content: center;
-        margin-top: var(--space-8);
-    }
-
-    @media (min-width: 1024px) {
-        .hero-badges {
-            justify-content: flex-start;
-        }
-    }
-
-    .hero-panel {
-        display: grid;
-        gap: var(--space-4);
-    }
-
-    .hero-panel-card {
-        background: color-mix(in oklch, var(--color-surface) 80%, transparent);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-2xl);
-        padding: var(--space-6);
-        box-shadow: var(--shadow-lg);
-        backdrop-filter: blur(10px);
-    }
-
-    .hero-panel-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--space-3);
-        margin-bottom: var(--space-4);
-    }
-
-    .hero-sample {
-        display: grid;
-        gap: var(--space-4);
-    }
-
-    .hero-poem {
-        font-family: var(--font-serif);
-        font-size: var(--text-sm);
-        line-height: var(--leading-relaxed);
-        color: var(--color-text);
-        background: var(--color-bg-subtle);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-4);
-    }
-
-    .hero-metrics {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--space-3);
-    }
-
-    .hero-metric {
-        border-radius: var(--radius-lg);
-        padding: var(--space-3);
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        box-shadow: var(--shadow-sm);
-    }
-
-    .hero-metric-label {
-        font-size: var(--text-2xs);
-        text-transform: uppercase;
-        letter-spacing: var(--tracking-wide);
-        color: var(--color-text-muted);
-        margin-bottom: var(--space-1);
-    }
-
-    .hero-metric-value {
-        font-size: var(--text-lg);
-        font-weight: 700;
-        color: var(--color-text);
-    }
-
-    /* Feature Grid */
-    .feature-section {
-        max-width: var(--container-max);
-        margin: 0 auto;
-        padding: var(--space-12) var(--space-6);
-    }
-
-    .feature-grid {
-        display: grid;
-        gap: var(--space-6);
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
-
-    .feature-card {
-        border-radius: var(--radius-xl);
-        padding: var(--space-6);
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        box-shadow: var(--shadow-sm);
-        transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
-    }
-
-    .feature-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-
-    .feature-icon-box {
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-lg);
-        font-size: 1.25rem;
-        margin-bottom: var(--space-4);
-    }
-
-    .icon-box-primary {
-        background: var(--color-primary-subtle);
-        color: var(--color-primary);
-    }
-
-    .icon-box-success {
-        background: var(--color-success-subtle);
-        color: var(--color-success);
-    }
-
-    .icon-box-warning {
-        background: var(--color-warning-subtle);
-        color: var(--color-warning);
-    }
-
-    .icon-box-neutral {
-        background: var(--color-bg-subtle);
-        color: var(--color-text-soft);
-    }
-
-    .home-section-title {
-        font-family: var(--font-display);
-        font-size: var(--text-3xl);
-        font-weight: 800;
-        margin-bottom: var(--space-8);
-        letter-spacing: var(--tracking-tight);
-    }
-
-    .method-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: var(--space-6);
-    }
-
-    .coverage-grid {
-        display: grid;
-        grid-template-columns: repeat(12, minmax(0, 1fr));
-        gap: var(--space-6);
-    }
-
-    .coverage-main {
-        grid-column: 1 / -1;
-    }
-
-    .coverage-stats {
-        grid-column: 1 / -1;
-        display: grid;
-        gap: var(--space-6);
-    }
-
-    .stat-value-lg {
-        font-size: clamp(2.4rem, 4vw, 3rem);
-    }
-
-    .text-on-primary-muted {
-        color: oklch(100% 0 0 / 0.7);
-    }
-
-    .text-on-primary-soft {
-        color: oklch(100% 0 0 / 0.8);
-    }
-
-    @media (min-width: 900px) {
-        .coverage-main {
-            grid-column: 1 / 7;
-        }
-
-        .coverage-stats {
-            grid-column: 7 / 13;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <!-- Hero Section -->
 <section class="home-hero">
     <div class="home-hero-content stagger">
         <div class="hero-copy">
             <div class="title-pill scroll-reveal">
-                <svg class="icon text-primary" aria-hidden="true"><use href="#icon-wave-square"></use></svg>
+                <svg class="icon text-primary" aria-hidden="true">
+                    <use href="#icon-wave-square"></use>
+                </svg>
                 Literary Intelligence Platform
             </div>
 
@@ -315,30 +19,41 @@
             </h1>
 
             <p class="hero-desc scroll-reveal">
-                Move from raw text to metrics, prosody, comparative theory, and multilingual interpretation in one coherent
+                Move from raw text to metrics, prosody, comparative theory, and multilingual interpretation in one
+                coherent
                 workflow.
             </p>
 
             <div class="hero-actions scroll-reveal">
                 <a href="/analyze" class="btn btn-primary btn-lg">
-                    <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+                    <svg class="icon" aria-hidden="true">
+                        <use href="#icon-search"></use>
+                    </svg>
                     Start Analysis
                 </a>
                 <a href="/dashboard" class="btn btn-secondary btn-lg">
-                    <svg class="icon" aria-hidden="true"><use href="#icon-chart-line"></use></svg>
+                    <svg class="icon" aria-hidden="true">
+                        <use href="#icon-chart-line"></use>
+                    </svg>
                     Open Dashboard
                 </a>
             </div>
 
             <div class="hero-badges scroll-reveal">
                 <span class="badge badge-neutral p-4 rounded-full text-sm">
-                    <svg class="icon text-success mr-2" aria-hidden="true"><use href="#icon-check"></use></svg> 15+ metrics
+                    <svg class="icon text-success mr-2" aria-hidden="true">
+                        <use href="#icon-check"></use>
+                    </svg> 15+ metrics
                 </span>
                 <span class="badge badge-neutral p-4 rounded-full text-sm">
-                    <svg class="icon text-success mr-2" aria-hidden="true"><use href="#icon-check"></use></svg> 11 theory lenses
+                    <svg class="icon text-success mr-2" aria-hidden="true">
+                        <use href="#icon-check"></use>
+                    </svg> 11 theory lenses
                 </span>
                 <span class="badge badge-neutral p-4 rounded-full text-sm">
-                    <svg class="icon text-success mr-2" aria-hidden="true"><use href="#icon-check"></use></svg> 6+ languages
+                    <svg class="icon text-success mr-2" aria-hidden="true">
+                        <use href="#icon-check"></use>
+                    </svg> 29 fixed varieties
                 </span>
             </div>
         </div>
@@ -384,7 +99,9 @@
 
         <article class="feature-card scroll-reveal">
             <div class="feature-icon-box icon-box-primary">
-                <svg class="icon" aria-hidden="true"><use href="#icon-chart-bar"></use></svg>
+                <svg class="icon" aria-hidden="true">
+                    <use href="#icon-chart-bar"></use>
+                </svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Quantitative Metrics</h2>
             <p class="text-sm text-soft leading-relaxed">
@@ -395,17 +112,21 @@
 
         <article class="feature-card scroll-reveal">
             <div class="feature-icon-box icon-box-success">
-                <svg class="icon" aria-hidden="true"><use href="#icon-music"></use></svg>
+                <svg class="icon" aria-hidden="true">
+                    <use href="#icon-music"></use>
+                </svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Prosody Analysis</h2>
             <p class="text-sm text-soft leading-relaxed">
-                Meter, rhyme patterning, and scansion support for English, Hindi, Urdu, Gujarati, and adjacent forms.
+                Meter, rhyme patterning, and scansion support across fixed English, Hindi, Gujarati, Urdu, and hybrid varieties.
             </p>
         </article>
 
         <article class="feature-card scroll-reveal">
             <div class="feature-icon-box icon-box-warning">
-                <svg class="icon" aria-hidden="true"><use href="#icon-language"></use></svg>
+                <svg class="icon" aria-hidden="true">
+                    <use href="#icon-language"></use>
+                </svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Linguistic Layers</h2>
             <p class="text-sm text-soft leading-relaxed">
@@ -415,7 +136,9 @@
 
         <article class="feature-card scroll-reveal">
             <div class="feature-icon-box icon-box-neutral">
-                <svg class="icon" aria-hidden="true"><use href="#icon-feather-alt"></use></svg>
+                <svg class="icon" aria-hidden="true">
+                    <use href="#icon-feather-alt"></use>
+                </svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Literary Devices</h2>
             <p class="text-sm text-soft leading-relaxed">
@@ -442,21 +165,27 @@
     <div class="method-grid stagger">
         <div class="feature-card bg-subtle scroll-reveal">
             <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
-                <svg class="icon text-primary" aria-hidden="true"><use href="#icon-layer-group"></use></svg> TP-CASTT
+                <svg class="icon text-primary" aria-hidden="true">
+                    <use href="#icon-layer-group"></use>
+                </svg> TP-CASTT
             </h3>
             <p class="text-sm text-soft leading-relaxed">A line-by-line interpretive scaffold for title, paraphrase,
                 connotation, attitude, shifts, and theme.</p>
         </div>
         <div class="feature-card bg-subtle scroll-reveal">
             <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
-                <svg class="icon text-success" aria-hidden="true"><use href="#icon-landmark"></use></svg> Touchstone
+                <svg class="icon text-success" aria-hidden="true">
+                    <use href="#icon-landmark"></use>
+                </svg> Touchstone
             </h3>
             <p class="text-sm text-soft leading-relaxed">Compare against canonical passages to surface tonal,
                 rhetorical, and structural differences.</p>
         </div>
         <div class="feature-card bg-subtle scroll-reveal">
             <h3 class="text-lg font-bold mb-3 d-flex items-center gap-2">
-                <svg class="icon text-warning" aria-hidden="true"><use href="#icon-brain"></use></svg> 11 Theory Lenses
+                <svg class="icon text-warning" aria-hidden="true">
+                    <use href="#icon-brain"></use>
+                </svg> 11 Theory Lenses
             </h3>
             <p class="text-sm text-soft leading-relaxed">Move between New Criticism, structuralism, feminist, Marxist,
                 and other frameworks without rebuilding the input.</p>
@@ -476,12 +205,24 @@
             </p>
 
             <div class="d-flex flex-wrap gap-3 mt-auto">
-                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-flag-usa"></use></svg> English</span>
-                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-om"></use></svg> हिन्दी</span>
-                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-book"></use></svg> ગુજરાતી</span>
-                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-star"></use></svg> اردو</span>
-                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-pen-fancy"></use></svg> मराठी</span>
-                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-water"></use></svg> বাংলা</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true">
+                        <use href="#icon-flag-usa"></use>
+                    </svg> English</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true">
+                        <use href="#icon-om"></use>
+                    </svg> हिन्दी</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true">
+                        <use href="#icon-book"></use>
+                    </svg> ગુજરાતી</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true">
+                        <use href="#icon-star"></use>
+                    </svg> اردو</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true">
+                        <use href="#icon-pen-fancy"></use>
+                    </svg> मराठी</span>
+                <span class="badge badge-ghost"><svg class="icon mr-1" aria-hidden="true">
+                        <use href="#icon-water"></use>
+                    </svg> বাংলা</span>
             </div>
         </div>
 
@@ -511,11 +252,15 @@
 
         <div class="d-flex justify-center gap-4 flex-wrap mt-8">
             <a href="/analyze" class="btn btn-primary btn-lg shadow-lg">
-                <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+                <svg class="icon" aria-hidden="true">
+                    <use href="#icon-search"></use>
+                </svg>
                 Analyze Your Text
             </a>
             <a href="/docs" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg shadow-sm">
-                <svg class="icon" aria-hidden="true"><use href="#icon-book"></use></svg>
+                <svg class="icon" aria-hidden="true">
+                    <use href="#icon-book"></use>
+                </svg>
                 Read API Docs
             </a>
         </div>

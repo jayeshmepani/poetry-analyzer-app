@@ -101,13 +101,13 @@
 
 <!-- Actions -->
 <div class="d-flex flex-wrap gap-4 mt-8 scroll-reveal">
-    <button onclick="loadDatabaseStatus()" class="btn btn-primary btn-lg">
+    <button type="button" onclick="loadDatabaseStatus()" class="btn btn-primary btn-lg">
         <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg> Refresh Status
     </button>
-    <button onclick="initializeDatabase()" class="btn btn-success btn-lg">
+    <button type="button" onclick="initializeDatabase()" class="btn btn-success btn-lg">
         <svg class="icon mr-2" aria-hidden="true"><use href="#icon-database"></use></svg> Initialize Database
     </button>
-    <button onclick="clearAllData()" class="btn btn-danger btn-lg">
+    <button type="button" onclick="clearAllData()" class="btn btn-danger btn-lg">
         <svg class="icon mr-2" aria-hidden="true"><use href="#icon-trash"></use></svg> Clear All Data
     </button>
 </div>
@@ -122,7 +122,7 @@
         showLoading('Loading database status...');
 
         try {
-            const response = await axios.get('/api/database/status');
+            const response = await axios.get('/database-status');
             const data = response.data.data || response.data;
 
             // Update connection status
@@ -197,7 +197,7 @@
         showLoading('Initializing database...');
 
         try {
-            const response = await axios.post('/api/database/initialize');
+            const response = await axios.post('/database-init');
             hideLoading();
             const responseData = response.data.data || response.data;
             showToast(responseData.message || 'Database initialized', 'success');
@@ -215,7 +215,7 @@
         showLoading('Clearing all data...');
 
         try {
-            await axios.post('/api/clear-results');
+            await axios.post('/results-clear');
             hideLoading();
             showToast('All data cleared', 'success');
             loadDatabaseStatus();

@@ -20,10 +20,101 @@ class SpaCySettings(BaseSettings):
         default="xx_sent_ud_sm", description="Multilingual model"
     )
     hindi_model: str = Field(default="hi_core_news_sm", description="Hindi model")
-    load_transformer: bool = Field(default=True, description="Load transformer models")
 
     class Config:
         env_prefix = "SPACY_"
+
+
+class TransformerSettings(BaseSettings):
+    """Transformer model configuration for sentiment and emotion analysis"""
+
+    sentiment_model: str = Field(
+        default="siebert/sentiment-roberta-large-english", description="Sentiment model"
+    )
+    emotion_model: str = Field(
+        default="duelker/samo-goemotions-deberta-v3-large", description="Emotion model"
+    )
+    multilingual_sentiment_model: str = Field(
+        default="cardiffnlp/twitter-xlm-roberta-base-sentiment",
+        description="Multilingual sentiment model",
+    )
+    multilingual_emotion_model: str = Field(
+        default="MoritzLaurer/DeBERTa-v3-large-mnli-fever-anli-ling-wanli",
+        description="Multilingual zero-shot model for emotion inference",
+    )
+    multilingual_sentiment_label_map: Dict[str, str] = Field(
+        default={
+            "LABEL_0": "NEGATIVE",
+            "LABEL_1": "NEUTRAL",
+            "LABEL_2": "POSITIVE",
+            "negative": "NEGATIVE",
+            "neutral": "NEUTRAL",
+            "positive": "POSITIVE",
+        },
+        description="Normalization map for multilingual sentiment labels",
+    )
+    multilingual_emotion_labels: List[str] = Field(
+        default=[
+            "joy",
+            "sadness",
+            "anger",
+            "fear",
+            "surprise",
+            "disgust",
+            "love",
+            "neutral",
+        ],
+        description="Candidate labels for multilingual emotion inference",
+    )
+    english_language_codes: List[str] = Field(
+        default=["en", "en_old", "en_middle", "en_modern"],
+        description="Language codes treated as English model route",
+    )
+    indic_language_codes: List[str] = Field(
+        default=[
+            "hi",
+            "hi_braj",
+            "hi_awadhi",
+            "hi_maithili",
+            "hi_sadhukkari",
+            "hi_khariboli",
+            "gu",
+            "gu_kathiawadi",
+            "gu_charotari",
+            "gu_surati",
+            "gu_old",
+            "ur",
+            "ur_standard",
+            "ur_dakhni",
+            "ur_rekhta",
+            "ur_dhakaiya",
+            "hinglish",
+        ],
+        description="Language codes routed to Indic specialist models",
+    )
+    indic_sentiment_model: str = Field(
+        default="cardiffnlp/twitter-xlm-roberta-base-sentiment",
+        description="Indic sentiment specialist model",
+    )
+    indic_emotion_model: str = Field(
+        default="MoritzLaurer/DeBERTa-v3-large-mnli-fever-anli-ling-wanli",
+        description="Indic emotion specialist model",
+    )
+    indic_emotion_mode: str = Field(
+        default="zero-shot-classification",
+        description="Task mode for Indic emotion model (text-classification or zero-shot-classification)",
+    )
+    generalist_zero_shot_model: str = Field(
+        default="MoritzLaurer/DeBERTa-v3-large-mnli-fever-anli-ling-wanli",
+        description="Generalist multilingual zero-shot fallback model",
+    )
+    generalist_sentiment_labels: List[str] = Field(
+        default=["positive", "neutral", "negative"],
+        description="Candidate labels for zero-shot sentiment fallback",
+    )
+
+    class Config:
+        env_prefix = "TRANSFORMER_"
 
 
 class StanzaSettings(BaseSettings):
@@ -34,6 +125,9 @@ class StanzaSettings(BaseSettings):
     )
     processors: str = Field(
         default="tokenize,pos,lemma,depparse", description="Processors to load"
+    )
+    resources_dir: str = Field(
+        default=".stanza_cache", description="Local writable Stanza resources directory"
     )
 
     class Config:
@@ -56,7 +150,7 @@ class IndicNLPSettings(BaseSettings):
 class AnalysisSettings(BaseSettings):
     """Analysis configuration"""
 
-    default_language: str = Field(default="en", description="Default analysis language")
+    default_language: str = Field(default="en_modern", description="Default analysis language")
     default_strictness: int = Field(
         default=7, ge=1, le=10, description="Default strictness level"
     )
@@ -281,6 +375,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     db: DatabaseSettings = Field(default_factory=DatabaseSettings)
     spacy: SpaCySettings = Field(default_factory=SpaCySettings)
+    transformer: TransformerSettings = Field(default_factory=TransformerSettings)
     stanza: StanzaSettings = Field(default_factory=StanzaSettings)
     indic_nlp: IndicNLPSettings = Field(default_factory=IndicNLPSettings)
     analysis: AnalysisSettings = Field(default_factory=AnalysisSettings)

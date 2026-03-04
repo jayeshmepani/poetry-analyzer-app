@@ -15,6 +15,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 os.environ.setdefault("HF_HOME", str(_PROJECT_ROOT / ".huggingface_cache"))
 
 from transformers import pipeline
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,78 +26,211 @@ class TransformerAnalyzer:
     Advanced sentiment and emotion analysis using BERT/Transformer models
     """
 
+    _PIPELINE_CACHE: Dict[Tuple[str, str], Any] = {}
+
     def __init__(self, language: str = "en"):
         self.language = language
         self._sentiment_pipe = None
         self._emotion_pipe = None
+        self._sentiment_task = "sentiment-analysis"
+        self._emotion_task = "text-classification"
         self._initialized = False
+
+    def _is_english_route(self) -> bool:
+        lang = (self.language or "").strip().lower()
+        return lang in {c.lower() for c in settings.transformer.english_language_codes}
+
+    def _is_indic_route(self) -> bool:
+        lang = (self.language or "").strip().lower()
+        return lang in {c.lower() for c in settings.transformer.indic_language_codes}
+
+    def _route_profile(self) -> str:
+        if self._is_english_route():
+            return "english"
+        if self._is_indic_route():
+            return "indic"
+        return "generalist"
+
+    def _normalize_sentiment_label(self, raw_label: str) -> str:
+        label = str(raw_label or "").strip()
+        if not label:
+            return "UNKNOWN"
+        mapped = settings.transformer.multilingual_sentiment_label_map.get(label)
+        if mapped:
+            return mapped
+        mapped_ci = settings.transformer.multilingual_sentiment_label_map.get(label.lower())
+        if mapped_ci:
+            return mapped_ci
+        return label.upper()
 
     def _initialize_models(self):
         # Alias for _initialize_pipelines to maintain consistency if needed
         self._initialize_pipelines()
 
+    def _get_cached_pipeline(self, task: str, model_name: str, device: int, **kwargs):
+        cache_key = (task, model_name)
+        if cache_key in self._PIPELINE_CACHE:
+            return self._PIPELINE_CACHE[cache_key]
+        built = pipeline(task, model=model_name, device=device, **kwargs)
+        self._PIPELINE_CACHE[cache_key] = built
+        return built
+
     def _initialize_pipelines(self):
-        """Initialize transformer pipelines only for English — called lazily on first use"""
+        """Initialize transformer pipelines lazily with multilingual routing."""
         if self._initialized:
             return
         self._initialized = True
-        if self.language == "en":
-            try:
-                import torch
-                # Use GPU (0) if available for these massive models, else fallback to CPU (-1)
-                device = 0 if torch.cuda.is_available() else -1
-                
-                # Use state-of-the-art flagship LARGE models for maximum accuracy
-                logger.info("Loading flagship sentiment model (siebert/sentiment-roberta-large-english)...")
-                self._sentiment_pipe = pipeline(
-                    "sentiment-analysis", 
-                    model="siebert/sentiment-roberta-large-english",
-                    device=device
+        try:
+            import torch
+            device = 0 if torch.cuda.is_available() else -1
+            profile = self._route_profile()
+            if profile == "english":
+                logger.info(
+                    f"Loading English transformer pipelines: "
+                    f"{settings.transformer.sentiment_model} + {settings.transformer.emotion_model}"
                 )
-                logger.info("Loading flagship emotion model (duelker/samo-goemotions-deberta-v3-large)...")
-                self._emotion_pipe = pipeline(
-                    "text-classification", 
-                    model="duelker/samo-goemotions-deberta-v3-large", 
+                self._sentiment_task = "sentiment-analysis"
+                self._emotion_task = "text-classification"
+                self._sentiment_pipe = self._get_cached_pipeline(
+                    "sentiment-analysis",
+                    settings.transformer.sentiment_model,
+                    device,
+                )
+                self._emotion_pipe = self._get_cached_pipeline(
+                    "text-classification",
+                    settings.transformer.emotion_model,
+                    device,
                     top_k=None,
-                    device=device
                 )
-                logger.info("Transformer pipelines initialized successfully")
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                logger.warning(f"Transformer initialization failed: {e}")
+            elif profile == "indic":
+                logger.info(
+                    f"Loading Indic transformer pipelines: "
+                    f"{settings.transformer.indic_sentiment_model} + "
+                    f"{settings.transformer.indic_emotion_model}"
+                )
+                try:
+                    self._sentiment_task = "sentiment-analysis"
+                    self._sentiment_pipe = self._get_cached_pipeline(
+                        "sentiment-analysis",
+                        settings.transformer.indic_sentiment_model,
+                        device,
+                    )
+                except Exception:
+                    logger.warning(
+                        "Indic sentiment model failed for sentiment-analysis. "
+                        "Falling back to generalist zero-shot."
+                    )
+                    self._sentiment_task = "zero-shot-classification"
+                    self._sentiment_pipe = self._get_cached_pipeline(
+                        "zero-shot-classification",
+                        settings.transformer.generalist_zero_shot_model,
+                        device,
+                    )
+                self._emotion_task = settings.transformer.indic_emotion_mode
+                if self._emotion_task == "zero-shot-classification":
+                    self._emotion_pipe = self._get_cached_pipeline(
+                        "zero-shot-classification",
+                        settings.transformer.indic_emotion_model,
+                        device,
+                    )
+                else:
+                    try:
+                        self._emotion_pipe = self._get_cached_pipeline(
+                            "text-classification",
+                            settings.transformer.indic_emotion_model,
+                            device,
+                            top_k=None,
+                        )
+                        self._emotion_task = "text-classification"
+                    except Exception:
+                        logger.warning(
+                            "Indic emotion model does not expose text-classification head. "
+                            "Falling back to generalist zero-shot."
+                        )
+                        self._emotion_task = "zero-shot-classification"
+                        self._emotion_pipe = self._get_cached_pipeline(
+                            "zero-shot-classification",
+                            settings.transformer.generalist_zero_shot_model,
+                            device,
+                        )
+            else:
+                logger.info(
+                    f"Loading generalist zero-shot model: {settings.transformer.generalist_zero_shot_model}"
+                )
+                self._sentiment_task = "zero-shot-classification"
+                self._emotion_task = "zero-shot-classification"
+                self._sentiment_pipe = self._get_cached_pipeline(
+                    "zero-shot-classification",
+                    settings.transformer.generalist_zero_shot_model,
+                    device,
+                )
+                self._emotion_pipe = self._sentiment_pipe
+            logger.info("Transformer pipelines initialized successfully")
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            logger.warning(f"Transformer initialization failed: {e}")
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Perform sentiment and emotion analysis"""
         # Lazy-load models on first call (avoids debug reloader loading 2x ~3GB)
         if not self._initialized:
             self._initialize_pipelines()
-        if self.language != "en" or not self._sentiment_pipe:
+        if not self._sentiment_pipe:
             return {"status": "unsupported_or_failed", "sentiment": {}, "emotions": {}}
 
         try:
             # Truncate text if too long for transformer (512 tokens approx)
             truncated_text = text[:1000] 
             
-            sentiment_res = self._sentiment_pipe(truncated_text)[0]
-            emotion_res = self._emotion_pipe(truncated_text)[0]
-            
-            # Convert emotion scores to dict
-            emotions = {item['label']: round(item['score'], 4) for item in emotion_res}
+            if self._sentiment_task == "zero-shot-classification":
+                zs_sent = self._sentiment_pipe(
+                    truncated_text,
+                    candidate_labels=settings.transformer.generalist_sentiment_labels,
+                    multi_label=False,
+                )
+                sentiment_label = self._normalize_sentiment_label(
+                    (zs_sent.get("labels") or ["UNKNOWN"])[0]
+                )
+                sentiment_score = round(float((zs_sent.get("scores") or [0.0])[0]), 4)
+            else:
+                sentiment_res = self._sentiment_pipe(truncated_text)[0]
+                sentiment_label = self._normalize_sentiment_label(sentiment_res.get("label", ""))
+                sentiment_score = round(float(sentiment_res.get("score", 0.0)), 4)
+
+            if self._emotion_task == "text-classification" and self._emotion_pipe:
+                emotion_res = self._emotion_pipe(truncated_text)[0]
+                emotions = {
+                    item["label"].lower(): round(float(item["score"]), 4)
+                    for item in emotion_res
+                }
+            else:
+                candidate_labels = settings.transformer.multilingual_emotion_labels
+                zs = self._emotion_pipe(
+                    truncated_text,
+                    candidate_labels=candidate_labels,
+                    multi_label=True,
+                )
+                emotions = {
+                    lbl.lower(): round(float(score), 4)
+                    for lbl, score in zip(zs.get("labels", []), zs.get("scores", []))
+                }
             
             return {
+                "status": "ok",
                 "sentiment": {
-                    "label": sentiment_res['label'],
-                    "score": round(sentiment_res['score'], 4)
+                    "label": sentiment_label,
+                    "score": sentiment_score,
                 },
                 "emotions": emotions,
-                "dominant_emotion": max(emotions, key=emotions.get)
+                "dominant_emotion": max(emotions, key=emotions.get) if emotions else "unknown",
+                "route_profile": self._route_profile(),
             }
         except Exception as e:
             import traceback
             traceback.print_exc()
             logger.error(f"Transformer analysis failed: {e}")
-            return {"error": str(e)}
+            return {"status": "failed", "error": str(e)}
 
 class DialectDetector:
     """Detect Hindi/Indic dialects and language varieties"""
