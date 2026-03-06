@@ -1,0 +1,21 @@
+{
+  "score_min": 1.0,
+  "score_max": 10.0,
+  "technical_sentence_variety_min": 1,
+  "technical_morph_complexity_min": 5,
+  "language_semantic_density_min": 0.5,
+  "language_synonym_min": 2,
+  "imagery_types_high": 5,
+  "imagery_types_mid": 2,
+  "tropes_count_high": 5,
+  "tropes_count_mid": 2,
+  "compound_strong": 0.5,
+  "compound_mid": 0.2,
+  "ttr_high": 0.6,
+  "ttr_mid": 0.4,
+  "tp_castt_title_preview_chars": 80,
+  "tp_castt_paraphrase_sentences": 2,
+  "tp_castt_top_content_words": 8,
+  "tp_castt_shift_threshold": 0.4,
+  "tp_castt_theme_top_k": 5
+}

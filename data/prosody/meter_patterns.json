@@ -1,0 +1,58 @@
+{
+  "iambic": {
+    "name": "Iambic",
+    "pattern": [
+      "da",
+      "DUM"
+    ],
+    "feet_name": "iamb",
+    "description": "unstressed-stressed (da-DUM)"
+  },
+  "trochaic": {
+    "name": "Trochaic",
+    "pattern": [
+      "DUM",
+      "da"
+    ],
+    "feet_name": "trochee",
+    "description": "stressed-unstressed (DUM-da)"
+  },
+  "anapestic": {
+    "name": "Anapestic",
+    "pattern": [
+      "da",
+      "da",
+      "DUM"
+    ],
+    "feet_name": "anapest",
+    "description": "unstressed-unstressed-stressed"
+  },
+  "dactylic": {
+    "name": "Dactylic",
+    "pattern": [
+      "DUM",
+      "da",
+      "da"
+    ],
+    "feet_name": "dactyl",
+    "description": "stressed-unstressed-unstressed"
+  },
+  "spondaic": {
+    "name": "Spondaic",
+    "pattern": [
+      "DUM",
+      "DUM"
+    ],
+    "feet_name": "spondee",
+    "description": "stressed-stressed"
+  },
+  "pyrrhic": {
+    "name": "Pyrrhic",
+    "pattern": [
+      "da",
+      "da"
+    ],
+    "feet_name": "pyrrhus",
+    "description": "unstressed-unstressed"
+  }
+}

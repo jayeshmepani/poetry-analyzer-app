@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from enum import Enum
 import re
 
+from app.services.rule_loader import get_literary_theory_rules
+
 
 class CriticismType(Enum):
     """Types of literary criticism"""
@@ -49,6 +51,8 @@ class LiteraryTheoryAnalyzer:
         self.tokens: List[str] = []
         self._used_evidence_indices: set[int] = set()
         self.model_signals: Dict[str, Any] = {}
+        self._rules = get_literary_theory_rules()
+        self._summary_rules = self._rules["summary"]
 
     def analyze(self, text: str, frameworks: List[str] = None, signals: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -112,15 +116,11 @@ class LiteraryTheoryAnalyzer:
         """
         raw = float(payload.get("score", 0.0) or 0.0)
         strength = self._framework_signal_strength(payload)
-        support = float(self.model_signals.get("support_factor", 0.65))
-        support = max(0.25, min(1.0, support))
-
-        if strength <= 1:
-            adjusted = (raw * 0.35 + 5.0 * 0.65) * support + raw * (1 - support)
-        elif strength <= 3:
-            adjusted = (raw * 0.6 + 5.0 * 0.4) * support + raw * (1 - support)
-        else:
-            adjusted = raw
+        support = self.model_signals.get("support_factor")
+        if support is None:
+            support = strength / self._framework_signal_capacity(payload)
+        support = max(0.0, min(1.0, float(support)))
+        adjusted = raw * support if support > 0 else raw
 
         payload["raw_score"] = round(raw, 2)
         payload["score"] = round(max(0.0, min(10.0, adjusted)), 1)
@@ -154,6 +154,26 @@ class LiteraryTheoryAnalyzer:
             elif isinstance(v, bool) and v:
                 strength += 1
         return strength
+
+    def _framework_signal_capacity(self, payload: Dict[str, Any]) -> float:
+        capacity = 0.0
+        ignored_keys = {
+            "framework", "analysis", "recommendations", "derridean_concepts",
+            "feminist_concepts", "marxist_concepts", "freudian_concepts",
+            "ecocritical_concepts", "fallacies_avoided", "value_formula",
+            "form_elements", "raw_score", "descriptive_summary", "evidence_points",
+            "diagnostics"
+        }
+        for k, v in payload.items():
+            if k in ignored_keys:
+                continue
+            if isinstance(v, list):
+                capacity += max(1.0, float(len(v)))
+            elif isinstance(v, dict):
+                capacity += max(1.0, float(len(v)))
+            else:
+                capacity += 1.0
+        return max(1.0, capacity)
 
     def _enrich_framework_result(self, framework: str, payload: Dict[str, Any]) -> None:
         """Add descriptive narrative, evidence excerpts, and confidence metadata."""
@@ -191,26 +211,28 @@ class LiteraryTheoryAnalyzer:
                 continue
             token_freq[tok] = token_freq.get(tok, 0) + 1
         ranked = sorted(token_freq.items(), key=lambda x: x[1], reverse=True)
-        return [tok for tok, _ in ranked[:10]]
+        return [tok for tok, _ in ranked[: self._summary_rules["keyword_top_k"]]]
 
     def _extract_evidence_lines(self, keywords: List[str], max_items: int = 3) -> List[str]:
         if not self.lines:
             return []
 
+        if max_items is None:
+            max_items = self._summary_rules["evidence_max_items"]
         lower_keywords = [k.lower() for k in (keywords or []) if k]
         scored: List[tuple[float, int]] = []
         for idx, line in enumerate(self.lines):
             line_l = line.lower()
             hit_score = sum(1 for k in lower_keywords if k and k in line_l)
             token_count = len(line.split())
-            punctuation_count = sum(1 for ch in line if ch in ",;:.?!")
+            punctuation_count = sum(1 for ch in line if ch in self._summary_rules["punctuation_chars"])
             density = punctuation_count / max(1, len(line))
             novelty_bonus = 1 if idx not in self._used_evidence_indices else 0
             total = (
-                hit_score * 2.5
-                + min(1.5, token_count / 8.0)
-                + min(1.0, density * 20)
-                + novelty_bonus
+                hit_score * self._summary_rules["hit_weight"]
+                + min(self._summary_rules["token_count_cap"], token_count / self._summary_rules["token_count_scale"])
+                + min(self._summary_rules["punctuation_cap"], density * self._summary_rules["punctuation_scale"])
+                + novelty_bonus * self._summary_rules["novelty_bonus"]
             )
             scored.append((total, idx))
 
@@ -266,16 +288,16 @@ class LiteraryTheoryAnalyzer:
 
     def _script_profile(self) -> str:
         text = self.text or ""
-        deva = len(re.findall(r"[\u0900-\u097F]", text))
-        arabic = len(re.findall(r"[\u0600-\u06FF]", text))
-        latin = len(re.findall(r"[A-Za-z]", text))
+        deva = len(re.findall(self._summary_rules["script_devanagari"], text))
+        arabic = len(re.findall(self._summary_rules["script_arabic"], text))
+        latin = len(re.findall(self._summary_rules["script_latin"], text))
         if deva >= arabic and deva >= latin and deva > 0:
-            return "Devanagari-dominant"
+            return self._summary_rules["script_labels"]["devanagari"]
         if arabic >= deva and arabic >= latin and arabic > 0:
-            return "Arabic-script dominant"
+            return self._summary_rules["script_labels"]["arabic"]
         if latin > 0:
-            return "Latin-script dominant"
-        return "Mixed/undetermined"
+            return self._summary_rules["script_labels"]["latin"]
+        return self._summary_rules["script_labels"]["mixed"]
 
     def _count_signals(self, payload: Dict[str, Any]) -> int:
         count = 0
@@ -291,18 +313,18 @@ class LiteraryTheoryAnalyzer:
         return count
 
     def _score_band(self, score: float) -> str:
-        if score >= 7.5:
+        if score >= self._summary_rules["score_band_strong"]:
             return "Strong"
-        if score >= 5.0:
+        if score >= self._summary_rules["score_band_moderate"]:
             return "Moderate"
-        if score >= 2.5:
+        if score >= self._summary_rules["score_band_emergent"]:
             return "Emergent"
         return "Low-signal"
 
     def _confidence_bucket(self, signal_count: int, score: float) -> str:
-        if signal_count >= 12 and score >= 5:
+        if signal_count >= self._summary_rules["confidence_high_signal"] and score >= self._summary_rules["confidence_high_score"]:
             return "High"
-        if signal_count >= 6:
+        if signal_count >= self._summary_rules["confidence_medium_signal"]:
             return "Medium"
         return "Low"
 
@@ -316,13 +338,14 @@ class LiteraryTheoryAnalyzer:
         confidence: str,
     ) -> str:
         cleaned_findings = [str(f).strip() for f in (key_findings or []) if str(f).strip()]
-        top_findings = "; ".join(cleaned_findings[:3]) if cleaned_findings else "No dominant markers were detected."
-        evidence_hint = "; ".join(evidence_points[:2]) if evidence_points else "No direct evidence lines were extracted."
-        return (
-            f"{analysis} "
-            f"This lens currently scores {score:.1f}/10 with {confidence.lower()} confidence. "
-            f"Most relevant observations: {top_findings} "
-            f"Representative textual cues: {evidence_hint}"
+        top_findings = "; ".join(cleaned_findings[: self._summary_rules["summary_findings_top"]]) if cleaned_findings else self._summary_rules["findings_default"]
+        evidence_hint = "; ".join(evidence_points[: self._summary_rules["summary_evidence_top"]]) if evidence_points else self._summary_rules["evidence_default"]
+        return self._summary_rules["narrative_template"].format(
+            analysis=analysis,
+            score=score,
+            confidence=confidence.lower(),
+            findings=top_findings,
+            evidence=evidence_hint,
         )
 
     # ==================== NEW CRITICISM / FORMALISM ====================
@@ -350,33 +373,28 @@ class LiteraryTheoryAnalyzer:
         imagery_coherence = self._analyze_imagery_coherence()
 
         # Calculate overall score
+        rules = self._rules["new_criticism"]
+        weights = rules["score_weights"]
         score = (
-            unity_score * 0.3 +
-            imagery_coherence * 0.3 +
-            (len(paradoxes) > 0) * 0.2 +
-            (len(ironies) > 0) * 0.2
-        ) * 10
+            unity_score * weights["unity"] +
+            imagery_coherence * weights["imagery"] +
+            (len(paradoxes) > 0) * weights["paradox_presence"] +
+            (len(ironies) > 0) * weights["irony_presence"]
+        ) * weights["scale"]
 
         return {
-            "framework": "New Criticism / Formalism",
+            "framework": rules["framework"],
             "score": round(min(10, score), 1),
-            "analysis": "Analysis based on intrinsic textual qualities, focusing on internal tensions, paradox, irony, and unity",
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Detected {len(paradoxes)} paradoxes",
-                f"Detected {len(ironies)} instances of irony",
-                f"Detected {len(ambiguities)} ambiguities",
-                f"Unity score: {unity_score:.2f}/1.0",
-                f"Imagery coherence: {imagery_coherence:.2f}/1.0"
+                rules["key_findings"]["paradoxes"].format(count=len(paradoxes)),
+                rules["key_findings"]["ironies"].format(count=len(ironies)),
+                rules["key_findings"]["ambiguities"].format(count=len(ambiguities)),
+                rules["key_findings"]["unity"].format(score=unity_score),
+                rules["key_findings"]["imagery"].format(score=imagery_coherence),
             ],
-            "recommendations": [
-                "Focus on resolving internal tensions for greater unity",
-                "Consider how paradoxes contribute to thematic depth",
-                "Evaluate whether ambiguities are productive or confusing"
-            ],
-            "fallacies_avoided": [
-                "Intentional Fallacy (author's intent not considered)",
-                "Affective Fallacy (reader response not considered)"
-            ],
+            "recommendations": rules["recommendations"],
+            "fallacies_avoided": rules["fallacies_avoided"],
             "internal_tensions": {
                 "paradoxes": paradoxes,
                 "ironies": ironies,
@@ -392,15 +410,11 @@ class LiteraryTheoryAnalyzer:
         new_crit = self._analyze_new_criticism()
         
         return {
-            "framework": "Formalism",
+            "framework": self._rules["formalism"]["framework"],
             "score": new_crit["score"],
-            "analysis": "Formalist analysis focusing on structural elements, literary devices, and formal properties",
+            "analysis": self._rules["formalism"]["analysis"],
             "key_findings": new_crit["key_findings"],
-            "form_elements": {
-                "structure": "Analyzed",
-                "literary_devices": "Analyzed",
-                "prosody": "Analyzed"
-            }
+            "form_elements": self._rules["formalism"]["form_elements"]
         }
 
     # ==================== STRUCTURALISM ====================
@@ -423,20 +437,24 @@ class LiteraryTheoryAnalyzer:
         # Analyze language systems
         language_patterns = self._analyze_language_patterns()
 
+        rules = self._rules["structuralism"]
+        weights = rules["score_weights"]
         score = (
-            (len(binaries) > 0) * 0.4 +
-            (narrative_structure["has_structure"] * 0.3) +
-            (language_patterns["coherence"] * 0.3)
-        ) * 10
+            (len(binaries) > 0) * weights["binary_presence"] +
+            (narrative_structure["has_structure"] * weights["structure_presence"]) +
+            (language_patterns["coherence"] * weights["language_coherence"])
+        ) * weights["scale"]
 
         return {
-            "framework": "Structuralism",
+            "framework": rules["framework"],
             "score": round(min(10, score), 1),
-            "analysis": "Structuralist analysis focusing on underlying patterns, binary oppositions, and language systems",
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Detected {len(binaries)} binary oppositions",
-                f"Narrative structure: {'Present' if narrative_structure['has_structure'] else 'Absent'}",
-                f"Language coherence: {language_patterns['coherence']:.2f}"
+                rules["key_findings"]["binaries"].format(count=len(binaries)),
+                rules["key_findings"]["narrative"].format(
+                    state=rules["narrative_present"] if narrative_structure["has_structure"] else rules["narrative_absent"]
+                ),
+                rules["key_findings"]["coherence"].format(score=language_patterns["coherence"])
             ],
             "binary_oppositions": binaries,
             "underlying_patterns": narrative_structure,
@@ -509,17 +527,17 @@ class LiteraryTheoryAnalyzer:
         # Analyze context dependence
         context_dependence = self._analyze_context_dependence()
 
-        # Value formula: V = T × R × C
-        text_potential = 0.7  # Base text quality
-        reader_engagement = len(emotional_triggers) / 10  # Reader factor
-        context_relevance = context_dependence  # Context factor
+        # Value formula: V = T × R × C (all derived from live signals)
+        text_potential = self._text_quality_signal()
+        reader_engagement = min(1.0, len(emotional_triggers) / 5.0)
+        context_relevance = max(0.0, min(1.0, context_dependence))
 
-        value = text_potential * (1 + reader_engagement) * (1 + context_relevance)
+        value = text_potential * (0.6 + 0.7 * reader_engagement) * (0.6 + 0.7 * context_relevance)
 
         return {
             "framework": "Reader-Response Criticism",
             "value_formula": "Value = Text × Reader × Context",
-            "score": round(min(10, value * 5), 1),
+            "score": round(min(10, value * 10), 1),
             "analysis": "Reader-response analysis focusing on how meaning emerges from reader-text transaction",
             "key_findings": [
                 f"Interpretive gaps: {len(gaps)} (spaces for reader meaning-making)",
@@ -868,7 +886,7 @@ class LiteraryTheoryAnalyzer:
             end_freq[e] = end_freq.get(e, 0) + 1
         refrain_density = sum(1 for c in end_freq.values() if c > 1) / max(1, len(end_freq))
 
-        score = min(1.0, 0.55 * lexical_recurrence + 0.45 * refrain_density + 0.15)
+        score = min(1.0, 0.55 * lexical_recurrence + 0.45 * refrain_density)
         return round(score, 2)
 
     def _analyze_imagery_coherence(self) -> float:
@@ -987,8 +1005,41 @@ class LiteraryTheoryAnalyzer:
         sentence_count = max(1.0, self._to_float(self._sig("linguistic", "text_metrics", "descriptive_stats", "sentence_count", default=1), 1.0))
         line_count = max(1.0, float(len(self.lines)))
         dependency_nodes = len(self._sig("linguistic", "dependency_tree", default=[]))
-        ratio = min(1.0, (line_count / sentence_count) * 0.18 + dependency_nodes / 200.0)
-        return round(max(0.2, ratio), 2)
+        ratio = min(1.0, (line_count / sentence_count) * self._rules["scales"]["line_sentence_ratio_scale"] + dependency_nodes / self._rules["scales"]["dependency_node_scale"])
+        return round(max(0.0, ratio), self._rules["scales"]["quality_rounding"])
+
+    def _text_quality_signal(self) -> float:
+        """Compute a dynamic text quality signal from live metrics."""
+        lex = self._to_float(self._sig("quantitative", "lexical_metrics", "lexical_density", default=0.0), 0.0)
+        ttr = self._to_float(self._sig("quantitative", "lexical_metrics", "type_token_ratio", default=0.0), 0.0)
+        rhyme = self._to_float(self._sig("prosody", "rhyme", "rhyme_density", default=0.0), 0.0)
+        readability = self._to_float(
+            self._sig("linguistic", "text_metrics", "readability", "flesch_reading_ease", default=60.0),
+            60.0,
+        )
+
+        if lex > 1.0:
+            lex = lex / 100.0
+        if ttr > 1.0:
+            ttr = ttr / 100.0
+        if rhyme > 1.0:
+            rhyme = rhyme / 100.0
+
+        imagery = self._sig("literary_devices", "imagery", default={})
+        imagery_total = 0.0
+        if isinstance(imagery, dict):
+            imagery_total = sum(float(v) for v in imagery.values() if isinstance(v, (int, float)))
+        imagery_score = min(1.0, imagery_total / self._rules["scales"]["imagery_total_scale"]) if imagery_total else 0.0
+
+        readability_score = max(0.0, min(1.0, readability / self._rules["scales"]["readability_scale"]))
+        quality = (
+            self._rules["quality_weights"]["lex"] * max(0.0, min(1.0, lex)) +
+            self._rules["quality_weights"]["ttr"] * max(0.0, min(1.0, ttr)) +
+            self._rules["quality_weights"]["imagery"] * imagery_score +
+            self._rules["quality_weights"]["rhyme"] * max(0.0, min(1.0, rhyme)) +
+            self._rules["quality_weights"]["readability"] * readability_score
+        )
+        return round(max(0.0, min(1.0, quality)), self._rules["scales"]["quality_rounding"])
 
     def _analyze_gender_representation(self) -> Dict[str, Any]:
         """Analyze gender representation"""
@@ -1018,12 +1069,22 @@ class LiteraryTheoryAnalyzer:
 
     def _analyze_language_patriarchy(self) -> Dict[str, Any]:
         """Analyze patriarchal language structures"""
-        found = []
-        
+        try:
+            from transformers import pipeline
+            from app.config import Settings
+            zs = pipeline(
+                "zero-shot-classification",
+                model=Settings().transformer.generalist_zero_shot_model,
+                device=-1,
+            )
+            out = zs(self.text, ["patriarchal language", "gender-neutral language"])
+            score = float(out["scores"][0]) if out["labels"][0] == "patriarchal language" else 1 - float(out["scores"][0])
+        except Exception:
+            score = 0.0
         return {
-            "patriarchal_markers": found,
-            "score": 1.0,
-            "summary": f"Patriarchal language: {len(found)} instances"
+            "patriarchal_markers": [],
+            "score": score,
+            "summary": f"Patriarchal language score: {round(score, 3)}"
         }
 
     def _analyze_class_representation(self) -> Dict[str, Any]:
@@ -1034,7 +1095,7 @@ class LiteraryTheoryAnalyzer:
         return {
             "working_class_count": wc_count,
             "upper_class_count": uc_count,
-            "score": min(1.0, 0.35 + (wc_count + uc_count) / 8),
+            "score": min(1.0, (wc_count + uc_count) / 8),
             "summary": f"Working: {wc_count}, Upper: {uc_count}"
         }
 
@@ -1051,7 +1112,8 @@ class LiteraryTheoryAnalyzer:
 
     def _analyze_economic_themes(self) -> Dict[str, Any]:
         """Analyze economic themes"""
-        count = int(self._to_float(self._sig("quantitative", "lexical_metrics", "lexical_density", default=0), 0.0) // 20)
+        lex = self._to_float(self._sig("quantitative", "lexical_metrics", "lexical_density", default=0), 0.0)
+        count = int((lex * 100) // 20)
         
         return {
             "economic_word_count": count,
@@ -1118,7 +1180,18 @@ class LiteraryTheoryAnalyzer:
     def _analyze_human_nature_relationship(self) -> Dict[str, Any]:
         """Analyze human-nature relationship"""
         sentiment = self._sig("additional", "transformer_analysis", "sentiment", default={})
-        score = self._to_float(sentiment.get("score", 0.5), 0.5) if isinstance(sentiment, dict) else 0.5
+        score = None
+        if isinstance(sentiment, dict):
+            score = self._to_float(sentiment.get("score", None), None)
+        if score is None:
+            emotions = self._sig("additional", "transformer_analysis", "emotions", default={})
+            if isinstance(emotions, dict) and emotions:
+                pos = self._to_float(emotions.get("joy", 0.0), 0.0) + self._to_float(emotions.get("love", 0.0), 0.0)
+                neg = self._to_float(emotions.get("sadness", 0.0), 0.0) + self._to_float(emotions.get("fear", 0.0), 0.0)
+                total = max(0.0001, pos + neg)
+                score = max(0.0, min(1.0, pos / total))
+            else:
+                score = 0.0
         pos_count = int(score * 10)
         neg_count = int((1 - score) * 10)
         
@@ -1287,16 +1360,17 @@ class LiteraryTheoryAnalyzer:
     def _synthesize_results(self, results: Dict[str, Any]) -> str:
         """Synthesize results from multiple frameworks"""
         if not results:
-            return "No frameworks applied"
+            return self._summary_rules["synthesis_empty"]
         
         scored = [(k, float(v.get("score", 0) or 0)) for k, v in results.items()]
         avg_score = sum(v for _, v in scored) / max(1, len(scored))
         top = max(scored, key=lambda x: x[1]) if scored else ("n/a", 0.0)
         low = min(scored, key=lambda x: x[1]) if scored else ("n/a", 0.0)
-        return (
-            f"Multi-framework synthesis across {len(results)} lenses. "
-            f"Mean score is {avg_score:.1f}/10, with strongest alignment in {top[0]} ({top[1]:.1f}) "
-            f"and weakest in {low[0]} ({low[1]:.1f}). "
-            "Use higher-scoring lenses for interpretive emphasis and lower-scoring lenses as revision targets "
-            "to strengthen symbolic density, thematic contrast, and rhetorical force."
+        return self._summary_rules["synthesis_template"].format(
+            count=len(results),
+            avg=avg_score,
+            top_name=top[0],
+            top_score=top[1],
+            low_name=low[0],
+            low_score=low[1],
         )

@@ -141,7 +141,7 @@
                 <tr class="table-row-hover">
                     <td>
                         <div class="font-extrabold text-text mb-1">${r.title || 'Untitled'}</div>
-                        <div class="text-xs text-soft truncate" style="max-width: 250px;">${r.text ? r.text.substring(0, 60) + '...' : ''}</div>
+                        <div class="text-xs text-soft truncate max-w-250">${r.text ? r.text.substring(0, 60) + '...' : ''}</div>
                     </td>
                     <td>
                         <span class="badge badge-primary">${getLanguageName(r.language || 'en')}</span>
@@ -151,7 +151,7 @@
                     </td>
                     <td>
                         <div class="d-flex items-center gap-2">
-                            <div class="rounded-full bg-subtle overflow-hidden" style="width: 60px; height: 8px;">
+                            <div class="rounded-full bg-subtle overflow-hidden w-16 h-2">
                                 <div class="h-full rounded-full" style="width: ${r.overall_score || 0}%; background: ${getScoreColorHex(r.overall_score)}"></div>
                             </div>
                             <span class="font-black" style="color: ${getScoreColorHex(r.overall_score)}">${r.overall_score ? r.overall_score.toFixed(1) : '-'}</span>
@@ -168,10 +168,10 @@
                     </td>
                     <td class="text-right pr-4">
                         <div class="d-flex justify-end gap-2">
-                            <button type="button" onclick="window.location.href='/results/${r.uuid}'" class="btn btn-secondary" style="padding: 0.5rem;" title="View Details">
+                            <button type="button" onclick="window.location.href='/results/${r.uuid}'" class="btn btn-secondary p-2" title="View Details">
                                 <svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>
                             </button>
-                            <button type="button" onclick="deleteResult('${r.uuid}')" class="btn btn-danger" style="padding: 0.5rem;" title="Delete">
+                            <button type="button" onclick="deleteResult('${r.uuid}')" class="btn btn-danger p-2" title="Delete">
                                 <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg>
                             </button>
                         </div>
@@ -200,7 +200,7 @@
             tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="p-12 text-center">
-                    <div class="d-flex items-center justify-center rounded-full bg-danger-subtle text-danger mx-auto mb-4" style="width: 64px; height: 64px; font-size: 2rem;">
+                    <div class="d-flex items-center justify-center rounded-full bg-danger-subtle text-danger mx-auto mb-4 size-64 text-3xl">
                         <svg class="icon" aria-hidden="true"><use href="#icon-exclamation-triangle"></use></svg>
                     </div>
                     <h3 class="text-xl font-bold text-text mb-2">Failed to Load Results</h3>
@@ -220,7 +220,7 @@
         <div class="stat-card text-center p-5 card-hover transition">
             <div class="text-sm font-bold text-muted uppercase tracking-widest mb-3">${name}</div>
             <div class="text-4xl font-black mb-1" style="color: ${colorHex};">${score ? score.toFixed(1) : '-'}</div>
-            <div class="w-full rounded-full mt-4 overflow-hidden bg-subtle" style="height: 6px;">
+            <div class="w-full rounded-full mt-4 overflow-hidden bg-subtle h-2">
                 <div class="h-full rounded-full" style="width: ${score || 0}%; background: ${colorHex}"></div>
             </div>
         </div>

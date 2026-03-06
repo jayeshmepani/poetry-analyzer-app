@@ -1,0 +1,6 @@
+{
+  "laghu_signs": ["ि", "ु", "ृ"],
+  "guru_signs": ["ा", "ी", "ू", "े", "ै", "ो", "ौ"],
+  "anusvara_visarga": ["ं", "ः"],
+  "virama": "्"
+}

@@ -1,0 +1,9 @@
+{
+  "minimum_couplets": 5,
+  "max_couplets_for_radif_check": 5,
+  "ending_word_window": 3,
+  "qaafiya_density_required": 1.0,
+  "qaafiya_density_round": 3,
+  "lines_per_couplet": 2,
+  "radif_min_length": 2
+}

@@ -1,0 +1,12 @@
+{
+  "computational_greatness": {
+    "weights": {
+      "ld": 0.15,
+      "mtld": 0.20,
+      "ppl": 0.25,
+      "n_emb": 0.25,
+      "r_d": 0.15
+    },
+    "scale": 10.0
+  }
+}

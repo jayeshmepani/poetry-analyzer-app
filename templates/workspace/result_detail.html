@@ -467,7 +467,7 @@
             <div class="stat-card text-center p-5">
                 <div class="text-sm font-bold text-muted uppercase tracking-widest mb-3">${escapeHtml(name)}</div>
                 <div class="text-4xl font-black mb-1" style="color:${scoreColor(s)}">${s ? s.toFixed(2) : '-'}</div>
-                <div class="w-full rounded-full mt-4 overflow-hidden bg-subtle" style="height: 6px;">
+                <div class="w-full rounded-full mt-4 overflow-hidden bg-subtle h-2">
                     <div class="h-full rounded-full" style="width:${Math.max(0, Math.min(s, 10)) * 10}%; background:${scoreColor(s)}"></div>
                 </div>
             </div>
@@ -550,7 +550,7 @@
         const container = document.getElementById('reportContainer');
         container.innerHTML = `
             <div class="card p-6">
-                <div class="d-grid gap-6 grid-cols-1 md-grid-cols-2 p-6 rounded-xl" style="background: linear-gradient(135deg, var(--color-primary-subtle), var(--color-secondary-subtle));">
+                <div class="d-grid gap-6 grid-cols-1 md:grid-cols-2 p-6 rounded-xl bg-gradient-to-br">
                     <div>
                         <h2 class="text-2xl font-black text-text mb-2">${escapeHtml(result.title || 'Untitled')}</h2>
                         <div class="d-flex flex-wrap gap-2 mt-3">
@@ -574,7 +574,7 @@
             </div>
 
             ${displayResult.executive_summary ? `
-            <div class="card border border-primary-subtle" style="background: linear-gradient(135deg, var(--color-surface), var(--color-primary-subtle));">
+            <div class="card border border-primary-subtle bg-surface-primary-gradient">
                 <h3 class="text-lg font-bold text-text mb-4">
                     <svg class="icon text-primary mr-2" aria-hidden="true"><use href="#icon-file-alt"></use></svg> Executive Summary
                 </h3>
@@ -606,19 +606,19 @@
             <div class="d-grid gap-6 grid-cols-1 lg:grid-cols-2">
                 <div class="card">
                     <h3 class="text-lg font-bold text-text mb-4">Ratings Radar</h3>
-                    <div id="ratingsRadar" style="width:100%; min-height:320px;"></div>
+                    <div id="ratingsRadar" class="w-full min-h-320"></div>
                 </div>
                 <div class="card">
                     <h3 class="text-lg font-bold text-text mb-4">Transformer Emotions</h3>
-                    <div id="emotionBar" style="width:100%; min-height:320px;"></div>
+                    <div id="emotionBar" class="w-full min-h-320"></div>
                 </div>
                 <div class="card">
                     <h3 class="text-lg font-bold text-text mb-4">Rasa Distribution</h3>
-                    <div id="rasaBar" style="width:100%; min-height:320px;"></div>
+                    <div id="rasaBar" class="w-full min-h-320"></div>
                 </div>
                 <div class="card">
                     <h3 class="text-lg font-bold text-text mb-4">Lexical Snapshot</h3>
-                    <div id="lexicalBar" style="width:100%; min-height:320px;"></div>
+                    <div id="lexicalBar" class="w-full min-h-320"></div>
                 </div>
             </div>
 

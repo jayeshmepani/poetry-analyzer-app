@@ -1,0 +1,9 @@
+{
+  "length_markers": ["ː", "ˑ"],
+  "ignore_chars": ["ˈ", "ˌ", "ː", "ˑ"],
+  "symbols": {
+    "short": "˘",
+    "long": "—",
+    "overlong": "—˘"
+  }
+}

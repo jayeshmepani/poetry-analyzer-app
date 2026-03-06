@@ -91,7 +91,14 @@ def download_nltk_data() -> None:
     """Download required NLTK datasets."""
     import nltk
 
-    packages = ["punkt", "punkt_tab", "averaged_perceptron_tagger"]
+    packages = [
+        "punkt",
+        "punkt_tab",
+        "averaged_perceptron_tagger",
+        "wordnet",
+        "omw-1.4",
+        "gutenberg",
+    ]
     for pkg in packages:
         logger.info(f"Downloading NLTK data: {pkg}")
         nltk.download(pkg, quiet=True)
@@ -224,6 +231,86 @@ def setup_stanza_resources(env: dict) -> None:
         logger.warning(f"Stanza resource setup skipped/failed: {e}")
 
 
+def setup_iwn_resources(env: dict) -> None:
+    """Download IndoWordNet data into configured directory."""
+    iwn_dir = env_or_default(env, "IWN_DATA_DIR", ".iwn_data")
+    iwn_dir = os.path.abspath(iwn_dir)
+    os.makedirs(iwn_dir, exist_ok=True)
+
+    try:
+        import pyiwn
+        import pyiwn.constants as constants
+
+        # Redirect IndoWordNet data paths into the configured directory.
+        constants.USER_HOME = os.path.dirname(iwn_dir)
+        constants.IWN_DATA_PATH = iwn_dir
+        constants.IWN_DATA_TEMP_PATH = os.path.join(constants.USER_HOME, "iwn_data.tar.gz")
+
+        logger.info(f"Downloading IndoWordNet data to: {constants.IWN_DATA_PATH}")
+        ok = pyiwn.helpers.download()
+        if ok:
+            logger.info("  ✓ IndoWordNet data ready")
+        else:
+            logger.error("  ✗ IndoWordNet download failed")
+    except Exception as e:
+        logger.warning(f"IndoWordNet setup skipped/failed: {e}")
+
+
+def setup_urdu_g2p(env: dict) -> None:
+    """Download Urdu G2P dataset and build a fast lookup cache."""
+    dataset_name = env_or_default(env, "URDU_G2P_DATASET", "humairmunirawn/UrduG2P")
+    split = env_or_default(env, "URDU_G2P_SPLIT", "train")
+    cache_dir = os.path.abspath(env_or_default(env, "URDU_G2P_CACHE_DIR", ".urdu_g2p_cache"))
+    os.makedirs(cache_dir, exist_ok=True)
+
+    cache_path = os.path.join(cache_dir, "urdu_g2p_map.json")
+    if os.path.exists(cache_path):
+        logger.info(f"Urdu G2P cache already present: {cache_path} (skip)")
+        return
+
+    try:
+        from datasets import load_dataset
+    except Exception as e:
+        logger.warning(f"datasets not available; Urdu G2P setup skipped: {e}")
+        return
+
+    try:
+        logger.info(f"Downloading Urdu G2P dataset: {dataset_name} [{split}]")
+        ds = load_dataset(dataset_name, split=split, cache_dir=cache_dir)
+        if not ds:
+            logger.warning("Urdu G2P dataset returned empty; skipping cache build")
+            return
+
+        # Heuristically pick likely word/ipa columns without hardcoding.
+        sample = ds[0]
+        keys = list(sample.keys())
+        word_keys = [k for k in keys if "word" in k.lower() or "grapheme" in k.lower() or "text" in k.lower()]
+        ipa_keys = [k for k in keys if "ipa" in k.lower() or "phoneme" in k.lower() or "phonetic" in k.lower()]
+        if not word_keys or not ipa_keys:
+            logger.warning(f"Urdu G2P columns not detected (keys={keys}); skipping cache build")
+            return
+
+        word_key = word_keys[0]
+        ipa_key = ipa_keys[0]
+
+        mapping = {}
+        for row in ds:
+            word = str(row.get(word_key, "")).strip()
+            ipa = str(row.get(ipa_key, "")).strip()
+            if word and ipa:
+                mapping[word] = ipa
+
+        if not mapping:
+            logger.warning("Urdu G2P mapping empty; skipping cache build")
+            return
+
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump(mapping, f, ensure_ascii=False)
+        logger.info(f"  ✓ Urdu G2P cache built: {cache_path} ({len(mapping)} entries)")
+    except Exception as e:
+        logger.warning(f"Urdu G2P setup skipped/failed: {e}")
+
+
 def main() -> None:
     print("=" * 60)
     print("  Poetry Analyzer — Model Setup")
@@ -240,11 +327,19 @@ def main() -> None:
     download_nltk_data()
 
     # 3. Stanza resources
-    print("\n[3/4] Stanza resources")
+    print("\n[3/6] Stanza resources")
     setup_stanza_resources(env)
 
-    # 4. Transformer models (optional, large download)
-    print("\n[4/4] Transformer models (this may take a while)")
+    # 4. IndoWordNet data
+    print("\n[4/6] IndoWordNet data")
+    setup_iwn_resources(env)
+
+    # 5. Urdu G2P dataset cache
+    print("\n[5/6] Urdu G2P dataset")
+    setup_urdu_g2p(env)
+
+    # 6. Transformer models (optional, large download)
+    print("\n[6/6] Transformer models (this may take a while)")
     prefetch_transformer_models(env)
 
     print("\n" + "=" * 60)

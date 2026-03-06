@@ -134,6 +134,29 @@ class StanzaSettings(BaseSettings):
         env_prefix = "STANZA_"
 
 
+class LexicalResourceSettings(BaseSettings):
+    """Lexical and phonology resource configuration"""
+
+    iwn_data_dir: str = Field(
+        default=".iwn_data", description="IndoWordNet data directory"
+    )
+    urdu_g2p_dataset: str = Field(
+        default="humairmunirawn/UrduG2P", description="HuggingFace Urdu G2P dataset"
+    )
+    urdu_g2p_split: str = Field(
+        default="train", description="Dataset split to use for Urdu G2P"
+    )
+    urdu_g2p_cache_dir: str = Field(
+        default=".urdu_g2p_cache", description="Local cache for Urdu G2P mapping"
+    )
+    wiktra_cache_dir: str = Field(
+        default=".wiktra_cache", description="Wiktra cache directory"
+    )
+
+    class Config:
+        env_prefix = ""
+
+
 class IndicNLPSettings(BaseSettings):
     """Indic NLP configuration"""
 
@@ -252,20 +275,13 @@ class TouchstoneSettings(BaseSettings):
     """Touchstone method configuration"""
 
     enabled: bool = Field(default=True, description="Enable touchstone comparison")
-    english_touchstones: List[Dict[str, str]] = Field(
-        default=[
-            {"name": "Milton", "passage": "And courage never to submit or yield"},
-            {
-                "name": "Shakespeare",
-                "passage": "Shall I compare thee to a summer's day",
-            },
-            {
-                "name": "Homer",
-                "passage": "Sing goddess the anger of Peleus son Achilles",
-            },
-            {"name": "Dante", "passage": "In the middle of the journey of our life"},
-        ],
-        description="English touchstone passages",
+    corpus: str = Field(
+        default="gutenberg",
+        description="Touchstone corpus source (e.g., gutenberg)",
+    )
+    max_passages: int = Field(
+        default=4,
+        description="Maximum number of touchstone passages to compare",
     )
 
     class Config:
@@ -377,6 +393,7 @@ class Settings(BaseSettings):
     spacy: SpaCySettings = Field(default_factory=SpaCySettings)
     transformer: TransformerSettings = Field(default_factory=TransformerSettings)
     stanza: StanzaSettings = Field(default_factory=StanzaSettings)
+    lexical: LexicalResourceSettings = Field(default_factory=LexicalResourceSettings)
     indic_nlp: IndicNLPSettings = Field(default_factory=IndicNLPSettings)
     analysis: AnalysisSettings = Field(default_factory=AnalysisSettings)
     rating_weights: RatingWeights = Field(default_factory=RatingWeights)

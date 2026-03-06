@@ -20,6 +20,8 @@ import pyphen
 import textdescriptives as td
 import spacy
 
+from app.services.rule_loader import get_quantitative_rules
+
 
 class QuantitativeMetricsCalculator:
     """
@@ -37,6 +39,7 @@ class QuantitativeMetricsCalculator:
         self.word_freq = Counter(self.words)
         self.total_words = len(self.words)
         self.unique_words = len(set(self.words))
+        self._rules = get_quantitative_rules()
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Run all quantitative metrics"""
@@ -99,23 +102,24 @@ class QuantitativeMetricsCalculator:
                 "jukta_akshar_density": 0.0,
             }
 
-        total_akshars = sum(len(w) for w in self.words)
+        total_akshars = sum(self._count_akshars(w) for w in self.words)
         avg_word_length = total_akshars / len(self.words)
 
+        # JUK: conjunct consonants per 100 words
         jukta_count = sum(word.count("्") for word in self.words)
-        jukta_density = jukta_count / len(self.words) * 100
+        jukta_density = (jukta_count / len(self.words)) * 100
 
-        # Count matras (vowel signs)
-        matra_chars = sum(
-            word.count(c)
-            for word in self.words
-            for c in "ािीुूृेैोौंः"
-        )
-        matra_complexity = matra_chars / len(self.words)
+        # PSW: percentage of polysyllabic words (>=3 akshars)
+        polysyllabic = sum(1 for w in self.words if self._count_akshars(w) >= 3)
+        psw = (polysyllabic / len(self.words)) * 100
 
-        # Simple RH scores based on syllable complexity
-        rh1_score = min(10, avg_word_length * 1.5)
-        rh2_score = min(10, avg_word_length + jukta_density / 10)
+        # RH1/RH2 (Sinha et al.)
+        rh1_score = -2.34 + 2.14 * avg_word_length + 0.01 * jukta_density
+        rh2_score = -0.82 + 1.83 * avg_word_length + 0.09 * psw
+
+        # Matra Complexity Index (MCI) = guru syllables / total syllables * 100
+        guru_count, total_syllables = self._count_guru_syllables(self.words)
+        matra_complexity = (guru_count / total_syllables * 100) if total_syllables > 0 else 0.0
 
         return {
             "rh1_score": round(rh1_score, 2),
@@ -178,64 +182,147 @@ class QuantitativeMetricsCalculator:
             # Fallback to default syllables library
             return syllables.estimate(word)
 
-        polysyllabic = sum(1 for w in self.words if len(w) >= 3)
-        polysyllabic_ratio = polysyllabic / len(self.words)
-
-        rh1 = -2.34 + 2.14 * avg_word_length + 0.01 * jukta_density
-        rh2 = -0.82 + 1.83 * avg_word_length + 0.09 * polysyllabic_ratio
-
-        guru_count = 0
-        total_matras = 0
-        guru_vowels = "आ ई ऊ ए ऐ ओ औ"
-        laghu_vowels = "अ इ उ ऋ"
-        for word in self.words:
-            for char in word:
-                if char in guru_vowels or ord(char) in [
-                    0x093E,
-                    0x093F,
-                    0x0940,
-                    0x0947,
-                    0x0948,
-                    0x094B,
-                    0x094C,
-                ]:
-                    guru_count += 1
-                    total_matras += 2
-                elif char in laghu_vowels or (
-                    ord(char) in range(0x0900, 0x097F) and char not in "्ंः"
-                ):
-                    total_matras += 1
-
-        mci = (guru_count / total_matras * 100) if total_matras > 0 else 0
-
-        return {
-            "rh1_score": round(rh1, 2),
-            "rh2_score": round(rh2, 2),
-            "matra_complexity_index": round(mci, 2),
-            "avg_akshars_per_word": round(avg_word_length, 2),
-            "jukta_akshar_density": round(jukta_density, 2),
-        }
-
     def _calculate_computational_greatness(self, metrics: Dict[str, Any]) -> float:
         """Calculate composite 'Computational Greatness' score"""
-        lexical = metrics.get("lexical_metrics", {})
-        readability = metrics.get("readability_metrics", {})
+        # Compute R_d using exact formula on end-word rhymes
+        rhyme_density = self._calculate_rhyme_density_pairwise(self.original_text)
 
-        lexical_density_norm = min(1.0, lexical.get("lexical_density", 0) / 100)
-        mtld_norm = min(1.0, lexical.get("mtld", 0) / 100)
-        fk_grade = readability.get("flesch_kincaid_grade", 10)
-        readability_norm = max(0, 1 - (fk_grade / 20))
-        ttr = lexical.get("type_token_ratio", 0)
-        rhyme_density = 0.5
+        # Normalize metrics across comparison set: poem + canonical touchstones
+        candidates = [self.original_text] + self._touchstone_passages()
 
+        def _metric_bundle(text: str) -> Dict[str, float]:
+            calc = QuantitativeMetricsCalculator(text=text, language=self.language)
+            base = calc._all_lexical_diversity_metrics()
+            ld = base.get("lexical_density", 0.0)
+            mtld = base.get("mtld", 0.0)
+            ttr_val = base.get("type_token_ratio", 0.0)
+            ppl = calc._calculate_perplexity()
+            n_emb = calc._embedding_novelty(text, self._touchstone_passages())
+            r_d = calc._calculate_rhyme_density_pairwise(text)
+            return {"ld": ld, "mtld": mtld, "ttr": ttr_val, "ppl": ppl, "n_emb": n_emb, "r_d": r_d}
+
+        bundles = [_metric_bundle(t) for t in candidates]
+
+        def _norm(key: str, value: float) -> float:
+            values = [b[key] for b in bundles]
+            vmin, vmax = min(values), max(values)
+            if vmax - vmin == 0:
+                return 0.0
+            return (value - vmin) / (vmax - vmin)
+
+        current = _metric_bundle(self.original_text)
+        ld_n = _norm("ld", current["ld"])
+        mtld_n = _norm("mtld", current["mtld"])
+        ppl_n = _norm("ppl", current["ppl"])
+        nemb_n = _norm("n_emb", current["n_emb"])
+        rd_n = _norm("r_d", current["r_d"])
+
+        # G_comp = w1*Ld + w2*MTLD + w3*(1-PPL) + w4*N_emb + w5*R_d
+        weights = self._rules["computational_greatness"]["weights"]
+        scale = float(self._rules["computational_greatness"]["scale"])
         score = (
-            0.15 * lexical_density_norm
-            + 0.20 * mtld_norm
-            + 0.25 * readability_norm
-            + 0.25 * ttr
-            + 0.15 * rhyme_density
+            weights["ld"] * ld_n
+            + weights["mtld"] * mtld_n
+            + weights["ppl"] * (1 - ppl_n)
+            + weights["n_emb"] * nemb_n
+            + weights["r_d"] * rd_n
         )
-        return round(score * 10, 2)
+        return round(score * scale, 2)
+
+    def _calculate_rhyme_density_pairwise(self, text: str) -> float:
+        """Exact rhyme density: R / (n(n-1)/2) on end words."""
+        lines = [l.strip() for l in text.split("\n") if l.strip()]
+        last_words = []
+        for line in lines:
+            words = line.split()
+            if words:
+                last_words.append(words[-1].lower().strip(".,!?;:'\""))
+        n = len(last_words)
+        if n < 2:
+            return 0.0
+        pairs = n * (n - 1) / 2
+        r = 0
+        for i in range(n):
+            for j in range(i + 1, n):
+                if self._rhymes_with(last_words[i], last_words[j]):
+                    r += 1
+        return r / pairs
+
+    def _rhymes_with(self, word1: str, word2: str) -> bool:
+        if not word1 or not word2:
+            return False
+        from app.services.phonology_resources import get_phonology
+
+        phon = get_phonology(self.language)
+        part1 = phon.rhyme_key(word1)
+        part2 = phon.rhyme_key(word2)
+        return bool(part1 and part2 and part1 == part2)
+
+    def _touchstone_passages(self) -> List[str]:
+        from app.services.touchstone_loader import select_touchstone_passages
+        try:
+            from app.config import Settings
+            limit = Settings().touchstone.max_passages
+        except Exception:
+            limit = 4
+        return select_touchstone_passages(self.original_text, limit=limit)
+
+    def _embedding_novelty(self, text: str, canon: List[str]) -> float:
+        """Novelty = 1 - max cosine similarity to canonical set."""
+        try:
+            if not hasattr(self, "_nlp"):
+                try:
+                    self._nlp = spacy.load("en_core_web_trf")
+                except Exception:
+                    self._nlp = spacy.load("en_core_web_sm")
+            doc = self._nlp(text)
+            if not doc.has_vector:
+                return 0.0
+            sims = []
+            for passage in canon:
+                d2 = self._nlp(passage)
+                if d2.has_vector:
+                    sims.append(doc.similarity(d2))
+            if not sims:
+                return 0.0
+            max_sim = max(sims)
+            return max(0.0, min(1.0, 1 - max_sim))
+        except Exception:
+            return 0.0
+
+    def _count_akshars(self, word: str) -> int:
+        """Count akshars (approx syllable count) in Devanagari word."""
+        if not word:
+            return 0
+        independent_vowels = set("अआइईउऊऋएऐओऔ")
+        vowel_signs = set("ािीुूृेैोौंः")
+        count = 0
+        for ch in word:
+            if ch in independent_vowels or ch in vowel_signs:
+                count += 1
+        return count
+
+    def _count_guru_syllables(self, words: List[str]) -> Tuple[int, int]:
+        """Count guru syllables and total syllables for MCI."""
+        guru_vowels = set("आईऊएऐओऔ")
+        guru_signs = set("ाीूेैोौ")
+        short_vowels = set("अइउऋ")
+        short_signs = set("िुृ")
+        anusvara_visarga = set("ंः")
+        total = 0
+        guru = 0
+        for word in words:
+            chars = list(word)
+            for i, ch in enumerate(chars):
+                if ch in guru_vowels or ch in guru_signs:
+                    total += 1
+                    guru += 1
+                elif ch in short_vowels or ch in short_signs:
+                    total += 1
+                    next_char = chars[i + 1] if i + 1 < len(chars) else ""
+                    if next_char == "्" or next_char in anusvara_visarga:
+                        guru += 1
+        return guru, total
 
     def _get_sentences(self) -> List[str]:
         """Extract sentences from text"""
@@ -325,6 +412,7 @@ class QuantitativeMetricsCalculator:
             "somers_measure": self._calculate_somers_measure(),
             # Lexical density
             "lexical_density": self._calculate_lexical_density(),
+            "lexical_density_percent": self._calculate_lexical_density_percent(),
             "content_word_ratio": self._calculate_content_word_ratio(),
         }
 
@@ -480,6 +568,7 @@ class QuantitativeMetricsCalculator:
                 "avg_sentence_length": 0,
                 "enjambment_ratio": 0,
                 "end_stopped_ratio": 0,
+                "end_syllable_density": 0.0,
             }
 
         # Line metrics
@@ -522,7 +611,30 @@ class QuantitativeMetricsCalculator:
             "end_stopped_ratio": round(1 - enjambment_ratio, 3),
             "end_stopped_lines": end_stopped,
             "enjambed_lines": enjambed,
+            "end_syllable_density": round(self._calculate_end_syllable_density(), 4),
         }
+
+    def _calculate_end_syllable_density(self) -> float:
+        """
+        A_d = (Lines with matching end-syllable patterns) / (Total Lines)
+        """
+        if not self.lines:
+            return 0.0
+        from app.services.phonology_resources import get_phonology
+
+        phon = get_phonology(self.language)
+        end_keys = []
+        for line in self.lines:
+            words = line.split()
+            if not words:
+                end_keys.append(None)
+                continue
+            key = phon.rhyme_key(words[-1])
+            end_keys.append(key)
+        # Count lines whose key appears at least twice
+        counts = Counter(k for k in end_keys if k)
+        matching = sum(1 for k in end_keys if k and counts.get(k, 0) >= 2)
+        return matching / len(self.lines) if self.lines else 0.0
 
     def _advanced_metrics(self) -> Dict[str, float]:
         """Advanced linguistic metrics"""
@@ -691,122 +803,53 @@ class QuantitativeMetricsCalculator:
 
     def _calculate_lexical_density(self) -> float:
         """
-        Lexical Density: (Content Words / Total Words) × 100
+        Lexical Density: |T_lex| / |T|
         Content words: nouns, verbs, adjectives, adverbs
         """
         if self.total_words == 0:
             return 0.0
 
-        # Simplified: assume words > 3 chars are content words
-        content_words = sum(1 for w in self.words if len(w) > 3)
-        return round((content_words / self.total_words) * 100, 2)
+        try:
+            if not hasattr(self, "_nlp"):
+                try:
+                    self._nlp = spacy.load("en_core_web_trf")
+                except Exception:
+                    self._nlp = spacy.load("en_core_web_sm")
+            doc = self._nlp(self.original_text)
+            content_pos = {"NOUN", "VERB", "ADJ", "ADV"}
+            content_words = sum(1 for t in doc if t.pos_ in content_pos)
+            return round(content_words / self.total_words, 4)
+        except Exception:
+            return 0.0
+
+    def _calculate_lexical_density_percent(self) -> float:
+        """Lexical Density percent: (content words / total words) * 100"""
+        if self.total_words == 0:
+            return 0.0
+        ratio = self._calculate_lexical_density()
+        return round(ratio * 100, 2)
 
     def _calculate_content_word_ratio(self) -> float:
         """Ratio of content words to function words"""
         if self.total_words == 0:
             return 0.0
 
-        # Common function words
-        function_words = {
-            "the",
-            "a",
-            "an",
-            "and",
-            "or",
-            "but",
-            "in",
-            "on",
-            "at",
-            "to",
-            "for",
-            "of",
-            "with",
-            "by",
-            "from",
-            "is",
-            "are",
-            "was",
-            "were",
-            "be",
-            "been",
-            "being",
-            "have",
-            "has",
-            "had",
-            "do",
-            "does",
-            "did",
-            "will",
-            "would",
-            "could",
-            "should",
-            "may",
-            "might",
-            "must",
-            "shall",
-            "can",
-            "need",
-            "dare",
-            "ought",
-            "used",
-            "i",
-            "you",
-            "he",
-            "she",
-            "it",
-            "we",
-            "they",
-            "me",
-            "him",
-            "her",
-            "us",
-            "them",
-            "my",
-            "your",
-            "his",
-            "its",
-            "our",
-            "their",
-            "this",
-            "that",
-            "these",
-            "those",
-            "what",
-            "which",
-            "who",
-            "whom",
-            "whose",
-            "when",
-            "where",
-            "why",
-            "how",
-            "all",
-            "each",
-            "every",
-            "both",
-            "few",
-            "more",
-            "most",
-            "other",
-            "some",
-            "such",
-            "no",
-            "nor",
-            "not",
-            "only",
-            "own",
-            "same",
-            "so",
-            "than",
-            "too",
-            "very",
-            "just",
-        }
-
-        content = sum(1 for w in self.words if w.lower() not in function_words)
-        return round(content / self.total_words, 4)
-
-    # ==================== READABILITY METRICS ====================
+        try:
+            if not hasattr(self, "_nlp"):
+                try:
+                    self._nlp = spacy.load("en_core_web_trf")
+                except Exception:
+                    self._nlp = spacy.load("en_core_web_sm")
+            doc = self._nlp(self.original_text)
+            function_pos = {"DET", "ADP", "CCONJ", "SCONJ", "AUX", "PRON", "PART"}
+            function_count = sum(1 for t in doc if t.pos_ in function_pos)
+            content_pos = {"NOUN", "VERB", "ADJ", "ADV"}
+            content_count = sum(1 for t in doc if t.pos_ in content_pos)
+            if function_count == 0:
+                return round(float(content_count), 4)
+            return round(content_count / function_count, 4)
+        except Exception:
+            return 0.0
 
     def _calculate_spache(self) -> float:
         """Spache Readability Formula (for grades 1-3)"""
@@ -829,10 +872,8 @@ class QuantitativeMetricsCalculator:
 
         avg_sentence_length = self.total_words / len(self.sentences)
 
-        # Count syllables in 100 words sample
-        sample = self.words[:100] if len(self.words) >= 100 else self.words
-        total_syllables = sum(self._get_syllables_per_word(w) for w in sample)
-        avg_syllables_per_100 = (total_syllables / len(sample)) * 100 if sample else 0
+        total_syllables = sum(self._get_syllables_per_word(w) for w in self.words)
+        avg_syllables_per_100 = (total_syllables / self.total_words) * 100 if self.total_words else 0
 
         # Estimate grade level
         grade = round((avg_sentence_length * 0.1) + (avg_syllables_per_100 * 0.01), 1)
@@ -848,22 +889,9 @@ class QuantitativeMetricsCalculator:
         if len(self.sentences) == 0:
             return {"grade": 0}
 
-        # Take 3 random 100-word samples
-        samples = []
-        for i in range(min(3, len(self.words) // 100)):
-            sample = self.words[i * 100 : (i + 1) * 100]
-            if sample:
-                sentences_in_sample = 1  # Simplified
-                syllables = sum(self._get_syllables_per_word(w) for w in sample)
-                samples.append(
-                    {"syllables": syllables, "sentences": sentences_in_sample}
-                )
-
-        if not samples:
-            return {"grade": 0}
-
-        avg_syllables = sum(s["syllables"] for s in samples) / len(samples)
-        avg_sentences = sum(s["sentences"] for s in samples) / len(samples)
+        total_syllables = sum(self._get_syllables_per_word(w) for w in self.words)
+        avg_syllables = (total_syllables / self.total_words) * 100 if self.total_words else 0
+        avg_sentences = (len(self.sentences) / self.total_words) * 100 if self.total_words else 0
 
         # Fry graph estimation
         grade = round((avg_syllables / 10) + (avg_sentences * 0.5), 1)
@@ -872,14 +900,10 @@ class QuantitativeMetricsCalculator:
 
     def _calculate_forcast(self) -> float:
         """FORCAST Readability Formula (for technical documents)"""
-        if len(self.words) < 150:
+        if self.total_words == 0:
             return 0.0
-
-        # Count monosyllabic words in 150-word sample
-        sample = self.words[:150]
-        monosyllabic = sum(1 for w in sample if self._get_syllables_per_word(w) == 1)
-
-        grade = 20 - (monosyllabic / 10)
+        monosyllabic = sum(1 for w in self.words if self._get_syllables_per_word(w) == 1)
+        grade = 20 - ((monosyllabic / self.total_words) * 100 / 10)
         return round(max(0, min(18, grade)), 1)
 
     def _calculate_powers_sumner_kearl(self) -> float:

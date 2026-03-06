@@ -1,0 +1,27 @@
+{
+  "mutaqaarib": {
+    "pattern": "˘—— ˘—— ˘—— ˘—",
+    "feet": ["فعولن"],
+    "description": "Fa'ūlun Fa'ūlun Fa'ūlun Fa'ūl"
+  },
+  "hazaj": {
+    "pattern": "˘—— — ˘—— —",
+    "feet": ["مفاعیلن"],
+    "description": "Mafā'īlun Mafā'īlun"
+  },
+  "ramal": {
+    "pattern": "—˘—— —˘—— —˘—— —˘—",
+    "feet": ["فاعلاتن"],
+    "description": "Fā'ilātun Fā'ilātun Fā'ilātun Fā'ilun"
+  },
+  "kaamil": {
+    "pattern": "˘˘—˘— ˘˘—˘— ˘˘—˘—",
+    "feet": ["متفاعلن"],
+    "description": "Mafā'ilun Mafā'ilun Mafā'ilun"
+  },
+  "mujtass": {
+    "pattern": "——˘— —˘——",
+    "feet": ["مستفعلن", "فاعلاتن"],
+    "description": "Mustaf'ilun Fā'ilātun"
+  }
+}

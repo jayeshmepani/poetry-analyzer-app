@@ -1,0 +1,47 @@
+{
+  "doha": {
+    "matra": [13, 11],
+    "charan": 2,
+    "description": "13+11 matras per line"
+  },
+  "chaupai": {
+    "matra": [16, 16, 16, 16],
+    "charan": 4,
+    "description": "16 matras per charan"
+  },
+  "soratha": {
+    "matra": [11, 13],
+    "charan": 2,
+    "description": "11+13 matras (inverse of Doha)"
+  },
+  "kundaliya": {
+    "matra": [24, 24, 24, 24, 24, 24],
+    "charan": 6,
+    "description": "24 matras x 6 charans"
+  },
+  "rola": {
+    "matra": [24, 24, 24, 24],
+    "charan": 4,
+    "description": "24 matras per charan"
+  },
+  "harigitika": {
+    "matra": [28, 28, 28, 28],
+    "charan": 4,
+    "description": "28 matras (16+12)"
+  },
+  "barvai": {
+    "matra": [12, 7],
+    "charan": 2,
+    "description": "12+7 matras"
+  },
+  "savaiya": {
+    "matra": [23, 23, 23, 23],
+    "charan": 4,
+    "description": "23 varnas (Mattagayand)"
+  },
+  "kavitt": {
+    "matra": [31, 31, 31, 31],
+    "charan": 4,
+    "description": "31-33 varnas"
+  }
+}

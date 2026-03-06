@@ -1,0 +1,20 @@
+{
+  "haiku": {
+    "min_lines": 3,
+    "max_lines": 3,
+    "syllable_pattern": [5, 7, 5],
+    "syllable_tolerance": 1
+  },
+  "sonnet": {
+    "lines": 14,
+    "rhyme_contains": ["ABAB", "ABBA"]
+  },
+  "villanelle": {
+    "lines": 19
+  },
+  "ghazal": {
+    "min_lines": 10,
+    "even_lines_only": true,
+    "requires_matla": true
+  }
+}

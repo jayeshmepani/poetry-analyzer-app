@@ -1,0 +1,17 @@
+{
+  "cultural_period": ["medieval language", "victorian language", "modern language", "internet age language"],
+  "cultural_context": ["western cultural context", "indic cultural context", "persian arabic cultural context"],
+  "anachronism": ["modern term", "archaic term"],
+  "code_switching": ["code-switching", "single-language"],
+  "dialect": ["braj bhasha", "awadhi", "bhojpuri", "maithili", "magahi", "chhattisgarhi", "haryanvi", "rajasthani", "standard hindi"],
+  "speech_acts": ["assertive", "directive", "commissive", "expressive", "declarative"],
+  "politeness": ["polite", "impolite", "neutral"],
+  "style_tone": ["melancholic", "lyrical", "contemplative", "celebratory", "satirical", "aggressive", "neutral"],
+  "plot_arch": ["linear narrative", "nonlinear narrative"],
+  "narrative_mode": ["focalization", "stream of consciousness", "unreliable narrator"],
+  "register": ["formal register", "informal register"],
+  "literary_metaphor": ["metaphor"],
+  "literary_simile": ["simile"],
+  "idiom": ["idiom"],
+  "proverb": ["proverb"]
+}

@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Set, Optional, Any
 from collections import Counter
 import logging
+import time
 
 # Import ALL libraries from requirements.txt
 import spacy
@@ -34,6 +35,7 @@ from transformers import pipeline
 # from gensim import corpora, models
 from indicnlp.tokenize import indic_tokenize
 from indicnlp.normalize.indic_normalize import IndicNormalizerFactory
+from app.services.rule_loader import get_output_limits
 
 logger = logging.getLogger(__name__)
 
@@ -56,19 +58,64 @@ class LinguisticAnalyzer:
         self.words: List[str] = []
         self.sentences: List[str] = []
         self.lines: List[str] = []
+        self._zero_shot = None
+        self._limits = get_output_limits()
+        from app.config import Settings
+        self._settings = Settings()
 
         # Initialize NLP models
         self._initialize_models()
+        self._initialize_lexical_resources()
+
+    def _limit(self, items: List[Any], key: str) -> List[Any]:
+        limit = self._limits.get(key) if self._limits else None
+        return items[: int(limit)] if limit is not None else items
+
+    def _initialize_lexical_resources(self) -> None:
+        """Initialize WordNet / IndoWordNet resources based on language."""
+        self._wn = None
+        self._iwn = None
+        if self.language == "en":
+            try:
+                from nltk.corpus import wordnet as wn
+                self._wn = wn
+            except Exception as e:
+                logger.warning(f"NLTK WordNet unavailable: {e}")
+        if self.language in ["hi", "gu", "ur", "mr", "bn", "sa", "ta", "te", "kn", "ml", "pa"]:
+            try:
+                from pyiwn import IndoWordNet, Language
+                import pyiwn.constants as constants
+                from app.config import settings
+
+                iwn_dir = os.path.abspath(settings.lexical.iwn_data_dir)
+                os.makedirs(iwn_dir, exist_ok=True)
+                constants.USER_HOME = os.path.dirname(iwn_dir)
+                constants.IWN_DATA_PATH = iwn_dir
+                constants.IWN_DATA_TEMP_PATH = os.path.join(constants.USER_HOME, "iwn_data.tar.gz")
+
+                lang_map = {
+                    "hi": Language.HINDI,
+                    "gu": Language.GUJARATI,
+                    "ur": Language.URDU,
+                    "mr": Language.MARATHI,
+                    "bn": Language.BENGALI,
+                    "sa": Language.SANSKRIT,
+                    "ta": Language.TAMIL,
+                    "te": Language.TELUGU,
+                    "kn": Language.KANNADA,
+                    "ml": Language.MALAYALAM,
+                    "pa": Language.PUNJABI,
+                }
+                lang_enum = lang_map.get(self.language, Language.HINDI)
+                self._iwn = IndoWordNet(lang=lang_enum)
+            except Exception as e:
+                logger.warning(f"IndoWordNet unavailable: {e}")
 
     def _initialize_models(self):
         """Initialize spaCy and Stanza models"""
         # spaCy initialization - use installed models only
         if self.use_spacy:
-            import spacy
-            from app.config import Settings
-
-            settings = Settings()
-
+            settings = self._settings
             if self.language == "en":
                 # Use transformer model for English
                 try:
@@ -88,6 +135,17 @@ class LinguisticAnalyzer:
                 except OSError as e:
                     logger.warning(f"Multilingual spaCy model not found: {e}")
                     self.nlp = None
+
+    def _ensure_zero_shot(self):
+        if self._zero_shot is not None:
+            return self._zero_shot
+        try:
+            model_name = self._settings.transformer.generalist_zero_shot_model
+            self._zero_shot = pipeline("zero-shot-classification", model=model_name, device=-1)
+        except Exception as e:
+            logger.warning(f"Zero-shot unavailable in linguistic analyzer: {e}")
+            self._zero_shot = None
+        return self._zero_shot
 
         # Stanza initialization for multilingual
         if self.use_stanza:
@@ -128,25 +186,39 @@ class LinguisticAnalyzer:
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Run complete linguistic analysis"""
+        start = time.perf_counter()
         self.text = text
+        logger.info("[linguistic] preprocess start")
         self._preprocess()
+        logger.info("[linguistic] preprocess done in %.2fs", time.perf_counter() - start)
 
         # Use spaCy if available (en_core_web_trf for English, xx_sent_ud_sm for others)
         if self.nlp:
-            return self._analyze_with_spacy()
+            logger.info("[linguistic] spaCy analysis start")
+            result = self._analyze_with_spacy()
+            logger.info("[linguistic] spaCy analysis done in %.2fs", time.perf_counter() - start)
+            return result
         elif self.stanza_nlp:
-            return self._analyze_with_stanza()
+            logger.info("[linguistic] Stanza analysis start")
+            result = self._analyze_with_stanza()
+            logger.info("[linguistic] Stanza analysis done in %.2fs", time.perf_counter() - start)
+            return result
         else:
-            return self._analyze_rule_based()
+            logger.info("[linguistic] Rule-based analysis start")
+            result = self._analyze_rule_based()
+            logger.info("[linguistic] Rule-based analysis done in %.2fs", time.perf_counter() - start)
+            return result
 
     def _preprocess(self):
         """Preprocess text into words, lines, sentences"""
         # Apply Indic Normalization if applicable
         if self.language in ["hi", "gu", "mr", "bn", "sa", "ur"]:
             try:
+                t0 = time.perf_counter()
                 factory = IndicNormalizerFactory()
                 normalizer = factory.get_normalizer(self.language)
                 self.text = normalizer.normalize(self.text)
+                logger.info("[linguistic] indic normalization %.2fs", time.perf_counter() - t0)
             except Exception as e:
                 logger.warning(f"Indic normalization failed: {e}")
 
@@ -165,15 +237,19 @@ class LinguisticAnalyzer:
 
         # Use spaCy for sentence segmentation if available
         if self.nlp:
+            t0 = time.perf_counter()
             doc = self.nlp(self.text)
             self.sentences = [
                 sent.text.strip() for sent in doc.sents if sent.text.strip()
             ]
+            logger.info("[linguistic] spaCy sentence segmentation %.2fs", time.perf_counter() - t0)
         else:
             try:
+                t0 = time.perf_counter()
                 self.sentences = nltk.sent_tokenize(self.text)
                 if not self.words: # If indic tokenizer wasn't used
                     self.words = nltk.word_tokenize(self.text.lower())
+                logger.info("[linguistic] NLTK sentence/word tokenization %.2fs", time.perf_counter() - t0)
             except Exception as e:
                 logger.warning(f"NLTK tokenization failed, falling back to regex: {e}")
                 self.sentences = re.split(r"[.!?।]+", self.text)
@@ -181,9 +257,12 @@ class LinguisticAnalyzer:
 
     def _analyze_with_spacy(self) -> Dict[str, Any]:
         """Analyze using spaCy with full potential - leveraging all installed libraries"""
+        t0_total = time.perf_counter()
         doc = self.nlp(self.text)
+        logger.info("[linguistic] spaCy doc created in %.2fs", time.perf_counter() - t0_total)
 
         # === SPACY: NER (Named Entity Recognition) ===
+        t0 = time.perf_counter()
         entities = []
         for ent in doc.ents:
             entities.append(
@@ -194,8 +273,10 @@ class LinguisticAnalyzer:
                     "end_char": ent.end_char,
                 }
             )
+        logger.info("[linguistic] spaCy NER %.2fs", time.perf_counter() - t0)
 
         # === SPACY: Lemmas with POS ===
+        t0 = time.perf_counter()
         lemmas_with_pos = []
         for token in doc:
             if token.is_alpha and not token.is_stop:
@@ -207,8 +288,10 @@ class LinguisticAnalyzer:
                         "dep": token.dep_,
                     }
                 )
+        logger.info("[linguistic] spaCy lemmas/POS %.2fs", time.perf_counter() - t0)
 
         # === SPACY: Word Vectors for Similarity ===
+        t0 = time.perf_counter()
         word_vectors = {}
         if doc.has_vector:
             word_vectors = {
@@ -220,11 +303,13 @@ class LinguisticAnalyzer:
                 if hasattr(doc, "vector_norm")
                 else 0,
             }
+        logger.info("[linguistic] spaCy vectors %.2fs", time.perf_counter() - t0)
 
         # === SPACY: Noun Chunks with details ===
         # NOTE:
         # spaCy multilingual "xx" models do not implement language-specific
         # noun_chunks iterator and raise NotImplementedError [E894].
+        t0 = time.perf_counter()
         noun_chunks = []
         try:
             for chunk in doc.noun_chunks:
@@ -242,21 +327,58 @@ class LinguisticAnalyzer:
                 e,
             )
             noun_chunks = self._fallback_noun_chunks(doc)
+        logger.info("[linguistic] spaCy noun_chunks %.2fs", time.perf_counter() - t0)
 
         # === SPACY: Dependency Tree Analysis ===
+        t0 = time.perf_counter()
+        doc_len = len(doc)
+        logger.info("[linguistic] dep_tree start (tokens=%d)", doc_len)
         dep_tree = []
-        for token in doc:
+        for i, token in enumerate(doc):
+            if i and i % 50 == 0:
+                logger.info(
+                    "[linguistic] dep_tree progress %d/%d (%.2fs)",
+                    i,
+                    doc_len,
+                    time.perf_counter() - t0,
+                )
+            logger.info(
+                "[linguistic] dep_tree token %d/%d start text=%r dep=%s head=%r",
+                i + 1,
+                doc_len,
+                token.text,
+                token.dep_,
+                token.head.text,
+            )
+            t_tok = time.perf_counter()
+            if token.is_space or token.is_punct:
+                lefts = []
+                rights = []
+            else:
+                lefts = [t.text for t in token.lefts]
+                rights = [t.text for t in token.rights]
+            tok_dt = time.perf_counter() - t_tok
+            if tok_dt > 0.05:
+                logger.info(
+                    "[linguistic] dep_tree token %d slow %.2fs (lefts=%d rights=%d)",
+                    i + 1,
+                    tok_dt,
+                    len(lefts),
+                    len(rights),
+                )
             dep_tree.append(
                 {
                     "text": token.text,
                     "dep": token.dep_,
                     "head": token.head.text,
-                    "lefts": [t.text for t in token.lefts],
-                    "rights": [t.text for t in token.rights],
+                    "lefts": lefts,
+                    "rights": rights,
                 }
             )
+        logger.info("[linguistic] spaCy dependency tree %.2fs", time.perf_counter() - t0)
 
         # === TextDescriptives: Comprehensive Text Metrics ===
+        t0 = time.perf_counter()
         try:
             from textdescriptives import descriptives
 
@@ -280,8 +402,10 @@ class LinguisticAnalyzer:
             text_metrics = {"error": "textdescriptives not available"}
         except Exception as e:
             text_metrics = {"error": str(e)}
+        logger.info("[linguistic] textdescriptives %.2fs", time.perf_counter() - t0)
 
         # === VADER Sentiment Analysis ===
+        t0 = time.perf_counter()
         try:
             from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
@@ -304,20 +428,47 @@ class LinguisticAnalyzer:
             sentiment_analysis = {"error": "vaderSentiment not available"}
         except Exception as e:
             sentiment_analysis = {"error": str(e)}
+        logger.info("[linguistic] vader sentiment %.2fs", time.perf_counter() - t0)
+
+        logger.info("[linguistic] spaCy analysis total %.2fs", time.perf_counter() - t0_total)
+
+        t0 = time.perf_counter()
+        phonetics = self._analyze_phonetics_basic()
+        logger.info("[linguistic] phonetics %.2fs", time.perf_counter() - t0)
+
+        t0 = time.perf_counter()
+        morphology = self._analyze_morphology_spacy(doc)
+        logger.info("[linguistic] morphology %.2fs", time.perf_counter() - t0)
+
+        t0 = time.perf_counter()
+        syntax = self._analyze_syntax_spacy(doc)
+        logger.info("[linguistic] syntax %.2fs", time.perf_counter() - t0)
+
+        t0 = time.perf_counter()
+        semantics = self._analyze_semantics_spacy(doc)
+        logger.info("[linguistic] semantics %.2fs", time.perf_counter() - t0)
+
+        t0 = time.perf_counter()
+        lexical_relations = self._analyze_lexical_relations()
+        logger.info("[linguistic] lexical_relations %.2fs", time.perf_counter() - t0)
+
+        t0 = time.perf_counter()
+        pos_distribution = self._analyze_pos_spacy(doc)
+        logger.info("[linguistic] pos_distribution %.2fs", time.perf_counter() - t0)
 
         return {
-            "phonetics": self._analyze_phonetics_basic(),
-            "morphology": self._analyze_morphology_spacy(doc),
-            "syntax": self._analyze_syntax_spacy(doc),
-            "semantics": self._analyze_semantics_spacy(doc),
-            "lexical_relations": self._analyze_lexical_relations(),
-            "pos_distribution": self._analyze_pos_spacy(doc),
+            "phonetics": phonetics,
+            "morphology": morphology,
+            "syntax": syntax,
+            "semantics": semantics,
+            "lexical_relations": lexical_relations,
+            "pos_distribution": pos_distribution,
             # New spaCy features
             "named_entities": entities,
-            "lemmas_with_pos": lemmas_with_pos[:50],
+            "lemmas_with_pos": self._limit(lemmas_with_pos, "linguistic_lemmas_with_pos"),
             "word_vectors": word_vectors,
-            "noun_chunks": noun_chunks[:20],
-            "dependency_tree": dep_tree[:30],
+            "noun_chunks": self._limit(noun_chunks, "linguistic_noun_chunks"),
+            "dependency_tree": self._limit(dep_tree, "linguistic_dependency_tree"),
             # Library integrations
             "text_metrics": text_metrics,
             "sentiment": sentiment_analysis,
@@ -333,6 +484,7 @@ class LinguisticAnalyzer:
         current_tokens = []
 
         allowed_pos = {"NOUN", "PROPN", "ADJ"}
+        t0 = time.perf_counter()
         for token in doc:
             if token.is_space or token.is_punct:
                 if current_tokens:
@@ -371,6 +523,7 @@ class LinguisticAnalyzer:
                 }
             )
 
+        logger.info("[linguistic] fallback noun_chunks built in %.2fs", time.perf_counter() - t0)
         return chunks
 
     def _analyze_with_stanza(self) -> Dict[str, Any]:
@@ -442,30 +595,24 @@ class LinguisticAnalyzer:
 
     def _detect_phonesthemes(self, text: str) -> Dict[str, List[str]]:
         """Detect phonestheme clusters"""
-        phonestheme_dict = {
-            "gl-": ["glow", "glitter", "gleam", "glisten", "glimmer"],
-            "sn-": ["snore", "sniff", "snout", "sneer", "snarl"],
-            "fl-": ["flow", "flutter", "fling", "flap", "flash"],
-            "sl-": ["slow", "slide", "slip", "slimy", "slap"],
-            "cr-": ["crack", "crush", "crumble", "crisp", "crazy"],
-            "sp-": ["sparkle", "speck", "spit", "spray", "spread"],
-            "st-": ["star", "stone", "still", "stop", "sturdy"],
-            "bl-": ["black", "blot", "blaze", "bleak", "blind"],
-            "gr-": ["green", "grow", "grass", "grave", "grim"],
-            "pr-": ["pray", "press", "prize", "proud", "pretty"],
-            "tr-": ["tree", "trial", "treat", "true", "trust"],
-            "dr-": ["dream", "drop", "drift", "drive", "drama"],
-            "sw-": ["sweet", "swift", "swing", "swim", "swell"],
-            "tw-": ["twin", "twist", "twinkle", "twelve", "twenty"],
-        }
-
+        words = re.findall(r"[A-Za-z']+", text.lower())
+        clusters = Counter()
+        examples: Dict[str, List[str]] = {}
+        for w in words:
+            if len(w) < 2:
+                continue
+            prefix_len = self._limits.get("linguistic_cluster_prefix_len") if self._limits else None
+            if prefix_len is None:
+                continue
+            cluster = w[: int(prefix_len)] + "-"
+            clusters[cluster] += 1
+            examples.setdefault(cluster, []).append(w)
         found = {}
-        for cluster, examples in phonestheme_dict.items():
-            matches = [
-                word for word in examples if cluster + word[2:] in text or word in text
-            ]
-            if matches:
-                found[cluster] = matches
+        for cluster, count in clusters.items():
+            if count >= 2:
+                example_limit = self._limits.get("linguistic_cluster_examples") if self._limits else None
+                examples_list = list(dict.fromkeys(examples.get(cluster, [])))
+                found[cluster] = examples_list[: int(example_limit)] if example_limit is not None else examples_list
         return found
 
     def _detect_alliteration_basic(self) -> List[Dict[str, Any]]:
@@ -489,7 +636,7 @@ class LinguisticAnalyzer:
                             "words": [words[i], words[i + 1]],
                         }
                     )
-        return alliterations[:10]
+        return self._limit(alliterations, "linguistic_alliterations")
 
     def _detect_assonance(self) -> List[Dict[str, Any]]:
         """Detect assonance"""
@@ -515,7 +662,7 @@ class LinguisticAnalyzer:
                             "words": [words[i], words[i + 1]],
                         }
                     )
-        return assonances[:10]
+        return self._limit(assonances, "linguistic_assonances")
 
     def _detect_consonance(self) -> List[Dict[str, Any]]:
         """Detect consonance"""
@@ -541,84 +688,24 @@ class LinguisticAnalyzer:
                             "words": [words[i], words[i + 1]],
                         }
                     )
-        return consonances[:10]
+        return self._limit(consonances, "linguistic_consonances")
 
     def _detect_onomatopoeia(self) -> List[str]:
         """Detect onomatopoeic words"""
-        onomatopoeic_words = [
-            "buzz",
-            "hiss",
-            "clang",
-            "crash",
-            "bang",
-            "pop",
-            "splash",
-            "drip",
-            "drop",
-            "hum",
-            "ring",
-            "ding",
-            "dong",
-            "meow",
-            "bark",
-            "woof",
-            "moo",
-            "quack",
-            "cuckoo",
-            "chirp",
-            "tweet",
-            "flutter",
-            "rattle",
-            "clatter",
-            "thud",
-            "thump",
-            "wham",
-            "zap",
-            "zoom",
-            "whoosh",
-            "swish",
-            "tick",
-            "tock",
-            "ping",
-            "clink",
-            "clank",
-            "jingle",
-            "jangle",
-            "rumble",
-            "grumble",
-            "gurgle",
-            "bubble",
-            "burp",
-            "chomp",
-            "gobble",
-            "slurp",
-            "sigh",
-            "yawn",
-            "gasp",
-            "giggle",
-            "laugh",
-            "chuckle",
-            "sob",
-            "cry",
-            "wail",
-            "whimper",
-            "moan",
-            "groan",
-            "roar",
-            "sizzle",
-            "fizz",
-            "crackle",
-            "snap",
-            "crunch",
-            "creak",
-            "squeak",
-            "screech",
-            "howl",
-            "whistle",
-            "chime",
-        ]
-        text_lower = self.text.lower()
-        return [word for word in onomatopoeic_words if word in text_lower]
+        zs = self._ensure_zero_shot()
+        if not zs:
+            return []
+        words = list(dict.fromkeys(re.findall(r"[A-Za-z']+", self.text.lower())))
+        found = []
+        word_limit = self._limits.get("linguistic_phonestheme_words") if self._limits else None
+        for word in (words[: int(word_limit)] if word_limit is not None else words):
+            try:
+                out = zs(word, ["onomatopoeia"])
+                if out["scores"][0] >= 0.6:
+                    found.append(word)
+            except Exception:
+                continue
+        return found
 
     def _calculate_plosive_density(self, text: str) -> float:
         """Calculate density of plosive consonants"""
@@ -651,18 +738,8 @@ class LinguisticAnalyzer:
                 2,
             ),
             "grammatical_features": dict(feature_counts.most_common(10)),
-            "prefix_count": sum(
-                1
-                for t in doc
-                if any(t.text.lower().startswith(p) for p in ["un", "re", "pre", "dis"])
-            ),
-            "suffix_count": sum(
-                1
-                for t in doc
-                if any(
-                    t.text.lower().endswith(s) for s in ["ing", "tion", "ment", "ness"]
-                )
-            ),
+            "prefix_count": sum(prefix_stats.values()),
+            "suffix_count": sum(suffix_stats.values()),
         }
 
     def _analyze_morphology_stanza(self, doc) -> Dict[str, Any]:
@@ -692,105 +769,39 @@ class LinguisticAnalyzer:
     def _analyze_morphology_basic(self) -> Dict[str, Any]:
         """Basic morphological analysis"""
         length_dist = Counter(len(w) for w in self.words)
+        prefix_stats = self._detect_prefixes()
+        suffix_stats = self._detect_suffixes()
         return {
             "word_length_distribution": dict(length_dist),
             "avg_word_length": round(
                 sum(len(w) for w in self.words) / max(1, len(self.words)), 2
             ),
-            "prefixes": self._detect_prefixes(),
-            "suffixes": self._detect_suffixes(),
+            "prefixes": prefix_stats,
+            "suffixes": suffix_stats,
             "compound_words": self._detect_compounds(),
-            "prefix_count": sum(
-                1
-                for w in self.words
-                if any(w.startswith(p) for p in ["un", "re", "pre", "dis"])
-            ),
-            "suffix_count": sum(
-                1
-                for w in self.words
-                if any(w.endswith(s) for s in ["ing", "tion", "ment", "ness"])
-            ),
+            "prefix_count": sum(prefix_stats.values()),
+            "suffix_count": sum(suffix_stats.values()),
         }
 
     def _detect_prefixes(self) -> Dict[str, int]:
-        """Detect common prefixes"""
-        prefixes = [
-            "un",
-            "re",
-            "pre",
-            "dis",
-            "mis",
-            "over",
-            "under",
-            "inter",
-            "trans",
-            "con",
-            "com",
-            "pro",
-            "anti",
-            "auto",
-            "bi",
-            "co",
-            "de",
-            "ex",
-            "in",
-            "non",
-            "out",
-            "post",
-            "sub",
-            "super",
-            "sym",
-            "syn",
-        ]
-        return {
-            p: sum(1 for w in self.words if w.startswith(p))
-            for p in prefixes
-            if sum(1 for w in self.words if w.startswith(p)) > 0
-        }
+        """Detect common prefixes dynamically"""
+        counts = Counter()
+        for w in self.words:
+            w = w.lower()
+            for n in (2, 3, 4):
+                if len(w) > n:
+                    counts[w[:n]] += 1
+        return {p: c for p, c in counts.items() if c >= 2}
 
     def _detect_suffixes(self) -> Dict[str, int]:
-        """Detect common suffixes"""
-        suffixes = [
-            "ing",
-            "tion",
-            "sion",
-            "ment",
-            "ness",
-            "able",
-            "ible",
-            "ful",
-            "less",
-            "ly",
-            "ed",
-            "er",
-            "est",
-            "s",
-            "es",
-            "ous",
-            "ious",
-            "ive",
-            "al",
-            "ial",
-            "ic",
-            "y",
-            "ary",
-            "ory",
-            "ery",
-            "ity",
-            "ty",
-            "ance",
-            "ence",
-            "ism",
-            "ist",
-            "ship",
-            "hood",
-            "dom",
-        ]
-        return {
-            s: sum(1 for w in self.words if w.endswith(s))
-            for s in suffixes
-            if sum(1 for w in self.words if w.endswith(s)) > 0
-        }
+        """Detect common suffixes dynamically"""
+        counts = Counter()
+        for w in self.words:
+            w = w.lower()
+            for n in (2, 3, 4):
+                if len(w) > n:
+                    counts[w[-n:]] += 1
+        return {s: c for s, c in counts.items() if c >= 2}
 
     def _detect_compounds(self) -> List[str]:
         """Detect compound words"""
@@ -807,11 +818,22 @@ class LinguisticAnalyzer:
 
     def _analyze_syntax_spacy(self, doc) -> Dict[str, Any]:
         """Deep syntactic analysis using spaCy dependency parser"""
-        sentence_lengths = [len(sent) for sent in doc.sents]
+        t0_total = time.perf_counter()
+        logger.info("[linguistic] syntax_spacy start")
+
+        t0 = time.perf_counter()
+        sents_list = list(doc.sents)
+        logger.info("[linguistic] syntax_spacy sents_list %d (%.2fs)", len(sents_list), time.perf_counter() - t0)
+
+        t0 = time.perf_counter()
+        sentence_lengths = [len(sent) for sent in sents_list]
+        logger.info("[linguistic] syntax_spacy sentence_lengths (%.2fs)", time.perf_counter() - t0)
 
         # Dependency Map for first few sentences (to avoid massive JSON)
         dep_map = []
-        for sent in list(doc.sents)[:3]:
+        t0 = time.perf_counter()
+        sent_limit = self._limits.get("linguistic_syntax_sent_limit") if self._limits else None
+        for sent in (sents_list[: int(sent_limit)] if sent_limit is not None else sents_list):
             sent_deps = []
             for token in sent:
                 sent_deps.append(
@@ -823,11 +845,24 @@ class LinguisticAnalyzer:
                     }
                 )
             dep_map.append(sent_deps)
+        logger.info("[linguistic] syntax_spacy dep_map (%.2fs)", time.perf_counter() - t0)
 
-        avg_deps = sum(len(list(token.children)) for token in doc) / max(1, len(doc))
+        t0 = time.perf_counter()
+        avg_deps = 0.0
+        try:
+            # spaCy xx models may not have reliable dependency parsing for some languages.
+            # Avoid iterating children when parser isn't available to prevent hangs.
+            if getattr(doc, "is_parsed", False) and self.language not in {"hi", "ur", "bn", "mr", "ta", "te", "ml", "kn"}:
+                avg_deps = sum(len(list(token.children)) for token in doc) / max(1, len(doc))
+            else:
+                avg_deps = 0.0
+        except Exception as e:
+            logger.warning("[linguistic] syntax_spacy avg_deps failed: %s", e)
+            avg_deps = 0.0
+        logger.info("[linguistic] syntax_spacy avg_deps (%.2fs)", time.perf_counter() - t0)
 
-        return {
-            "total_sentences": len(list(doc.sents)),
+        result = {
+            "total_sentences": len(sents_list),
             "avg_sentence_length": round(
                 sum(sentence_lengths) / max(1, len(sentence_lengths)), 2
             ),
@@ -839,33 +874,17 @@ class LinguisticAnalyzer:
             "sentence_types": self._identify_sentence_types(),
             "syntactic_complexity": round(avg_deps, 2),
         }
+        logger.info("[linguistic] syntax_spacy total %.2fs", time.perf_counter() - t0_total)
+        return result
 
     def _analyze_syntax_stanza(self, doc) -> Dict[str, Any]:
         """Syntactic analysis using Stanza"""
         sentence_lengths = [len(sent.words) for sent in doc.sentences]
-        subordinating = [
-            "because",
-            "although",
-            "while",
-            "when",
-            "if",
-            "unless",
-            "since",
-            "though",
-        ]
-        coordinating = ["and", "but", "or", "nor", "for", "yet", "so"]
-
         sub_count = sum(
-            1
-            for sent in doc.sentences
-            for word in sent.words
-            if word.deprel in ["mark", "advmod"] and word.text.lower() in subordinating
+            1 for sent in doc.sentences for word in sent.words if word.deprel in ["mark", "advmod"]
         )
         coord_count = sum(
-            1
-            for sent in doc.sentences
-            for word in sent.words
-            if word.deprel == "cc" and word.text.lower() in coordinating
+            1 for sent in doc.sentences for word in sent.words if word.deprel == "cc"
         )
 
         return {
@@ -886,21 +905,17 @@ class LinguisticAnalyzer:
     def _analyze_syntax_basic(self) -> Dict[str, Any]:
         """Basic syntactic analysis"""
         sentence_lengths = [len(s.split()) for s in self.sentences]
-        subordinating = [
-            "because",
-            "although",
-            "while",
-            "when",
-            "if",
-            "unless",
-            "since",
-            "though",
-        ]
-        coordinating = ["and", "but", "or", "nor", "for", "yet", "so"]
-
-        text_lower = self.text.lower()
-        sub_count = sum(text_lower.count(w) for w in subordinating)
-        coord_count = sum(text_lower.count(w) for w in coordinating)
+        sub_count = 0
+        coord_count = 0
+        if self.language == "en":
+            try:
+                tokens = nltk.word_tokenize(self.text)
+                tagged = nltk.pos_tag(tokens)
+                sub_count = sum(1 for _, tag in tagged if tag == "IN")
+                coord_count = sum(1 for _, tag in tagged if tag == "CC")
+            except Exception:
+                sub_count = 0
+                coord_count = 0
 
         return {
             "total_sentences": len(self.sentences),
@@ -963,7 +978,7 @@ class LinguisticAnalyzer:
             "top_20_words": [w for w, c in word_freq.most_common(20)],
             "concrete_word_count": concrete_count,
             "abstract_word_count": len([t for t in doc if t.is_alpha]) - concrete_count,
-            "entities": entities[:20],
+            "entities": self._limit(entities, "linguistic_entities"),
         }
 
     def _analyze_semantics_basic(self) -> Dict[str, Any]:
@@ -985,61 +1000,25 @@ class LinguisticAnalyzer:
 
     def _get_concrete_words(self) -> Set[str]:
         """Identify concrete words"""
-        return {
-            "book",
-            "house",
-            "car",
-            "tree",
-            "flower",
-            "water",
-            "fire",
-            "stone",
-            "metal",
-            "glass",
-            "chair",
-            "table",
-            "door",
-            "window",
-            "road",
-            "mountain",
-            "river",
-            "sea",
-            "sky",
-            "star",
-            "moon",
-            "sun",
-            "earth",
-            "hand",
-            "foot",
-            "head",
-            "eye",
-            "ear",
-            "nose",
-            "mouth",
-            "heart",
-            "walk",
-            "run",
-            "eat",
-            "drink",
-            "sleep",
-            "see",
-            "hear",
-            "touch",
-            "taste",
-            "smell",
-            "red",
-            "blue",
-            "green",
-            "yellow",
-            "white",
-            "black",
-            "dark",
-            "light",
-            "hot",
-            "cold",
+        if not self._wn:
+            return set()
+        concrete_lexnames = {
+            "noun.artifact",
+            "noun.object",
+            "noun.plant",
+            "noun.animal",
+            "noun.body",
+            "noun.food",
+            "noun.substance",
+            "noun.location",
         }
+        concrete = set()
+        for w in set(self.words):
+            syns = self._wn.synsets(w, pos=self._wn.NOUN)
+            if any(s.lexname() in concrete_lexnames for s in syns):
+                concrete.add(w)
+        return concrete
 
-    # ==================== LEXICAL RELATIONS ====================
     def _analyze_lexical_relations(self) -> Dict[str, Any]:
         """Analyze word relationships"""
         return {
@@ -1053,80 +1032,79 @@ class LinguisticAnalyzer:
 
     def _detect_homophones(self) -> List[List[str]]:
         """Detect homophones"""
-        homophone_groups = [
-            ["their", "there", "they're"],
-            ["your", "you're"],
-            ["its", "it's"],
-            ["to", "too", "two"],
-            ["sea", "see"],
-            ["right", "write"],
-            ["sun", "son"],
-            ["won", "one"],
-            ["ate", "eight"],
-            ["bare", "bear"],
-            ["break", "brake"],
-            ["hair", "hare"],
-            ["know", "no"],
-            ["meat", "meet"],
-            ["pair", "pear"],
-            ["flour", "flower"],
-            ["peace", "piece"],
-            ["week", "weak"],
-            ["which", "witch"],
-        ]
-        return [
-            group
-            for group in homophone_groups
-            if len([w for w in group if w in self.words]) > 1
-        ]
+        try:
+            import pronouncing
+        except Exception as e:
+            logger.warning(f"Pronouncing unavailable for homophones: {e}")
+            return []
+
+        word_set = set(w.lower() for w in self.words if w)
+        phones_map: Dict[str, List[str]] = {}
+        for w in word_set:
+            phones = pronouncing.phones_for_word(w)
+            if not phones:
+                continue
+            for p in phones:
+                phones_map.setdefault(p, []).append(w)
+        return [group for group in phones_map.values() if len(group) > 1]
 
     def _detect_synonyms(self) -> Dict[str, List[str]]:
         """Detect synonyms"""
-        synonyms = {
-            "happy": ["joyful", "cheerful", "delighted", "pleased"],
-            "sad": ["unhappy", "sorrowful", "dejected", "melancholy"],
-            "big": ["large", "huge", "enormous", "vast"],
-            "beautiful": ["lovely", "gorgeous", "stunning", "attractive"],
-            "good": ["excellent", "great", "fine", "superb"],
-            "bad": ["poor", "terrible", "awful", "horrible"],
-            "fast": ["quick", "rapid", "swift", "speedy"],
-            "slow": ["sluggish", "gradual", "leisurely"],
-            "smart": ["intelligent", "clever", "bright", "wise"],
-            "love": ["adore", "cherish", "treasure"],
-            "hate": ["detest", "despise", "loathe"],
-        }
-        found = {}
-        for word, syns in synonyms.items():
-            matches = [s for s in syns if s in self.words]
-            if word in self.words or matches:
-                found[word] = ([word] if word in self.words else []) + matches
-        return {k: v for k, v in found.items() if len(v) > 1 or v}
+        word_set = set(w.lower() for w in self.words)
+        results: Dict[str, List[str]] = {}
+
+        if self._wn and self.language == "en":
+            for word in word_set:
+                syns = set()
+                for syn in self._wn.synsets(word):
+                    for lemma in syn.lemma_names():
+                        lemma_clean = lemma.replace("_", " ").lower()
+                        if lemma_clean != word:
+                            syns.add(lemma_clean)
+                matches = [s for s in syns if s in word_set]
+                if matches:
+                    results[word] = matches
+            return results
+
+        if self._iwn:
+            for word in word_set:
+                syns = set()
+                try:
+                    for syn in self._iwn.synsets(word):
+                        for lemma in syn.lemma_names():
+                            lemma_clean = str(lemma).strip()
+                            if lemma_clean and lemma_clean != word:
+                                syns.add(lemma_clean)
+                except Exception:
+                    continue
+                matches = [s for s in syns if s in word_set]
+                if matches:
+                    results[word] = matches
+            return results
+
+        return {}
 
     def _detect_antonyms(self) -> Dict[str, List[str]]:
         """Detect antonyms"""
-        antonyms = {
-            "good": ["bad", "evil", "poor"],
-            "big": ["small", "little", "tiny"],
-            "happy": ["sad", "unhappy"],
-            "light": ["dark", "heavy"],
-            "fast": ["slow"],
-            "hot": ["cold", "cool"],
-            "strong": ["weak"],
-            "easy": ["hard", "difficult"],
-            "love": ["hate"],
-            "peace": ["war"],
-            "success": ["failure"],
-            "begin": ["end"],
-            "open": ["close"],
-            "full": ["empty"],
-            "rich": ["poor"],
-            "loud": ["quiet"],
-        }
-        return {
-            word: [a for a in ants if a in self.words]
-            for word, ants in antonyms.items()
-            if word in self.words and any(a in self.words for a in ants)
-        }
+        word_set = set(w.lower() for w in self.words)
+        results: Dict[str, List[str]] = {}
+
+        if self._wn and self.language == "en":
+            for word in word_set:
+                ants = set()
+                for syn in self._wn.synsets(word):
+                    for lemma in syn.lemmas():
+                        for ant in lemma.antonyms():
+                            ant_name = ant.name().replace("_", " ").lower()
+                            if ant_name:
+                                ants.add(ant_name)
+                matches = [a for a in ants if a in word_set]
+                if matches:
+                    results[word] = matches
+            return results
+
+        # IndoWordNet does not expose direct antonym relations in pyiwn.
+        return {}
 
     def _detect_palindromes(self) -> List[str]:
         """Detect palindromes"""
@@ -1135,19 +1113,18 @@ class LinguisticAnalyzer:
         )
 
     def _detect_contronyms(self) -> List[List[str]]:
-        """Detect contronyms"""
-        contronyms = [
-            "cleave",
-            "dust",
-            "seed",
-            "stone",
-            "trim",
-            "oversight",
-            "sanction",
-            "bolt",
-            "fast",
-        ]
-        return [[w] for w in contronyms if w in self.words]
+        """Detect contronyms using WordNet antonym presence"""
+        contronyms = []
+        if not self._wn:
+            return contronyms
+        for w in set(self.words):
+            syns = self._wn.synsets(w)
+            if len(syns) < 2:
+                continue
+            has_ant = any(lemma.antonyms() for syn in syns for lemma in syn.lemmas())
+            if has_ant:
+                contronyms.append([w])
+        return contronyms
 
     def _detect_minimal_pairs(self) -> List[List[str]]:
         """Detect minimal pairs"""
@@ -1163,7 +1140,7 @@ class LinguisticAnalyzer:
                                 pair = sorted([word, new_word])
                                 if pair not in pairs:
                                     pairs.append(pair)
-        return pairs[:10]
+        return self._limit(pairs, "linguistic_pairs")
 
     # ==================== POS DISTRIBUTION ====================
     def _analyze_pos_spacy(self, doc) -> Dict[str, Any]:
@@ -1182,9 +1159,9 @@ class LinguisticAnalyzer:
         result = {
             pos_map.get(pos, pos.lower()): count for pos, count in pos_counts.items()
         }
-        result["detected_nouns"] = [t.text for t in doc if t.pos_ == "NOUN"][:10]
-        result["detected_verbs"] = [t.text for t in doc if t.pos_ == "VERB"][:10]
-        result["detected_adjectives"] = [t.text for t in doc if t.pos_ == "ADJ"][:10]
+        result["detected_nouns"] = self._limit([t.text for t in doc if t.pos_ == "NOUN"], "linguistic_detected_pos")
+        result["detected_verbs"] = self._limit([t.text for t in doc if t.pos_ == "VERB"], "linguistic_detected_pos")
+        result["detected_adjectives"] = self._limit([t.text for t in doc if t.pos_ == "ADJ"], "linguistic_detected_pos")
         return result
 
     def _analyze_pos_stanza(self, doc) -> Dict[str, Any]:
@@ -1239,799 +1216,67 @@ class LinguisticAnalyzer:
             "preposition": len(prepositions),
             "conjunction": len(conjunctions),
             "determiner": len(determiners),
-            "detected_nouns": list(nouns)[:10],
-            "detected_verbs": list(verbs)[:10],
-            "detected_adjectives": list(adjectives)[:10],
+            "detected_nouns": self._limit(list(nouns), "linguistic_detected_pos"),
+            "detected_verbs": self._limit(list(verbs), "linguistic_detected_pos"),
+            "detected_adjectives": self._limit(list(adjectives), "linguistic_detected_pos"),
         }
+
+    def _extract_pos(self, pos_tags: Set[str]) -> Set[str]:
+        """Extract tokens for requested POS tags without static lexicons."""
+        if self.nlp:
+            doc = self.nlp(self.text)
+            return {t.text.lower() for t in doc if t.pos_ in pos_tags and t.is_alpha}
+
+        if self.language == "en":
+            try:
+                tokens = nltk.word_tokenize(self.text)
+                tagged = nltk.pos_tag(tokens)
+                results = set()
+                for word, tag in tagged:
+                    if tag.startswith("NN") and "NOUN" in pos_tags:
+                        results.add(word.lower())
+                    if tag.startswith("VB") and "VERB" in pos_tags:
+                        results.add(word.lower())
+                    if tag.startswith("JJ") and "ADJ" in pos_tags:
+                        results.add(word.lower())
+                    if tag.startswith("RB") and "ADV" in pos_tags:
+                        results.add(word.lower())
+                    if tag in {"PRP", "PRP$"} and "PRON" in pos_tags:
+                        results.add(word.lower())
+                return results
+            except Exception:
+                return set()
+
+        return set()
 
     def _detect_nouns(self) -> Set[str]:
         """Detect common nouns"""
-        common = {
-            "time",
-            "year",
-            "people",
-            "way",
-            "day",
-            "man",
-            "thing",
-            "woman",
-            "life",
-            "child",
-            "world",
-            "school",
-            "state",
-            "family",
-            "student",
-            "group",
-            "country",
-            "problem",
-            "hand",
-            "part",
-            "place",
-            "case",
-            "week",
-            "company",
-            "system",
-            "program",
-            "question",
-            "number",
-            "night",
-            "point",
-            "home",
-            "water",
-            "room",
-            "mother",
-            "area",
-            "money",
-            "story",
-            "fact",
-            "month",
-            "lot",
-            "right",
-            "study",
-            "book",
-            "eye",
-            "job",
-            "word",
-            "business",
-            "issue",
-            "side",
-            "kind",
-            "head",
-            "house",
-            "service",
-            "friend",
-            "father",
-            "power",
-            "hour",
-            "game",
-            "line",
-            "end",
-            "member",
-            "law",
-            "car",
-            "city",
-            "name",
-            "president",
-            "team",
-            "minute",
-            "idea",
-            "kid",
-            "body",
-            "information",
-            "back",
-            "parent",
-            "face",
-            "level",
-            "office",
-            "door",
-            "health",
-            "art",
-            "war",
-            "history",
-            "party",
-            "result",
-            "change",
-            "morning",
-            "reason",
-            "research",
-            "girl",
-            "guy",
-            "moment",
-            "air",
-            "teacher",
-            "force",
-            "education",
-            "foot",
-            "boy",
-            "age",
-            "policy",
-            "process",
-            "music",
-            "market",
-            "sense",
-            "nation",
-            "plan",
-            "college",
-            "interest",
-            "death",
-            "experience",
-            "effect",
-            "use",
-            "class",
-            "control",
-            "care",
-            "field",
-            "development",
-            "role",
-            "effort",
-            "rate",
-            "heart",
-            "drug",
-            "show",
-            "leader",
-            "light",
-            "voice",
-            "wife",
-            "whole",
-            "police",
-            "mind",
-            "church",
-            "report",
-            "action",
-            "price",
-            "need",
-            "difference",
-            "image",
-            "table",
-            "river",
-            "sun",
-            "moon",
-            "star",
-            "sky",
-            "earth",
-            "sea",
-            "mountain",
-            "tree",
-            "flower",
-            "road",
-        }
-        return set(self.words).intersection(common)
+        return self._extract_pos({"NOUN", "PROPN"})
 
     def _detect_verbs(self) -> Set[str]:
         """Detect common verbs"""
-        common = {
-            "be",
-            "have",
-            "do",
-            "say",
-            "get",
-            "make",
-            "go",
-            "know",
-            "take",
-            "see",
-            "come",
-            "want",
-            "use",
-            "find",
-            "give",
-            "tell",
-            "try",
-            "call",
-            "keep",
-            "let",
-            "put",
-            "seem",
-            "help",
-            "show",
-            "hear",
-            "play",
-            "run",
-            "move",
-            "live",
-            "believe",
-            "hold",
-            "bring",
-            "happen",
-            "write",
-            "provide",
-            "sit",
-            "stand",
-            "lose",
-            "pay",
-            "meet",
-            "include",
-            "continue",
-            "set",
-            "learn",
-            "change",
-            "lead",
-            "understand",
-            "watch",
-            "follow",
-            "stop",
-            "create",
-            "speak",
-            "read",
-            "spend",
-            "grow",
-            "open",
-            "walk",
-            "win",
-            "offer",
-            "remember",
-            "love",
-            "consider",
-            "appear",
-            "buy",
-            "wait",
-            "serve",
-            "die",
-            "send",
-            "expect",
-            "build",
-            "stay",
-            "fall",
-            "cut",
-            "reach",
-            "kill",
-            "remain",
-            "suggest",
-            "raise",
-            "pass",
-            "sell",
-            "require",
-            "report",
-            "decide",
-            "pull",
-            "is",
-            "are",
-            "was",
-            "were",
-            "been",
-            "being",
-            "am",
-            "does",
-            "did",
-            "has",
-            "had",
-            "will",
-            "would",
-            "can",
-            "could",
-            "should",
-            "may",
-            "might",
-            "must",
-            "shall",
-        }
-        return set(self.words).intersection(common)
+        return self._extract_pos({"VERB", "AUX"})
 
     def _detect_adjectives(self) -> Set[str]:
-        """Detect common adjectives"""
-        common = {
-            "good",
-            "bad",
-            "big",
-            "small",
-            "large",
-            "little",
-            "old",
-            "new",
-            "young",
-            "early",
-            "late",
-            "great",
-            "high",
-            "low",
-            "right",
-            "left",
-            "first",
-            "last",
-            "long",
-            "short",
-            "tall",
-            "wide",
-            "narrow",
-            "deep",
-            "shallow",
-            "hot",
-            "cold",
-            "warm",
-            "cool",
-            "dark",
-            "bright",
-            "light",
-            "heavy",
-            "easy",
-            "hard",
-            "difficult",
-            "simple",
-            "complex",
-            "clear",
-            "beautiful",
-            "ugly",
-            "happy",
-            "sad",
-            "angry",
-            "calm",
-            "quiet",
-            "loud",
-            "soft",
-            "strong",
-            "weak",
-            "fast",
-            "slow",
-            "quick",
-            "rich",
-            "poor",
-            "clean",
-            "dirty",
-            "dry",
-            "wet",
-            "full",
-            "empty",
-            "open",
-            "closed",
-            "true",
-            "false",
-            "real",
-            "same",
-            "different",
-            "other",
-            "more",
-            "most",
-            "some",
-            "any",
-            "no",
-            "every",
-            "each",
-            "both",
-            "few",
-            "many",
-            "much",
-            "several",
-            "all",
-            "whole",
-            "single",
-            "double",
-            "certain",
-            "likely",
-            "possible",
-            "necessary",
-            "important",
-            "special",
-            "common",
-            "public",
-            "private",
-            "personal",
-            "social",
-            "political",
-            "economic",
-            "cultural",
-            "historical",
-            "modern",
-            "ancient",
-            "classical",
-            "traditional",
-            "popular",
-            "serious",
-            "formal",
-            "informal",
-            "basic",
-            "final",
-            "central",
-            "human",
-            "natural",
-            "physical",
-            "mental",
-            "emotional",
-            "spiritual",
-            "intellectual",
-            "moral",
-            "free",
-            "busy",
-            "alone",
-            "together",
-            "ready",
-            "willing",
-            "able",
-            "due",
-            "next",
-            "previous",
-            "current",
-            "recent",
-            "past",
-            "future",
-            "present",
-            "daily",
-            "weekly",
-            "monthly",
-            "yearly",
-            "regular",
-            "constant",
-            "permanent",
-            "temporary",
-            "partial",
-            "complete",
-            "total",
-            "exact",
-            "specific",
-            "general",
-            "rare",
-            "unique",
-            "various",
-        }
-        return set(self.words).intersection(common)
+        """Detect adjectives"""
+        return self._extract_pos({"ADJ"})
 
     def _detect_adverbs(self) -> Set[str]:
-        """Detect common adverbs"""
-        common = {
-            "very",
-            "really",
-            "just",
-            "still",
-            "already",
-            "also",
-            "always",
-            "never",
-            "often",
-            "sometimes",
-            "usually",
-            "ever",
-            "again",
-            "even",
-            "almost",
-            "yet",
-            "only",
-            "much",
-            "more",
-            "most",
-            "less",
-            "least",
-            "quite",
-            "rather",
-            "fairly",
-            "too",
-            "so",
-            "thus",
-            "therefore",
-            "however",
-            "although",
-            "though",
-            "while",
-            "when",
-            "where",
-            "why",
-            "how",
-            "there",
-            "here",
-            "now",
-            "then",
-            "today",
-            "tomorrow",
-            "yesterday",
-            "soon",
-            "later",
-            "early",
-            "late",
-            "quickly",
-            "slowly",
-            "carefully",
-            "suddenly",
-            "finally",
-            "recently",
-            "currently",
-            "certainly",
-            "definitely",
-            "exactly",
-            "especially",
-            "simply",
-            "absolutely",
-            "completely",
-            "entirely",
-            "extremely",
-            "possibly",
-            "probably",
-            "perhaps",
-            "maybe",
-            "around",
-            "away",
-            "back",
-            "down",
-            "forward",
-            "in",
-            "off",
-            "out",
-            "over",
-            "through",
-            "together",
-            "up",
-        }
-        return set(self.words).intersection(common)
+        """Detect adverbs"""
+        return self._extract_pos({"ADV"})
 
     def _detect_pronouns(self) -> Set[str]:
         """Detect pronouns"""
-        common = {
-            "i",
-            "you",
-            "he",
-            "she",
-            "it",
-            "we",
-            "they",
-            "me",
-            "him",
-            "her",
-            "us",
-            "them",
-            "my",
-            "your",
-            "his",
-            "its",
-            "our",
-            "their",
-            "mine",
-            "yours",
-            "hers",
-            "ours",
-            "theirs",
-            "this",
-            "that",
-            "these",
-            "those",
-            "who",
-            "whom",
-            "whose",
-            "which",
-            "what",
-            "someone",
-            "somebody",
-            "something",
-            "anyone",
-            "anybody",
-            "anything",
-            "everyone",
-            "everybody",
-            "everything",
-            "nobody",
-            "nothing",
-            "each",
-            "either",
-            "neither",
-            "one",
-        }
-        return set(self.words).intersection(common)
+        return self._extract_pos({"PRON"})
 
     def _detect_prepositions(self) -> Set[str]:
         """Detect prepositions"""
-        common = {
-            "in",
-            "on",
-            "at",
-            "by",
-            "for",
-            "with",
-            "about",
-            "against",
-            "between",
-            "into",
-            "through",
-            "during",
-            "before",
-            "after",
-            "above",
-            "below",
-            "to",
-            "from",
-            "up",
-            "down",
-            "out",
-            "off",
-            "over",
-            "under",
-            "around",
-            "near",
-            "onto",
-            "opposite",
-            "outside",
-            "past",
-            "since",
-            "toward",
-            "until",
-            "upon",
-            "within",
-            "without",
-        }
-        return set(self.words).intersection(common)
+        return self._extract_pos({"ADP"})
 
     def _detect_conjunctions(self) -> Set[str]:
         """Detect conjunctions"""
-        common = {
-            "and",
-            "but",
-            "or",
-            "nor",
-            "for",
-            "yet",
-            "so",
-            "because",
-            "although",
-            "though",
-            "while",
-            "when",
-            "if",
-            "unless",
-            "since",
-            "until",
-            "provided",
-            "whereas",
-            "whenever",
-            "wherever",
-            "whether",
-            "than",
-            "rather",
-        }
-        return set(self.words).intersection(common)
+        return self._extract_pos({"CCONJ", "SCONJ"})
 
     def _detect_determiners(self) -> Set[str]:
         """Detect determiners"""
-        common = {
-            "a",
-            "an",
-            "the",
-            "this",
-            "that",
-            "these",
-            "those",
-            "my",
-            "your",
-            "his",
-            "her",
-            "its",
-            "our",
-            "their",
-            "some",
-            "any",
-            "no",
-            "not",
-            "all",
-            "both",
-            "each",
-            "every",
-            "either",
-            "neither",
-            "much",
-            "many",
-            "more",
-            "most",
-            "few",
-            "little",
-            "less",
-            "least",
-            "several",
-            "enough",
-            "quite",
-            "rather",
-            "such",
-        }
-        return set(self.words).intersection(common)
-
-
-def analyze_idioms(text: str) -> Dict[str, List[str]]:
-    """Detect idioms and proverbs"""
-    idioms = [
-        "break the ice",
-        "bite the bullet",
-        "beat around the bush",
-        "burn the midnight oil",
-        "cost an arm and a leg",
-        "hit the nail on the head",
-        "kill two birds with one stone",
-        "let the cat out of the bag",
-        "make a long story short",
-        "once in a blue moon",
-        "piece of cake",
-        "rain cats and dogs",
-        "spill the beans",
-        "take it with a grain of salt",
-        "the ball is in your court",
-        "the best of both worlds",
-        "throw caution to the wind",
-        "under the weather",
-        "when pigs fly",
-        "a penny for your thoughts",
-        "actions speak louder than words",
-        "add insult to injury",
-        "against all odds",
-        "back to the drawing board",
-        "barking up the wrong tree",
-        "beat a dead horse",
-        "better late than never",
-        "bite off more than you can chew",
-        "blood is thicker than water",
-        "break a leg",
-        "by the skin of your teeth",
-        "call it a day",
-        "come rain or shine",
-        "cross that bridge when you come to it",
-        "curiosity killed the cat",
-        "cut corners",
-        "cut to the chase",
-        "don't count your chickens",
-        "don't put all your eggs in one basket",
-        "easier said than done",
-        "every cloud has a silver lining",
-        "get a taste of your own medicine",
-        "get out of hand",
-        "get your act together",
-        "give someone the benefit of the doubt",
-        "go back to the drawing board",
-        "go the extra mile",
-        "good things come to those who wait",
-        "hang in there",
-        "hit the sack",
-        "in the heat of the moment",
-        "in the nick of time",
-        "it takes two to tango",
-        "jump on the bandwagon",
-        "keep something at bay",
-        "last but not least",
-        "let sleeping dogs lie",
-        "miss the boat",
-        "no pain no gain",
-        "on the ball",
-        "on the fence",
-        "play devil's advocate",
-        "pull someone's leg",
-        "put something on hold",
-        "see eye to eye",
-        "sit on the fence",
-        "so far so good",
-        "stab someone in the back",
-        "take it easy",
-        "the elephant in the room",
-        "the last straw",
-        "time flies",
-        "to make matters worse",
-        "under pressure",
-        "up in the air",
-        "up to the ears",
-        "wait and see",
-        "when it rains it pours",
-        "you can say that again",
-    ]
-
-    proverbs = [
-        "a stitch in time saves nine",
-        "all that glitters is not gold",
-        "an apple a day keeps the doctor away",
-        "birds of a feather flock together",
-        "better safe than sorry",
-        "don't judge a book by its cover",
-        "early bird catches the worm",
-        "honesty is the best policy",
-        "if it ain't broke don't fix it",
-        "knowledge is power",
-        "laughter is the best medicine",
-        "look before you leap",
-        "money can't buy happiness",
-        "practice makes perfect",
-        "prevention is better than cure",
-        "rome wasn't built in a day",
-        "the pen is mightier than the sword",
-        "there's no place like home",
-        "time heals all wounds",
-        "to err is human",
-        "two heads are better than one",
-        "when in rome do as the romans do",
-        "where there's a will there's a way",
-        "you can't have your cake and eat it too",
-    ]
-
-    text_lower = text.lower()
-    return {
-        "idioms": [idiom for idiom in idioms if idiom in text_lower],
-        "proverbs": [proverb for proverb in proverbs if proverb in text_lower],
-    }
+        return self._extract_pos({"DET"})

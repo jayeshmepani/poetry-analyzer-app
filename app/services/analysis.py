@@ -4,13 +4,16 @@ Orchestrates all analysis modules
 """
 
 import json
-from typing import Dict, List, Optional
+import re
+from typing import Dict, List, Optional, Any
 from datetime import datetime
+from collections import Counter
 
 from app.services.quantitative import QuantitativeMetricsCalculator
 from app.services.prosody import ProsodyAnalyzer, HindiProsodyAnalyzer, detect_poem_form
 from app.services.linguistic import LinguisticAnalyzer
 from app.services.literary_devices import LiteraryDevicesAnalyzer
+from app.services.rule_loader import get_analysis_rules
 
 
 class AnalysisService:
@@ -22,6 +25,7 @@ class AnalysisService:
         self.hindi_prosody = HindiProsodyAnalyzer()
         self.linguistic_analyzer = LinguisticAnalyzer()
         self.literary_devices = LiteraryDevicesAnalyzer()
+        self._rules = get_analysis_rules()
 
     def analyze(self, text: str, language: str = "en", strictness: int = 7) -> Dict:
         """Run complete analysis on text"""
@@ -56,6 +60,13 @@ class AnalysisService:
             quantitative, linguistic, literary, ratings
         )
 
+        # TP-CASTT analysis
+        tp_castt = self._tp_castt(self.text, linguistic)
+
+        # Pritchard Scale + Transaction Formula
+        pritchard = self._pritchard_scale(ratings)
+        transaction = self._transaction_value(ratings, linguistic)
+
         return {
             "quantitative": quantitative,
             "prosody": prosody,
@@ -63,6 +74,9 @@ class AnalysisService:
             "literary_devices": literary,
             "form_detected": form_info,
             "ratings": ratings,
+            "pritchard_scale": pritchard,
+            "transaction_formula": transaction,
+            "tp_castt": tp_castt,
             "executive_summary": summary,
             "strengths": strengths,
             "suggestions": suggestions,
@@ -84,10 +98,10 @@ class AnalysisService:
         imagery_score = self._calculate_imagery_score(literary, linguistic)
 
         # Emotional Impact
-        emotion_score = self._calculate_emotional_score(literary, quantitative)
+        emotion_score = self._calculate_emotional_score(literary, linguistic)
 
-        # Cultural Fidelity (simplified)
-        cultural_score = 7.0  # Default assumption
+        # Cultural Fidelity (based on language-specific devices)
+        cultural_score = self._calculate_cultural_score(literary, linguistic)
 
         # Originality
         originality_score = self._calculate_originality_score(quantitative, linguistic)
@@ -112,6 +126,21 @@ class AnalysisService:
             "overall_quality": round(overall, 1),
         }
 
+    def _calculate_cultural_score(self, literary: Dict, linguistic: Dict) -> float:
+        rules = self._rules
+        score = 5.0
+        sanskrit = literary.get("sanskrit_alankar", {})
+        rasa = literary.get("rasa", {})
+        alankar_count = sum(len(v) for v in sanskrit.values()) if isinstance(sanskrit, dict) else 0
+        rasa_strength = sum(rasa.values()) if isinstance(rasa, dict) else 0
+        if alankar_count > 5:
+            score += 2.0
+        elif alankar_count > 0:
+            score += 1.0
+        if rasa_strength > 0:
+            score += 1.0
+        return min(10.0, max(1.0, score))
+
     def _calculate_technical_score(self, quantitative: Dict, linguistic: Dict) -> float:
         """Calculate technical craft score"""
         score = 5.0
@@ -122,15 +151,19 @@ class AnalysisService:
 
         # Adjust based on sentence variety
         sentence_types = linguistic.get("syntax", {}).get("sentence_types", {})
-        if sum(sentence_types.values()) > 1:
+        min_variety = rules.get("technical_sentence_variety_min") if rules else None
+        if min_variety is not None and sum(sentence_types.values()) > int(min_variety):
             score += 0.5
 
         # Adjust based on morphological complexity
         morph = linguistic.get("morphology", {})
-        if morph.get("prefix_count", 0) + morph.get("suffix_count", 0) > 5:
+        morph_min = rules.get("technical_morph_complexity_min") if rules else None
+        if morph_min is not None and (morph.get("prefix_count", 0) + morph.get("suffix_count", 0) > int(morph_min)):
             score += 0.5
 
-        return min(10.0, max(1.0, score))
+        if not rules:
+            return score
+        return min(float(rules.get("score_max", 10.0)), max(float(rules.get("score_min", 1.0)), score))
 
     def _calculate_language_score(self, linguistic: Dict) -> float:
         """Calculate language and diction score"""
@@ -138,15 +171,19 @@ class AnalysisService:
 
         # Check for varied vocabulary
         lexical = linguistic.get("semantics", {})
-        if lexical.get("semantic_density", 0) > 0.5:
+        sem_min = rules.get("language_semantic_density_min") if rules else None
+        if sem_min is not None and lexical.get("semantic_density", 0) > float(sem_min):
             score += 1.0
 
         # Check for rich synonyms
         lex_relations = linguistic.get("lexical_relations", {})
-        if len(lex_relations.get("synonyms", {})) > 2:
+        syn_min = rules.get("language_synonym_min") if rules else None
+        if syn_min is not None and len(lex_relations.get("synonyms", {})) > int(syn_min):
             score += 1.0
 
-        return min(10.0, max(1.0, score))
+        if not rules:
+            return score
+        return min(float(rules.get("score_max", 10.0)), max(float(rules.get("score_min", 1.0)), score))
 
     def _calculate_imagery_score(self, literary: Dict, linguistic: Dict) -> float:
         """Calculate imagery and voice score"""
@@ -156,40 +193,133 @@ class AnalysisService:
         imagery = literary.get("imagery", {})
         imagery_types = sum(len(v) for v in imagery.values())
 
-        if imagery_types > 5:
+        high = rules.get("imagery_types_high") if rules else None
+        mid = rules.get("imagery_types_mid") if rules else None
+        if high is not None and imagery_types > int(high):
             score += 1.5
-        elif imagery_types > 2:
+        elif mid is not None and imagery_types > int(mid):
             score += 0.5
 
         # Check for figurative language
         tropes = literary.get("tropes", {})
         tropes_count = sum(len(v) for v in tropes.values())
 
-        if tropes_count > 5:
+        th = rules.get("tropes_count_high") if rules else None
+        tm = rules.get("tropes_count_mid") if rules else None
+        if th is not None and tropes_count > int(th):
             score += 1.5
-        elif tropes_count > 2:
+        elif tm is not None and tropes_count > int(tm):
             score += 0.5
 
-        return min(10.0, max(1.0, score))
+        if not rules:
+            return score
+        return min(float(rules.get("score_max", 10.0)), max(float(rules.get("score_min", 1.0)), score))
 
-    def _calculate_emotional_score(self, literary: Dict, quantitative: Dict) -> float:
+    def _calculate_emotional_score(self, literary: Dict, linguistic: Dict) -> float:
         """Calculate emotional impact score"""
         score = 5.0
-
-        # Check for emotional imagery
-        imagery = literary.get("imagery", {})
-        emotional_types = ["sadness", "joy", "fear", "anger", "love"]
-
-        # Simple heuristic based on word choice
-        text_lower = str(literary).lower()
-        emotional_words = sum(1 for t in emotional_types if t in text_lower)
-
-        if emotional_words > 3:
+        sentiment = linguistic.get("sentiment", {})
+        compound = sentiment.get("compound", 0)
+        strong = rules.get("compound_strong") if rules else None
+        mid = rules.get("compound_mid") if rules else None
+        if strong is not None and (compound >= float(strong) or compound <= -float(strong)):
             score += 1.5
-        elif emotional_words > 1:
+        elif mid is not None and (compound >= float(mid) or compound <= -float(mid)):
             score += 0.5
 
-        return min(10.0, max(1.0, score))
+        if not rules:
+            return score
+        return min(float(rules.get("score_max", 10.0)), max(float(rules.get("score_min", 1.0)), score))
+
+    def _pritchard_scale(self, ratings: Dict[str, float]) -> Dict[str, float]:
+        """Pritchard Scale: Greatness = Perfection × Importance."""
+        perfection = (
+            ratings.get("technical_craft", 5.0)
+            + ratings.get("language_diction", 5.0)
+            + ratings.get("imagery_voice", 5.0)
+        ) / 3.0
+        importance = (
+            ratings.get("emotional_impact", 5.0)
+            + ratings.get("cultural_fidelity", 5.0)
+            + ratings.get("originality", 5.0)
+        ) / 3.0
+        greatness = perfection * importance
+        return {
+            "perfection": round(perfection, 2),
+            "importance": round(importance, 2),
+            "greatness": round(greatness, 2),
+        }
+
+    def _transaction_value(self, ratings: Dict[str, float], linguistic: Dict) -> Dict[str, float]:
+        """Transaction Formula: Value = Text × Reader × Context."""
+        text_score = ratings.get("technical_craft", 5.0)
+        reader_score = ratings.get("emotional_impact", 5.0)
+        context_score = ratings.get("cultural_fidelity", 5.0)
+        value = text_score * reader_score * context_score
+        return {
+            "text": round(text_score, 2),
+            "reader": round(reader_score, 2),
+            "context": round(context_score, 2),
+            "value": round(value, 2),
+        }
+
+    def _tp_castt(self, text: str, linguistic: Dict) -> Dict[str, Any]:
+        """TP-CASTT analysis (Title, Paraphrase, Connotation, Attitude, Shifts, Title, Theme)."""
+        lines = [l.strip() for l in text.split("\n") if l.strip()]
+        title_limit = rules.get("tp_castt_title_preview_chars") if rules else None
+        title = lines[0][: int(title_limit)] if lines and title_limit is not None else (lines[0] if lines else "")
+        sentences = re.split(r"[.!?।]", text)
+        sentences = [s.strip() for s in sentences if s.strip()]
+        para_limit = rules.get("tp_castt_paraphrase_sentences") if rules else None
+        paraphrase = " ".join(sentences[: int(para_limit)]) if sentences and para_limit is not None else (" ".join(sentences) if sentences else "")
+
+        # Connotation: top content words
+        content_words = []
+        try:
+            import spacy
+            nlp = spacy.load("en_core_web_trf")
+            doc = nlp(text)
+            content_words = [t.lemma_.lower() for t in doc if t.pos_ in {"NOUN","VERB","ADJ","ADV"}]
+        except Exception:
+            content_words = re.findall(r"[A-Za-z']+", text.lower())
+        top_limit = rules.get("tp_castt_top_content_words") if rules else None
+        top = [w for w, _ in Counter(content_words).most_common(int(top_limit))] if top_limit is not None else [w for w, _ in Counter(content_words).most_common()]
+
+        # Attitude: sentiment
+        sentiment = linguistic.get("sentiment", {})
+        attitude = sentiment.get("sentiment_label", "neutral")
+
+        # Shifts: line-level sentiment changes (VADER)
+        shifts = []
+        try:
+            from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+            analyzer = SentimentIntensityAnalyzer()
+            prev = None
+            for i, line in enumerate(lines):
+                c = analyzer.polarity_scores(line)["compound"]
+                shift_threshold = rules.get("tp_castt_shift_threshold") if rules else None
+                if shift_threshold is not None and prev is not None and abs(c - prev) >= float(shift_threshold):
+                    shifts.append({"line": i + 1, "from": prev, "to": c})
+                prev = c
+        except Exception:
+            shifts = []
+
+        # Title again: overlap with top keywords
+        title_keywords = set(re.findall(r"[A-Za-z']+", title.lower()))
+        overlap = sorted(list(title_keywords.intersection(top)))
+
+        theme_limit = rules.get("tp_castt_theme_top_k") if rules else None
+        theme = " / ".join(top[: int(theme_limit)]) if top and theme_limit is not None else (" / ".join(top) if top else "")
+
+        return {
+            "title": title,
+            "paraphrase": paraphrase,
+            "connotation_keywords": top,
+            "attitude": attitude,
+            "shifts": shifts,
+            "title_again_keywords": overlap,
+            "theme": theme,
+        }
 
     def _calculate_originality_score(
         self, quantitative: Dict, linguistic: Dict
@@ -201,12 +331,16 @@ class AnalysisService:
         lex = quantitative.get("lexical_metrics", {})
         ttr = lex.get("type_token_ratio", 0)
 
-        if ttr > 0.6:
+        ttr_high = rules.get("ttr_high") if rules else None
+        ttr_mid = rules.get("ttr_mid") if rules else None
+        if ttr_high is not None and ttr > float(ttr_high):
             score += 1.5
-        elif ttr > 0.4:
+        elif ttr_mid is not None and ttr > float(ttr_mid):
             score += 0.5
 
-        return min(10.0, max(1.0, score))
+        if not rules:
+            return score
+        return min(float(rules.get("score_max", 10.0)), max(float(rules.get("score_min", 1.0)), score))
 
     def _generate_summary(
         self, quantitative: Dict, linguistic: Dict, literary: Dict, ratings: Dict

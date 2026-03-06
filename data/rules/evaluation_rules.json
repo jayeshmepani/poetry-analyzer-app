@@ -1,0 +1,205 @@
+{
+  "weights": {
+    "technical_craft": 0.15,
+    "language_diction": 0.15,
+    "imagery_voice": 0.15,
+    "emotional_impact": 0.15,
+    "cultural_fidelity": 0.15,
+    "originality": 0.15,
+    "computational_greatness": 0.10
+  },
+  "base_scores": {
+    "technical_craft": 5.0,
+    "language_diction": 5.0,
+    "imagery_voice": 5.0,
+    "emotional_impact": 5.0,
+    "cultural_fidelity": 6.0,
+    "originality": 5.0,
+    "computational_greatness": 5.0,
+    "vocal": 5.0,
+    "breath": 7.0
+  },
+  "thresholds": {
+    "metrical_regularity_high": 0.7,
+    "metrical_regularity_mid": 0.5,
+    "metrical_regularity_low": 0.3,
+    "rhyme_density_high": 0.8,
+    "rhyme_density_mid": 0.5,
+    "ttr_high": 0.6,
+    "ttr_mid": 0.4,
+    "lexical_density_high": 0.6,
+    "lexical_density_mid": 0.4,
+    "imagery_count_high": 10,
+    "imagery_count_mid": 5,
+    "imagery_count_low": 2,
+    "trope_count_high": 8,
+    "trope_count_mid": 3,
+    "valence_high": 0.5,
+    "valence_mid": 0.3,
+    "valence_low": 0.1,
+    "arousal_high": 0.5,
+    "alankar_high": 3,
+    "alankar_low": 0,
+    "overall_excellent": 8.5,
+    "overall_good": 7.0,
+    "overall_fair": 5.0,
+    "avg_line_len_long": 12,
+    "voice_alliteration_bonus": 2.0,
+    "voice_meter_bonus": 2.0,
+    "breath_penalty": 2.0,
+    "dramatic_scale": 5.0,
+    "dramatic_base": 5.0,
+    "priority_cutoff": 6
+  },
+  "limits": {
+    "strengths": null,
+    "issues": null,
+    "suggestions": null
+  },
+  "templates": {
+    "strengths": {
+      "vocabulary": {
+        "category": "Vocabulary",
+        "description": "Strong vocabulary diversity with high type-token ratio",
+        "evidence": "TTR: {ttr:.2f}",
+        "impact": "Demonstrates rich language use and avoids repetition"
+      },
+      "imagery": {
+        "category": "Imagery",
+        "description": "Effective use of sensory imagery",
+        "evidence": "{count} instances of sensory language detected",
+        "impact": "Creates vivid mental pictures for the reader"
+      },
+      "figurative": {
+        "category": "Figurative Language",
+        "description": "Strong use of metaphors, similes, and other tropes",
+        "evidence": "{count} instances of figurative language",
+        "impact": "Adds depth and layers of meaning"
+      },
+      "prosody": {
+        "category": "Prosody",
+        "description": "Consistent {meter} pattern",
+        "evidence": "Regularity score: {regularity:.2f}",
+        "impact": "Creates musical rhythm and flow"
+      },
+      "classical": {
+        "category": "Classical Devices",
+        "description": "Rich use of Sanskrit/Hindi Alankars (figures of speech)",
+        "evidence": "{count} Alankars detected",
+        "impact": "Demonstrates mastery of classical poetic ornamentation"
+      },
+      "rasa": {
+        "category": "Emotional Essence",
+        "description": "Strong presence of {rasa} Rasa",
+        "evidence": "Consistent emotional tone detected via Navarasa theory",
+        "impact": "Evokes a powerful aesthetic experience (rasanubhuti)"
+      }
+    },
+    "issues": {
+      "low_ttr": {
+        "location": "Throughout text",
+        "issue_type": "DICTION",
+        "severity": "moderate",
+        "technical_explanation": "Low type-token ratio indicates excessive word repetition",
+        "impact_analysis": "Reduces vocabulary richness and reader engagement",
+        "evidence": "TTR: {ttr:.2f} (ideal: >{ideal_ttr:.2f})",
+        "suggested_fix": "Vary word choice using synonyms and related terms",
+        "why_it_matters": "Vocabulary diversity enhances literary quality"
+      },
+      "inconsistent_meter": {
+        "location": "Throughout text",
+        "issue_type": "METER",
+        "severity": "minor",
+        "technical_explanation": "No consistent metrical pattern detected",
+        "impact_analysis": "May lack musical rhythm expected in formal poetry",
+        "evidence": "Free verse with low regularity",
+        "suggested_fix": "Either embrace free verse fully or establish consistent meter",
+        "why_it_matters": "Metrical consistency contributes to prosodic quality"
+      }
+    },
+    "suggestions": {
+      "technical_craft": {
+        "priority": 1,
+        "category": "Technical Craft",
+        "description": "Consider establishing a consistent metrical pattern or embracing free verse fully",
+        "example": "Study exemplary poems in your chosen form for guidance"
+      },
+      "imagery": {
+        "priority": 2,
+        "category": "Imagery",
+        "description": "Add more vivid sensory details across multiple senses",
+        "example": "Incorporate visual, auditory, and tactile imagery"
+      },
+      "originality": {
+        "priority": 3,
+        "category": "Originality",
+        "description": "Explore more unique word choices and fresh metaphors",
+        "example": "Avoid clichés and seek unexpected comparisons"
+      },
+      "emotional_resonance": {
+        "priority": 2,
+        "category": "Emotional Resonance",
+        "description": "Deepen the dominant Rasa (emotional essence) using appropriate Bhavas",
+        "example": "Use Vibhavas (stimuli) and Anubhavas (reactions) to evoke specific emotions"
+      }
+    },
+    "publishability": {
+      "excellent": {
+        "ready": true,
+        "needs_light_edits": false,
+        "needs_heavy_revision": false,
+        "major_rework_required": false,
+        "assessment": "Professional-grade work ready for submission after light copyediting",
+        "recommended_venues": ["Literary journals", "Poetry magazines", "Anthologies"]
+      },
+      "good": {
+        "ready": false,
+        "needs_light_edits": true,
+        "needs_heavy_revision": false,
+        "major_rework_required": false,
+        "assessment": "Strong work requiring targeted edits before submission",
+        "recommended_venues": ["Regional journals", "Online poetry platforms", "Writing contests"]
+      },
+      "fair": {
+        "ready": false,
+        "needs_light_edits": false,
+        "needs_heavy_revision": true,
+        "major_rework_required": false,
+        "assessment": "Promising work requiring substantial revision",
+        "recommended_venues": ["Workshop feedback", "Writing groups", "Revision-focused programs"]
+      },
+      "poor": {
+        "ready": false,
+        "needs_light_edits": false,
+        "needs_heavy_revision": false,
+        "major_rework_required": true,
+        "assessment": "Early draft requiring major rework and development",
+        "recommended_venues": ["Writing workshops", "Mentorship programs", "Practice and revision"]
+      }
+    },
+    "performance": {
+      "vocal_notes_high": "Rich sound patterns detected suggest dynamic delivery.",
+      "vocal_notes_low": "Simple structure for clear delivery.",
+      "breath_notes_high": "Average line length of {avg_len:.1f} words allows for natural breathing.",
+      "breath_notes_low": "Long complex lines require advanced breath control.",
+      "dramatic_notes_high": "Significant emotional variance detected.",
+      "dramatic_notes_low": "Steady emotional tone.",
+      "engagement_notes": "Strong imagery facilitates audience connection.",
+      "recommendations": [
+        "Vary tempo during highly alliterative passages",
+        "Use the natural line breaks for strategic pauses",
+        "Emphasize sensory imagery to anchor audience attention"
+      ]
+    },
+    "summary": {
+      "quality_excellent": "polished and publishable quality",
+      "quality_good": "promising with room for improvement",
+      "quality_fair": "requiring significant revision",
+      "template": "This is a {total_lines}-line literary work with an overall quality score of {overall}/10. The work is of {quality}. Technical craft scores {technical}/10, while imagery and voice score {imagery}/10."
+    },
+    "education": {
+      "meter_template": "**Metrical Consistency**: Your poem shows elements of {meter} meter, but with irregular execution (regularity: {regularity:.2f}). Study the pattern: {pattern} and practice scanning lines to improve consistency.",
+      "default": "**Poetic Craft**: Continue developing your unique voice while studying established forms. Read widely in your chosen genre to internalize successful techniques."
+    }
+  }
+}

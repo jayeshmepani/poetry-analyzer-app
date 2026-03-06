@@ -7,6 +7,7 @@ Orchestrates ALL analysis modules for comprehensive literary analysis
 from typing import Dict, Any, Optional, List
 import logging
 from datetime import datetime
+import time
 import uuid
 
 from app.services.quantitative import QuantitativeMetricsCalculator
@@ -27,6 +28,7 @@ from app.services.structural_analysis import (
 )
 from app.services.ghazal_verifier import GhazalVerifier, verify_ghazal
 from app.services.additional_analysis import run_additional_analyses
+from app.services.rule_loader import get_performance_rules, get_output_limits
 from app.services.style_tone_analysis import (
     StyleToneAnalyzer,
     PragmaticsAnalyzer,
@@ -70,6 +72,7 @@ class CompleteAnalysisService:
         title: Optional[str] = None,
         form: Optional[str] = None,
         enable_all: bool = True,
+        progress_cb=None,
     ) -> Dict[str, Any]:
         """
         Perform COMPLETE analysis of a literary text
@@ -87,16 +90,35 @@ class CompleteAnalysisService:
         timestamp = datetime.now().isoformat()
 
         try:
+            def _progress(pct: int, message: str) -> None:
+                if progress_cb:
+                    progress_cb(int(pct), message)
             # Core Analysis Modules
-            # Limit text length for complex analysis to avoid timeouts
-            if len(text) > 10000:
-                text = text[:10000]
-                logger.warning("Text truncated to 10000 characters for performance")
+            perf_rules = get_performance_rules()
+            max_chars = perf_rules.get("analysis_input_max_chars") if perf_rules else None
+            if max_chars is not None and len(text) > int(max_chars):
+                text = text[: int(max_chars)]
+                logger.warning("Text truncated to %s characters by performance rules", max_chars)
 
+            t0 = time.perf_counter()
             quantitative = self.quantitative_calc.analyze(text)
+            logger.info("[analysis] quantitative %.2fs", time.perf_counter() - t0)
+            _progress(34, "Quantitative analysis complete")
+
+            t0 = time.perf_counter()
             prosody = self.prosody_analyzer.analyze(text)
+            logger.info("[analysis] prosody %.2fs", time.perf_counter() - t0)
+            _progress(36, "Prosody analysis complete")
+
+            t0 = time.perf_counter()
             linguistic = self.linguistic_analyzer.analyze(text)
+            logger.info("[analysis] linguistic %.2fs", time.perf_counter() - t0)
+            _progress(42, "Linguistic analysis complete")
+
+            t0 = time.perf_counter()
             literary_devices = self.literary_analyzer.analyze(text)
+            logger.info("[analysis] literary_devices %.2fs", time.perf_counter() - t0)
+            _progress(46, "Literary devices analysis complete")
 
             # Form Detection (Safely)
             try:
@@ -118,6 +140,7 @@ class CompleteAnalysisService:
             # Advanced Analysis - Selective for speed
             advanced = None
             if enable_all:
+                t0 = time.perf_counter()
                 # Limit methods for performance verification
                 advanced = self.advanced_engine.analyze(
                     text,
@@ -126,16 +149,24 @@ class CompleteAnalysisService:
                         "touchstone",
                     ],
                 )
+                logger.info("[analysis] advanced %.2fs", time.perf_counter() - t0)
+                _progress(50, "Advanced analysis complete")
 
             # Structural Analysis (Golden Ratio, Fibonacci)
             structural = None
             if enable_all:
+                t0 = time.perf_counter()
                 structural = self.structural_analyzer.analyze(text)
+                logger.info("[analysis] structural %.2fs", time.perf_counter() - t0)
+                _progress(52, "Structural analysis complete")
 
             # Literary Theory Analysis
             theory_analysis = None
             if enable_all:
+                t0 = time.perf_counter()
                 theory_analysis = self.theory_analyzer.analyze(text)
+                logger.info("[analysis] theory %.2fs", time.perf_counter() - t0)
+                _progress(53, "Theory analysis complete")
 
             # Ghazal Verification (if applicable)
             ghazal_verification = None
@@ -145,7 +176,21 @@ class CompleteAnalysisService:
             # Additional Analyses
             additional = None
             if enable_all:
-                additional = run_additional_analyses(text, self.language)
+                t0 = time.perf_counter()
+                def _additional_progress(rel_pct: int, message: str) -> None:
+                    if progress_cb:
+                        start, end = 54, 58
+                        rel = max(0, min(100, int(rel_pct)))
+                        mapped = start + (end - start) * (rel / 100.0)
+                        progress_cb(int(round(mapped)), message)
+
+                additional = run_additional_analyses(
+                    text,
+                    self.language,
+                    progress_cb=_additional_progress if progress_cb else None,
+                )
+                logger.info("[analysis] additional %.2fs", time.perf_counter() - t0)
+                _progress(58, "Additional analysis complete")
 
             # Compile metrics for evaluation
             metrics = {
@@ -185,7 +230,10 @@ class CompleteAnalysisService:
                      sentiment_analysis["sentiment_arc"] = []
 
             # Run Evaluation
+            t0 = time.perf_counter()
             evaluation = self.evaluation_engine.evaluate(text, metrics, self.language)
+            logger.info("[analysis] evaluation %.2fs", time.perf_counter() - t0)
+            _progress(60, "Evaluation complete")
             ratings = evaluation["ratings"]
 
             # Generate Summaries
@@ -193,13 +241,20 @@ class CompleteAnalysisService:
             educational_insight = generate_educational_insight(metrics)
 
             # Compile FINAL result (100% feature-complete)
+            preview_limit = get_output_limits().get("analysis_text_preview_chars") if get_output_limits() else None
+            preview_text = (
+                text[: int(preview_limit)] + "..."
+                if preview_limit is not None and len(text) > int(preview_limit)
+                else text
+            )
+
             result = {
                 "id": result_id,
                 "title": title,
                 "language": self.language,
                 "form": form or prosody.get("detected_form", "unknown"),
                 "timestamp": timestamp,
-                "text_preview": text[:200] + "..." if len(text) > 200 else text,
+                "text_preview": preview_text,
                 # Core Analysis
                 "quantitative": quantitative,
                 "prosody": prosody,

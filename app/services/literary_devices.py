@@ -5,8 +5,15 @@ Based on Ultimate Literary Master System - Dimension 3
 """
 
 import re
+import logging
 from typing import Dict, List, Tuple, Set, Optional, Any
 from collections import Counter
+import spacy
+from transformers import pipeline
+from nltk.corpus import wordnet as wn
+from app.config import Settings
+from app.services.label_loader import get_labels
+from app.services.rule_loader import get_thresholds, get_literary_device_rules
 
 
 class LiteraryDevicesAnalyzer:
@@ -20,6 +27,11 @@ class LiteraryDevicesAnalyzer:
         self.text = ""
         self.lines: List[str] = []
         self.words: List[str] = []
+        self._nlp = None
+        self._zero_shot = None
+        self._settings = Settings()
+        self._logger = logging.getLogger(__name__)
+        self._rules = get_literary_device_rules() or {}
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Run complete literary devices analysis"""
@@ -41,6 +53,65 @@ class LiteraryDevicesAnalyzer:
             result["rasa_vector"] = self._analyze_rasa()
 
         return result
+
+    def _ensure_nlp(self) -> Optional[Any]:
+        if self._nlp is not None:
+            return self._nlp
+        try:
+            if self.language == "en":
+                self._nlp = spacy.load(self._settings.spacy.english_model)
+            else:
+                self._nlp = spacy.load(self._settings.spacy.multilingual_model)
+        except Exception as e:
+            self._logger.warning(f"spaCy unavailable for literary devices: {e}")
+            self._nlp = None
+        return self._nlp
+
+    def _ensure_zero_shot(self):
+        if self._zero_shot is not None:
+            return self._zero_shot
+        try:
+            model_name = self._settings.transformer.generalist_zero_shot_model
+            self._zero_shot = pipeline("zero-shot-classification", model=model_name, device=-1)
+        except Exception as e:
+            self._logger.warning(f"Zero-shot pipeline unavailable: {e}")
+            self._zero_shot = None
+        return self._zero_shot
+
+    def _zero_shot_labels(self, text: str, labels: List[str], threshold: float = None) -> List[Tuple[str, float]]:
+        zs = self._ensure_zero_shot()
+        if not zs or not labels:
+            return []
+        if threshold is None:
+            thresholds = get_thresholds()
+            threshold = thresholds.get("zero_shot_min_confidence")
+            if threshold is None:
+                return []
+        try:
+            out = zs(text, labels)
+            results = []
+            for label, score in zip(out["labels"], out["scores"]):
+                if score >= threshold:
+                    results.append((label, float(score)))
+            return results
+        except Exception:
+            return []
+
+    def _detect_zero_shot_device(self, label: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        results: List[Dict[str, Any]] = []
+        for i, line in enumerate(self.lines):
+            scores = self._zero_shot_labels(line, [label])
+            if scores:
+                results.append({
+                    "line": line,
+                    "line_number": i + 1,
+                    "score": scores[0][1],
+                    "type": label
+                })
+        if limit is None:
+            top_k = self._rules.get("top_k")
+            return results[: int(top_k)] if top_k is not None else results
+        return results[:limit]
 
     # ==================== TROPES (Figures of Thought) ====================
 
@@ -64,362 +135,206 @@ class LiteraryDevicesAnalyzer:
 
     def _detect_metaphor(self) -> List[Dict[str, Any]]:
         """Detect metaphors"""
-        metaphors = []
-        metaphor_patterns = [
-            r'\b(\w+)\s+is\s+\w+',
-            r'\b(\w+)\s+was\s+\w+',
-            r'\b(\w+)\s+becomes?\s+\w+',
-            r'\blife\s+(is|was|becomes)\b',
-            r'\btime\s+(is|was|becomes)\b',
-            r'\bdeath\s+(is|was|becomes)\b',
-            r'\blove\s+(is|was|becomes)\b',
-            r'\bhope\s+(is|was|becomes)\b',
-            r'\bheart\s+(is|was|becomes)\b',
-            r'\bsoul\s+(is|was|becomes)\b'
-        ]
-
-        for i, line in enumerate(self.lines):
-            for pattern in metaphor_patterns:
-                matches = re.finditer(pattern, line.lower())
-                for match in matches:
+        metaphors: List[Dict[str, Any]] = []
+        nlp = self._ensure_nlp()
+        if nlp:
+            for i, line in enumerate(self.lines):
+                doc = nlp(line)
+                for sent in doc.sents:
+                    root = sent.root
+                    if root.lemma_ == "be":
+                        subj = next((t for t in sent if t.dep_ in {"nsubj", "nsubjpass"}), None)
+                        attr = next((t for t in sent if t.dep_ in {"attr", "oprd"}), None)
+                        if subj is not None and attr is not None:
+                            if subj.has_vector and attr.has_vector:
+                                sim = subj.similarity(attr)
+                                sim_threshold = self._rules.get("embedding_similarity_threshold")
+                                if sim_threshold is not None and sim < float(sim_threshold):
+                                    metaphors.append({
+                                        "line": line,
+                                        "line_number": i + 1,
+                                        "text": f"{subj.text} {root.text} {attr.text}",
+                                        "similarity": round(sim, 3),
+                                        "type": "metaphor"
+                                    })
+        if not metaphors:
+            for i, line in enumerate(self.lines):
+                labels = get_labels("literary_metaphor")
+                if not labels:
+                    continue
+                scores = self._zero_shot_labels(line, labels)
+                if scores:
                     metaphors.append({
                         "line": line,
                         "line_number": i + 1,
-                        "text": match.group(),
-                        "type": "direct_metaphor"
+                        "score": scores[0][1],
+                        "type": "metaphor"
                     })
-
-        return metaphors[:15]
+        top_k = self._rules.get("top_k")
+        return metaphors[: int(top_k)] if top_k is not None else metaphors
 
     def _detect_simile(self) -> List[Dict[str, Any]]:
         """Detect similes"""
         similes = []
-        patterns = [
-            r'\blike\s+\w+',
-            r'\bas\s+\w+\s+as\b',
-            r'\bas\s+\w+\b',
-            r'\bthan\s+\w+',
-            r'\bresembles?\b',
-            r'\bakin\s+to\b',
-            r'\bsimilar\s+to\b'
-        ]
-
         for i, line in enumerate(self.lines):
-            for pattern in patterns:
-                matches = re.finditer(pattern, line.lower())
-                for match in matches:
-                    similes.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "phrase": match.group(),
-                        "type": "simile"
-                    })
-
-        return similes[:15]
+            labels = get_labels("literary_simile")
+            if not labels:
+                continue
+            scores = self._zero_shot_labels(line, labels)
+            if scores:
+                similes.append({
+                    "line": line,
+                    "line_number": i + 1,
+                    "score": scores[0][1],
+                    "type": "simile"
+                })
+        top_k = self._rules.get("top_k")
+        return similes[: int(top_k)] if top_k is not None else similes
 
     def _detect_personification(self) -> List[Dict[str, Any]]:
         """Detect personification"""
         personifications = []
-        human_verbs = [
-            "whisper", "shout", "cry", "laugh", "smile", "speak", "talk", "think",
-            "feel", "know", "want", "love", "hate", "dance", "run", "walk", "fly",
-            "sleep", "wake", "sing", "weep", "mourn", "rejoice", "sigh", "gaze",
-            "beckon", "embrace", "kiss", "bless", "curse", "forgive", "remember"
-        ]
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return personifications
 
-        nature_words = ["wind", "storm", "rain", "thunder", "lightning", "sun", "moon",
-                       "star", "sky", "cloud", "river", "ocean", "sea", "mountain",
-                       "tree", "flower", "leaf", "branch", "root", "earth", "fire"]
+        human_verb_lexnames = set(self._rules.get("personification_verb_lexnames", []))
 
         for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for verb in human_verbs:
-                if verb in line_lower:
-                    # Check if subject is non-human
-                    for nature in nature_words:
-                        if nature in line_lower:
-                            personifications.append({
-                                "line": line,
-                                "line_number": i + 1,
-                                "human_verb": verb,
-                                "subject": nature,
-                                "type": "nature_personification"
-                            })
-
-        return personifications[:15]
+            doc = nlp(line)
+            for sent in doc.sents:
+                for token in sent:
+                    if token.pos_ != "VERB":
+                        continue
+                    lexnames = {s.lexname() for s in wn.synsets(token.lemma_, pos=wn.VERB)}
+                    if not (lexnames & human_verb_lexnames):
+                        continue
+                    subj = next((t for t in sent if t.dep_ in {"nsubj", "nsubjpass"}), None)
+                    if not subj:
+                        continue
+                    noun_syns = wn.synsets(subj.lemma_, pos=wn.NOUN)
+                    is_person = any(s.lexname() == "noun.person" for s in noun_syns)
+                    if not is_person:
+                        personifications.append({
+                            "line": line,
+                            "line_number": i + 1,
+                            "subject": subj.text,
+                            "verb": token.text,
+                            "type": "personification"
+                        })
+        top_k = self._rules.get("top_k")
+        return personifications[: int(top_k)] if top_k is not None else personifications
 
     def _detect_metonymy(self) -> List[Dict[str, Any]]:
         """Detect metonymy (substitution of associated term)"""
-        metonymies = []
-        metonymy_dict = {
-            "crown": "royalty/monarchy",
-            "throne": "monarchy/power",
-            "sword": "military/war",
-            "pen": "writing/literature",
-            "press": "media/newspapers",
-            "hollywood": "film industry",
-            "wall street": "finance/capitalism",
-            "the white house": "US presidency",
-            "blue blood": "nobility",
-            "silver screen": "cinema",
-            "heart": "emotions/love",
-            "head": "mind/intellect",
-            "hand": "worker/labor",
-            "brass": "military officers",
-            "bench": "judiciary",
-            "bar": "legal profession",
-            "pulpit": "clergy",
-            "scepter": "royal authority"
-        }
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for key, meaning in metonymy_dict.items():
-                if key in line_lower:
-                    metonymies.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "term": key,
-                        "represents": meaning,
-                        "type": "metonymy"
-                    })
-
-        return metonymies[:15]
+        return self._detect_zero_shot_device("metonymy")
 
     def _detect_synecdoche(self) -> List[Dict[str, Any]]:
         """Detect synecdoche (part for whole or whole for part)"""
         synecdoches = []
-        part_whole = {
-            "head": "person",
-            "hand": "worker/helper",
-            "foot": "soldier/traveler",
-            "heart": "emotions/courage",
-            "eye": "vision/attention",
-            "sail": "ship",
-            "wheels": "car/vehicle",
-            "glass": "mirror/drinking vessel",
-            "roof": "home/shelter",
-            "mouth": "person/speaker",
-            "tongue": "language/speech",
-            "ear": "attention/listening",
-            "face": "person",
-            "body": "person/corpse",
-            "blood": "family/lineage",
-            "flesh": "humanity/mortality"
-        }
-
         for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for part, whole in part_whole.items():
-                if re.search(rf'\b{part}s?\b', line_lower):
-                    synecdoches.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "part": part,
-                        "represents": whole,
-                        "type": "synecdoche"
-                    })
-
-        return synecdoches[:15]
+            tokens = re.findall(r"[A-Za-z']+", line.lower())
+            for word in tokens:
+                synsets = wn.synsets(word, pos=wn.NOUN)
+                for syn in synsets:
+                    holos = syn.member_holonyms() + syn.part_holonyms() + syn.substance_holonyms()
+                    meros = syn.member_meronyms() + syn.part_meronyms() + syn.substance_meronyms()
+                    if holos or meros:
+                        synecdoches.append({
+                            "line": line,
+                            "line_number": i + 1,
+                            "word": word,
+                            "holonyms": [h.name().split('.')[0] for h in holos][: int(self._rules.get("holonym_top_k"))] if self._rules.get("holonym_top_k") is not None else [h.name().split('.')[0] for h in holos],
+                            "meronyms": [m.name().split('.')[0] for m in meros][: int(self._rules.get("meronym_top_k"))] if self._rules.get("meronym_top_k") is not None else [m.name().split('.')[0] for m in meros],
+                            "type": "synecdoche"
+                        })
+                        break
+        top_k = self._rules.get("top_k")
+        return synecdoches[: int(top_k)] if top_k is not None else synecdoches
 
     def _detect_hyperbole(self) -> List[Dict[str, Any]]:
         """Detect hyperbole (exaggeration)"""
-        hyperboles = []
-        extreme_words = [
-            "million", "billion", "trillion", "zillion", "infinite", "eternal",
-            "forever", "never", "always", "enormous", "immense", "tremendous",
-            "colossal", "gigantic", "mammoth", "monstrous", "endless", "boundless",
-            "limitless", "countless", "myriad", "ocean", "sea", "mountain", "world",
-            "universe", "cosmos", "heaven", "hell", "death", "god", "devil"
-        ]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for word in extreme_words:
-                if word in line_lower:
-                    hyperboles.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "exaggeration": word,
-                        "type": "hyperbole"
-                    })
-
-        return hyperboles[:15]
+        return self._detect_zero_shot_device("hyperbole")
 
     def _detect_litotes(self) -> List[Dict[str, Any]]:
         """Detect litotes (understatement using negation)"""
         litotes = []
-        litotes_patterns = [
-            r'not\s+bad',
-            r'no\s+small',
-            r"isn't\s+bad",
-            r'not\s+uncommon',
-            r'not\s+unlike',
-            r'not\s+without',
-            r'no\s+little',
-            r'not\s+few',
-            r'not\s+least',
-            r'no\s+ordinary',
-            r'not\s+exactly',
-            r'less\s+than',
-            r'could\s+be\s+better',
-            r'pretty\s+good',
-            r'fair\s+enough'
-        ]
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return self._detect_zero_shot_device("litotes")
+
+        def antonyms(word: str) -> Set[str]:
+            ants = set()
+            for syn in wn.synsets(word):
+                for lemma in syn.lemmas():
+                    for ant in lemma.antonyms():
+                        ants.add(ant.name().replace("_", " "))
+            return ants
 
         for i, line in enumerate(self.lines):
-            for pattern in litotes_patterns:
-                if re.search(pattern, line.lower()):
-                    litotes.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "type": "understatement",
-                        "pattern": pattern
-                    })
-
-        return litotes[:15]
+            doc = nlp(line)
+            for token in doc:
+                if token.dep_ == "neg" and token.head is not None:
+                    head = token.head
+                    ant = antonyms(head.lemma_.lower())
+                    if ant:
+                        litotes.append({
+                            "line": line,
+                            "line_number": i + 1,
+                            "negated_head": head.text,
+                            "antonyms": list(ant)[: int(self._rules.get("antonym_top_k"))] if self._rules.get("antonym_top_k") is not None else list(ant),
+                            "type": "litotes"
+                        })
+                        break
+        if not litotes:
+            return self._detect_zero_shot_device("litotes")
+        top_k = self._rules.get("top_k")
+        return litotes[: int(top_k)] if top_k is not None else litotes
 
     def _detect_irony(self) -> List[Dict[str, Any]]:
         """Detect irony markers"""
-        ironies = []
-        irony_markers = [
-            "little did", "ironically", "amazingly", "of course", "clearly",
-            "naturally", "what a", "how", "oh", "alas", "lo", "behold",
-            "would you believe", "as if", "yeah right", "sure", "right"
-        ]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for marker in irony_markers:
-                if marker in line_lower:
-                    ironies.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "marker": marker,
-                        "type": "verbal_irony"
-                    })
-
-        return ironies[:15]
+        return self._detect_zero_shot_device("irony")
 
     def _detect_oxymoron(self) -> List[Dict[str, Any]]:
         """Detect oxymoron (contradictory terms)"""
-        oxymorons = []
-        oxymora = [
-            "deafening silence", "bitter sweet", "living dead", "pretty ugly",
-            "small fortune", "free gift", "open secret", "alone together",
-            "seriously funny", "original copy", "virtual reality", "act naturally",
-            "found missing", "clearly confused", "same difference", "real fake",
-            "controlled chaos", "organized mess", "happy sadness", "cruel kindness",
-            "dark light", "cold fire", "dry water", "heavy lightness", "wise fool"
-        ]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for ox in oxymora:
-                if ox in line_lower:
-                    oxymorons.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "oxymoron": ox,
-                        "type": "oxymoron"
-                    })
-
-        return oxymorons[:15]
+        return self._detect_zero_shot_device("oxymoron")
 
     def _detect_paradox(self) -> List[Dict[str, Any]]:
         """Detect paradox (seemingly contradictory truth)"""
-        paradoxes = []
-        paradox_phrases = [
-            "less is more", "more is less", "everything must change",
-            "change is constant", "the beginning of the end", "endless beginning",
-            "I know nothing", "the only truth is lies", "silence speaks",
-            "alone together", "living death", "dying to live", "lost found",
-            "wise ignorance", "ignorant wisdom", "strong weakness", "weak strength"
-        ]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for phrase in paradox_phrases:
-                if phrase in line_lower:
-                    paradoxes.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "paradox": phrase,
-                        "type": "paradox"
-                    })
-
-        return paradoxes[:15]
+        return self._detect_zero_shot_device("paradox")
 
     def _detect_apostrophe(self) -> List[Dict[str, Any]]:
         """Detect apostrophe (addressing absent/abstract entities)"""
         apostrophes = []
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return self._detect_zero_shot_device("apostrophe")
 
         for i, line in enumerate(self.lines):
-            if re.match(r'^(O|Oh|Hey|Dear|Hail|Welcome)\s+\w+', line, re.IGNORECASE):
-                apostrophes.append({
-                    "line": line,
-                    "line_number": i + 1,
-                    "type": "apostrophe"
-                })
-            # Also detect direct address
-            elif re.search(r'\bO\s+\w+\b', line, re.IGNORECASE):
-                apostrophes.append({
-                    "line": line,
-                    "line_number": i + 1,
-                    "type": "apostrophe"
-                })
+            doc = nlp(line)
+            for sent in doc.sents:
+                vocative = any(t.dep_ == "vocative" for t in sent)
+                starts_intj = len(sent) > 1 and sent[0].pos_ == "INTJ" and sent[1].pos_ in {"PROPN", "NOUN"}
+                if vocative or starts_intj:
+                    apostrophes.append({
+                        "line": line,
+                        "line_number": i + 1,
+                        "type": "apostrophe"
+                    })
+                    break
 
-        return apostrophes[:15]
+        if not apostrophes:
+            return self._detect_zero_shot_device("apostrophe")
+        top_k = self._rules.get("top_k")
+        return apostrophes[: int(top_k)] if top_k is not None else apostrophes
 
     def _detect_synesthesia(self) -> List[Dict[str, Any]]:
         """Detect synesthesia (mixing senses)"""
-        synesthesias = []
-        syn_phrases = [
-            "loud color", "loud colors", "sweet music", "sweet sound",
-            "bitter cold", "soft sound", "warm voice", "cold voice",
-            "colorful sound", "musical color", "bright sound", "dark taste",
-            "smooth taste", "rough sound", "sharp taste", "heavy color",
-            "light sound", "quiet color", "noisy color", "fragrant color"
-        ]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for phrase in syn_phrases:
-                if phrase in line_lower:
-                    synesthesias.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "phrase": phrase,
-                        "type": "synesthesia"
-                    })
-
-        return synesthesias[:15]
+        return self._detect_zero_shot_device("synesthesia")
 
     def _detect_euphemism(self) -> List[Dict[str, Any]]:
         """Detect euphemisms"""
-        euphemisms = []
-        euphemism_dict = {
-            "passed away": "died", "departed": "died", "passed on": "died",
-            "let go": "fired", "between jobs": "unemployed", "downsized": "fired",
-            "expecting": "pregnant", "in a better place": "dead", "sleeping": "dead",
-            "adult beverages": "alcohol", "pre-owned": "used", "collateral damage": "civilian casualties",
-            "passed over": "ignored", "correctional facility": "prison", "put to sleep": "euthanized",
-            "friendly fire": "accidental attack on allies"
-        }
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for eu, meaning in euphemism_dict.items():
-                if eu in line_lower:
-                    euphemisms.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "euphemism": eu,
-                        "meaning": meaning,
-                        "type": "euphemism"
-                    })
-
-        return euphemisms[:15]
+        return self._detect_zero_shot_device("euphemism")
 
     # ==================== SCHEMES (Figures of Sound/Structure) ====================
 
@@ -452,7 +367,10 @@ class LiteraryDevicesAnalyzer:
             if len(words) >= 2:
                 first_letters = [w[0].lower() for w in words if w and w[0].isalpha()]
                 for j in range(len(first_letters) - 1):
-                    if first_letters[j] == first_letters[j+1] and first_letters[j] in 'bcdfghjklmnpqrstvwxyz':
+                    consonants = self._rules.get("alliteration_consonants")
+                    if consonants is None:
+                        continue
+                    if first_letters[j] == first_letters[j+1] and first_letters[j] in consonants:
                         alliterations.append({
                             "line": line,
                             "line_number": i + 1,
@@ -461,7 +379,8 @@ class LiteraryDevicesAnalyzer:
                             "type": "alliteration"
                         })
 
-        return alliterations[:15]
+        top_k = self._rules.get("top_k")
+        return alliterations[: int(top_k)] if top_k is not None else alliterations
 
     def _detect_anaphora(self) -> List[Dict[str, Any]]:
         """Detect anaphora (repetition at beginning)"""
@@ -471,14 +390,18 @@ class LiteraryDevicesAnalyzer:
             words1 = self.lines[i].lower().split()
             words2 = self.lines[i+1].lower().split()
 
-            if words1 and words2 and words1[0] == words2[0] and len(words1[0]) > 2:
+            min_len = self._rules.get("min_word_length")
+            if min_len is None:
+                continue
+            if words1 and words2 and words1[0] == words2[0] and len(words1[0]) >= int(min_len):
                 anaphoras.append({
                     "lines": f"{i+1}-{i+2}",
                     "repeated_word": words1[0],
                     "type": "anaphora"
                 })
 
-        return anaphoras[:15]
+        top_k = self._rules.get("top_k")
+        return anaphoras[: int(top_k)] if top_k is not None else anaphoras
 
     def _detect_epistrophe(self) -> List[Dict[str, Any]]:
         """Detect epistrophe (repetition at end)"""
@@ -488,14 +411,18 @@ class LiteraryDevicesAnalyzer:
             words1 = self.lines[i].lower().split()
             words2 = self.lines[i+1].lower().split()
 
-            if words1 and words2 and words1[-1] == words2[-1] and len(words1[-1]) > 2:
+            min_len = self._rules.get("min_word_length")
+            if min_len is None:
+                continue
+            if words1 and words2 and words1[-1] == words2[-1] and len(words1[-1]) >= int(min_len):
                 epistrophes.append({
                     "lines": f"{i+1}-{i+2}",
                     "repeated_word": words1[-1],
                     "type": "epistrophe"
                 })
 
-        return epistrophes[:15]
+        top_k = self._rules.get("top_k")
+        return epistrophes[: int(top_k)] if top_k is not None else epistrophes
 
     def _detect_parallelism(self) -> List[Dict[str, Any]]:
         """Detect parallelism (similar structure)"""
@@ -505,7 +432,10 @@ class LiteraryDevicesAnalyzer:
             words1 = self.lines[i].split()
             words2 = self.lines[i+1].split()
 
-            if len(words1) == len(words2) and len(words1) > 2:
+            min_words = self._rules.get("min_words_per_line")
+            if min_words is None:
+                continue
+            if len(words1) == len(words2) and len(words1) >= int(min_words):
                 parallelisms.append({
                     "lines": f"{i+1}-{i+2}",
                     "structure": "parallel",
@@ -513,73 +443,102 @@ class LiteraryDevicesAnalyzer:
                     "type": "parallelism"
                 })
 
-        return parallelisms[:15]
+        top_k = self._rules.get("top_k")
+        return parallelisms[: int(top_k)] if top_k is not None else parallelisms
 
     def _detect_antithesis(self) -> List[Dict[str, Any]]:
         """Detect antithesis (contrasting ideas in parallel)"""
         antitheses = []
-        contrast_pairs = [
-            ("good", "bad"), ("love", "hate"), ("light", "dark"), ("life", "death"),
-            ("hope", "fear"), ("joy", "sorrow"), ("peace", "war"), ("hot", "cold"),
-            ("fast", "slow"), ("big", "small"), ("rich", "poor"), ("strong", "weak"),
-            ("high", "low"), ("up", "down"), ("in", "out"), ("front", "back"),
-            ("beginning", "end"), ("birth", "death"), ("day", "night"), ("sun", "moon"),
-            ("heaven", "hell"), ("god", "devil"), ("angel", "demon"), ("sweet", "bitter")
-        ]
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return self._detect_zero_shot_device("antithesis")
 
         for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for w1, w2 in contrast_pairs:
-                if w1 in line_lower and w2 in line_lower:
-                    antitheses.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "pair": f"{w1}-{w2}",
-                        "type": "antithesis"
-                    })
+            doc = nlp(line)
+            lemmas = {t.lemma_.lower() for t in doc if t.is_alpha}
+            pairs = []
+            for lemma in lemmas:
+                for syn in wn.synsets(lemma):
+                    for l in syn.lemmas():
+                        for ant in l.antonyms():
+                            ant_lemma = ant.name().replace("_", " ")
+                            if ant_lemma in lemmas:
+                                pairs.append((lemma, ant_lemma))
+            if pairs:
+                pair_limit = self._rules.get("antithesis_pair_limit")
+                antitheses.append({
+                    "line": line,
+                    "line_number": i + 1,
+                    "pairs": pairs[: int(pair_limit)] if pair_limit is not None else pairs,
+                    "type": "antithesis"
+                })
 
-        return antitheses[:15]
+        if not antitheses:
+            return self._detect_zero_shot_device("antithesis")
+        top_k = self._rules.get("top_k")
+        return antitheses[: int(top_k)] if top_k is not None else antitheses
 
     def _detect_chiasmus(self) -> List[Dict[str, Any]]:
         """Detect chiasmus (ABBA structure)"""
         chiasmi = []
-        # Simplified detection - looks for reversed word patterns
-        common_chiasmus = [
-            ("ask not", "not ask"), ("country you", "you country"),
-            ("mind body", "body mind"), ("heart soul", "soul heart")
-        ]
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return self._detect_zero_shot_device("chiasmus")
 
         for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for w1, w2 in common_chiasmus:
-                if w1 in line_lower and w2 in line_lower:
+            doc = nlp(line)
+            seq = [t.lemma_.lower() for t in doc if t.is_alpha and not t.is_stop]
+            window = int(self._rules.get("chiasmus_window", 4))
+            min_len = self._rules.get("min_word_length")
+            for j in range(len(seq) - (window - 1)):
+                chunk = seq[j:j + window]
+                if len(chunk) != window:
+                    continue
+                a, b, c, d = chunk[:4]
+                if min_len is None:
+                    continue
+                if a == d and b == c and len(a) >= int(min_len) and len(b) >= int(min_len):
                     chiasmi.append({
                         "line": line,
                         "line_number": i + 1,
-                        "pattern": f"{w1}...{w2}",
+                        "pattern": f"{a} {b} ... {c} {d}",
                         "type": "chiasmus"
                     })
-
-        return chiasmi[:15]
+                    break
+        if not chiasmi:
+            return self._detect_zero_shot_device("chiasmus")
+        top_k = self._rules.get("top_k")
+        return chiasmi[: int(top_k)] if top_k is not None else chiasmi
 
     def _detect_zeugma(self) -> List[Dict[str, Any]]:
         """Detect zeugma (one word governing multiple)"""
         zeugmas = []
-        # Simplified detection
-        zeugma_verbs = ["lost", "broke", "raised", "lowered", "opened", "closed"]
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return self._detect_zero_shot_device("zeugma")
 
         for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for verb in zeugma_verbs:
-                if verb in line_lower and line_lower.count("and") >= 1:
+            doc = nlp(line)
+            for token in doc:
+                if token.pos_ != "VERB":
+                    continue
+                objects = [c for c in token.children if c.dep_ in {"dobj", "obj", "iobj", "pobj"}]
+                min_objs = self._rules.get("zeugma_min_objects")
+                if min_objs is None:
+                    continue
+                if len(objects) >= int(min_objs):
                     zeugmas.append({
                         "line": line,
                         "line_number": i + 1,
-                        "governing_word": verb,
+                        "governing_word": token.text,
+                        "objects": [o.text for o in objects[: int(self._rules.get("zeugma_max_objects", 3))]],
                         "type": "zeugma"
                     })
-
-        return zeugmas[:15]
+                    break
+        if not zeugmas:
+            return self._detect_zero_shot_device("zeugma")
+        top_k = self._rules.get("top_k")
+        return zeugmas[: int(top_k)] if top_k is not None else zeugmas
 
     def _detect_asyndeton(self) -> List[Dict[str, Any]]:
         """Detect asyndeton (omission of conjunctions)"""
@@ -587,15 +546,20 @@ class LiteraryDevicesAnalyzer:
         # Look for lists without conjunctions
         for i, line in enumerate(self.lines):
             words = line.split()
-            if len(words) >= 4 and "and" not in line.lower() and "or" not in line.lower():
-                if line.count(",") >= 2:
+            min_words = self._rules.get("asyndeton_min_words")
+            min_commas = self._rules.get("asyndeton_min_commas")
+            if min_words is None or min_commas is None:
+                continue
+            if len(words) >= int(min_words) and "and" not in line.lower() and "or" not in line.lower():
+                if line.count(",") >= int(min_commas):
                     asyndetons.append({
                         "line": line,
                         "line_number": i + 1,
                         "type": "asyndeton"
                     })
 
-        return asyndetons[:15]
+        top_k = self._rules.get("top_k")
+        return asyndetons[: int(top_k)] if top_k is not None else asyndetons
 
     def _detect_polysyndeton(self) -> List[Dict[str, Any]]:
         """Detect polysyndeton (excessive conjunctions)"""
@@ -603,7 +567,10 @@ class LiteraryDevicesAnalyzer:
 
         for i, line in enumerate(self.lines):
             and_count = line.lower().count(" and ")
-            if and_count >= 2:
+            min_and = self._rules.get("polysyndeton_min_and")
+            if min_and is None:
+                continue
+            if and_count >= int(min_and):
                 polysyndetons.append({
                     "line": line,
                     "line_number": i + 1,
@@ -611,7 +578,8 @@ class LiteraryDevicesAnalyzer:
                     "type": "polysyndeton"
                 })
 
-        return polysyndetons[:15]
+        top_k = self._rules.get("top_k")
+        return polysyndetons[: int(top_k)] if top_k is not None else polysyndetons
 
     def _detect_symploce(self) -> List[Dict[str, Any]]:
         """Detect symploce (anaphora + epistrophe)"""
@@ -619,7 +587,10 @@ class LiteraryDevicesAnalyzer:
         for i in range(len(self.lines) - 1):
             words1 = self.lines[i].lower().split()
             words2 = self.lines[i+1].lower().split()
-            if len(words1) > 2 and len(words2) > 2:
+            min_words = self._rules.get("min_words_per_line")
+            if min_words is None:
+                continue
+            if len(words1) >= int(min_words) and len(words2) >= int(min_words):
                 if words1[0] == words2[0] and words1[-1] == words2[-1]:
                     symploces.append({
                         "lines": f"{i+1}-{i+2}",
@@ -627,7 +598,8 @@ class LiteraryDevicesAnalyzer:
                         "repeated_end": words1[-1],
                         "type": "symploce"
                     })
-        return symploces[:15]
+        top_k = self._rules.get("top_k")
+        return symploces[: int(top_k)] if top_k is not None else symploces
 
     def _detect_anadiplosis(self) -> List[Dict[str, Any]]:
         """Detect anadiplosis (repetition of end of line at start of next)"""
@@ -635,50 +607,78 @@ class LiteraryDevicesAnalyzer:
         for i in range(len(self.lines) - 1):
             words1 = self.lines[i].lower().split()
             words2 = self.lines[i+1].lower().split()
-            if words1 and words2 and words1[-1] == words2[0] and len(words1[-1]) > 2:
+            min_len = self._rules.get("min_word_length")
+            if min_len is None:
+                continue
+            if words1 and words2 and words1[-1] == words2[0] and len(words1[-1]) >= int(min_len):
                 anadiplosis.append({
                     "lines": f"{i+1}-{i+2}",
                     "repeated_word": words1[-1],
                     "type": "anadiplosis"
                 })
-        return anadiplosis[:15]
+        top_k = self._rules.get("top_k")
+        return anadiplosis[: int(top_k)] if top_k is not None else anadiplosis
 
     def _detect_climax(self) -> List[Dict[str, Any]]:
         """Detect climax (words in increasing order of importance/intensity)"""
         climaxes = []
-        climax_patterns = [
-            r'\b(good).*?(better).*?(best)\b',
-            r'\b(small).*?(medium).*?(large)\b',
-            r'\b(smile).*?(laugh).*?(roar)\b',
-            r'\b(walk).*?(run).*?(fly)\b'
-        ]
+        try:
+            import syllables
+        except Exception:
+            return self._detect_zero_shot_device("climax")
+
         for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for pattern in climax_patterns:
-                if re.search(pattern, line_lower):
-                    climaxes.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "type": "climax"
-                    })
-        return climaxes[:15]
+            parts = [p.strip() for p in re.split(r",|;| and | or ", line) if p.strip()]
+            min_parts = self._rules.get("climax_min_parts")
+            max_parts = self._rules.get("climax_max_parts")
+            if min_parts is None or max_parts is None:
+                continue
+            if len(parts) < int(min_parts):
+                continue
+            scores = []
+            for part in parts[: int(max_parts)]:
+                words = re.findall(r"[A-Za-z']+", part.lower())
+                if not words:
+                    continue
+                syl = sum(syllables.syllable(w) for w in words)
+                scores.append(syl / max(1, len(words)))
+            min_scores = self._rules.get("climax_min_scores")
+            if min_scores is None:
+                continue
+            if len(scores) >= int(min_scores) and all(scores[i] < scores[i+1] for i in range(len(scores)-1)):
+                climaxes.append({
+                    "line": line,
+                    "line_number": i + 1,
+                    "intensity_sequence": [round(s, 2) for s in scores[: int(self._rules.get("climax_intensity_top_k"))]] if self._rules.get("climax_intensity_top_k") is not None else [round(s, 2) for s in scores],
+                    "type": "climax"
+                })
+        if not climaxes:
+            return self._detect_zero_shot_device("climax")
+        top_k = self._rules.get("top_k")
+        return climaxes[: int(top_k)] if top_k is not None else climaxes
 
     def _detect_antimetabole(self) -> List[Dict[str, Any]]:
         """Detect antimetabole (repetition in reverse order)"""
         antimetaboles = []
+        window = self._rules.get("antimetabole_window")
+        min_len = self._rules.get("min_word_length")
+        if window is None or min_len is None:
+            return antimetaboles
+        window = int(window)
         for i, line in enumerate(self.lines):
             words = line.lower().split()
-            if len(words) >= 4:
+            if len(words) >= window:
                 # Basic check for A B ... B A pattern
-                for j in range(len(words) - 3):
-                    if words[j] == words[j+3] and words[j+1] == words[j+2] and len(words[j]) > 2:
+                for j in range(len(words) - (window - 1)):
+                    if words[j] == words[j+window-1] and words[j+1] == words[j+2] and len(words[j]) >= int(min_len):
                         antimetaboles.append({
                             "line": line,
                             "line_number": i + 1,
-                            "pattern": f"{words[j]} {words[j+1]} ... {words[j+2]} {words[j+3]}",
+                            "pattern": f"{words[j]} {words[j+1]} ... {words[j+2]} {words[j+window-1]}",
                             "type": "antimetabole"
                         })
-        return antimetaboles[:15]
+        top_k = self._rules.get("top_k")
+        return antimetaboles[: int(top_k)] if top_k is not None else antimetaboles
 
     def _detect_isocolon(self) -> List[Dict[str, Any]]:
         """Detect isocolon (parallel structures of same length)"""
@@ -686,7 +686,10 @@ class LiteraryDevicesAnalyzer:
         for i in range(len(self.lines) - 1):
             words1 = self.lines[i].split()
             words2 = self.lines[i+1].split()
-            if len(words1) == len(words2) and len(words1) >= 3:
+            min_words = self._rules.get("min_words_per_line")
+            if min_words is None:
+                continue
+            if len(words1) == len(words2) and len(words1) >= int(min_words):
                 # Checking syllable count matching as a proxy
                 try:
                     import syllables
@@ -701,7 +704,8 @@ class LiteraryDevicesAnalyzer:
                         })
                 except:
                     pass
-        return isocolons[:15]
+        top_k = self._rules.get("top_k")
+        return isocolons[: int(top_k)] if top_k is not None else isocolons
 
     def _detect_ellipsis(self) -> List[Dict[str, Any]]:
         """Detect ellipsis (omission of words)"""
@@ -713,7 +717,8 @@ class LiteraryDevicesAnalyzer:
                     "line_number": i + 1,
                     "type": "ellipsis"
                 })
-        return ellipses[:15]
+        top_k = self._rules.get("top_k")
+        return ellipses[: int(top_k)] if top_k is not None else ellipses
 
     # ==================== IMAGERY ====================
 
@@ -731,82 +736,45 @@ class LiteraryDevicesAnalyzer:
 
     def _detect_visual_imagery(self) -> List[Dict[str, Any]]:
         """Visual imagery (sight)"""
-        visual_words = [
-            "see", "saw", "look", "looking", "watch", "bright", "dark", "light",
-            "shadow", "color", "red", "blue", "green", "golden", "shining", "gleaming",
-            "sun", "moon", "star", "sky", "cloud", "rainbow", "sparkle", "glitter",
-            "glow", "beam", "ray", "flash", "glimmer", "shimmer", "dazzle", "blind"
-        ]
-        return self._detect_imagery_by_words(visual_words, "visual")
+        return self._detect_imagery_by_zero_shot("visual imagery")
 
     def _detect_auditory_imagery(self) -> List[Dict[str, Any]]:
         """Auditory imagery (sound)"""
-        auditory_words = [
-            "hear", "heard", "listen", "sound", "loud", "quiet", "silent", "whisper",
-            "thunder", "rumble", "ring", "voice", "music", "song", "cry", "shout",
-            "laugh", "scream", "shriek", "roar", "howl", "buzz", "hiss", "clang",
-            "crash", "bang", "pop", "splash", "drip", "hum", "chirp", "tweet"
-        ]
-        return self._detect_imagery_by_words(auditory_words, "auditory")
+        return self._detect_imagery_by_zero_shot("auditory imagery")
 
     def _detect_tactile_imagery(self) -> List[Dict[str, Any]]:
         """Tactile imagery (touch)"""
-        tactile_words = [
-            "touch", "feel", "warm", "cold", "hot", "cool", "rough", "smooth",
-            "soft", "hard", "sharp", "sticky", "dry", "wet", "tight", "loose",
-            "prickle", "tingle", "burn", "freeze", "ache", "pain", "pressure"
-        ]
-        return self._detect_imagery_by_words(tactile_words, "tactile")
+        return self._detect_imagery_by_zero_shot("tactile imagery")
 
     def _detect_gustatory_imagery(self) -> List[Dict[str, Any]]:
         """Gustatory imagery (taste)"""
-        gustatory_words = [
-            "taste", "sweet", "sour", "bitter", "salty", "spicy", "delicious",
-            "yummy", "flavor", "savory", "bland", "tender", "juicy", "tangy",
-            "zesty", "rich", "creamy", "crispy", "crunchy"
-        ]
-        return self._detect_imagery_by_words(gustatory_words, "gustatory")
+        return self._detect_imagery_by_zero_shot("gustatory imagery")
 
     def _detect_olfactory_imagery(self) -> List[Dict[str, Any]]:
         """Olfactory imagery (smell)"""
-        olfactory_words = [
-            "smell", "scent", "fragrant", "stink", "foul", "fresh", "sweet",
-            "perfume", "flower", "rose", "aroma", "incense", "smoke", "rain",
-            "musty", "pungent", "acrid", "earthy", "musky", "floral"
-        ]
-        return self._detect_imagery_by_words(olfactory_words, "olfactory")
+        return self._detect_imagery_by_zero_shot("olfactory imagery")
 
     def _detect_kinesthetic_imagery(self) -> List[Dict[str, Any]]:
         """Kinesthetic imagery (movement)"""
-        kinesthetic_words = [
-            "move", "run", "walk", "jump", "fly", "swim", "dance", "spin", "turn",
-            "twist", "flow", "drift", "glide", "slide", "creep", "climb", "rise",
-            "fall", "swing", "sway", "rock", "roll", "tumble", "soar", "dive"
-        ]
-        return self._detect_imagery_by_words(kinesthetic_words, "kinesthetic")
+        return self._detect_imagery_by_zero_shot("kinesthetic imagery")
 
     def _detect_organic_imagery(self) -> List[Dict[str, Any]]:
         """Organic imagery (internal sensations)"""
-        organic_words = [
-            "hunger", "thirst", "tired", "exhausted", "nausea", "dizzy", "faint",
-            "weak", "energy", "fatigue", "ache", "pain", "comfort", "ease",
-            "suffocate", "breathe", "heartbeat", "pulse", "chill", "fever"
-        ]
-        return self._detect_imagery_by_words(organic_words, "organic")
+        return self._detect_imagery_by_zero_shot("organic imagery")
 
-    def _detect_imagery_by_words(self, word_list: List[str], imagery_type: str) -> List[Dict[str, Any]]:
-        """Helper function to detect imagery by word list"""
+    def _detect_imagery_by_zero_shot(self, label: str) -> List[Dict[str, Any]]:
         imagery = []
         for i, line in enumerate(self.lines):
-            found = [w for w in word_list if w in line.lower()]
-            if found:
+            scores = self._zero_shot_labels(line, [label])
+            if scores:
                 imagery.append({
                     "line": line,
                     "line_number": i + 1,
-                    "imagery_words": found[:5],
-                    "type": imagery_type
+                    "score": scores[0][1],
+                    "type": label
                 })
-        return imagery[:15]
+        top_k = self._rules.get("top_k")
+        return imagery[: int(top_k)] if top_k is not None else imagery
 
     # ==================== SANSKRIT ALANKAR ====================
 
@@ -830,180 +798,141 @@ class LiteraryDevicesAnalyzer:
         Yamaka: Repetition of same syllables/words with different meanings
         Example: कर कर (doer/hands), हर हर (Shiva/remove)
         """
-        yamakas = []
-        # Common Yamaka words in Hindi/Sanskrit
-        yamaka_words = ["कर", "हर", "रवि", "शशि", "नीर", "वारि", "अम्बु", "जल"]
+        yamakas: List[Dict[str, Any]] = []
+
+        def polysemy_count(word: str) -> int:
+            if self.language == "en":
+                try:
+                    from nltk.corpus import wordnet as wn
+                    return len(wn.synsets(word))
+                except Exception:
+                    return 0
+            try:
+                from pyiwn import IndoWordNet, Language
+                lang_map = {
+                    "hi": Language.HINDI,
+                    "gu": Language.GUJARATI,
+                    "ur": Language.URDU,
+                    "mr": Language.MARATHI,
+                    "bn": Language.BENGALI,
+                    "sa": Language.SANSKRIT,
+                }
+                iwn = IndoWordNet(lang=lang_map.get(self.language, Language.HINDI))
+                return len(iwn.synsets(word))
+            except Exception:
+                return 0
 
         for i, line in enumerate(self.lines):
-            for word in yamaka_words:
-                count = line.count(word)
-                if count >= 2:
+            tokens = re.findall(r"[\w\u0900-\u097F\u0600-\u06FF]+", line)
+            counts = Counter(tokens)
+            for word, count in counts.items():
+                if count >= 2 and polysemy_count(word) >= 2:
+                    splits = count * (count - 1) // 2
                     yamakas.append({
                         "line": line,
                         "line_number": i + 1,
                         "repeated_word": word,
                         "count": count,
+                        "valid_splits": splits,
+                        "polysemy": polysemy_count(word),
                         "type": "yamaka"
                     })
 
-        return yamakas[:10]
+        top_k = self._rules.get("yamaka_top_k")
+        return yamakas[: int(top_k)] if top_k is not None else yamakas
 
     def _detect_shlesha(self) -> List[Dict[str, Any]]:
         """
         Shlesha: Pun/double meaning (one word, multiple meanings)
         Example: सारा (entire/essence), रस (juice/essence/emotion)
         """
-        shleshas = []
-        # Words with multiple meanings
-        shlesha_words = {
-            "सारा": ["entire", "essence"],
-            "रस": ["juice", "essence", "emotion"],
-            "नीर": ["water", "arrow"],
-            "अलि": ["bee", "friend"],
-            "हरि": ["Vishnu", "lion", "green"],
-            "गिरा": ["speech", "mountain"]
-        }
+        shleshas: List[Dict[str, Any]] = []
 
-        for i, line in enumerate(self.lines):
-            for word, meanings in shlesha_words.items():
-                if word in line:
-                    shleshas.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "word": word,
-                        "meanings": meanings,
-                        "type": "shlesha"
-                    })
+        if self.language == "en":
+            try:
+                from nltk.corpus import wordnet as wn
+                for i, line in enumerate(self.lines):
+                    tokens = re.findall(r"[A-Za-z']+", line.lower())
+                    for word in tokens:
+                        synsets = wn.synsets(word)
+                        if len(synsets) >= 2:
+                            meanings = [s.definition() for s in synsets[: int(self._rules.get("shlesha_meaning_top_k"))]] if self._rules.get("shlesha_meaning_top_k") is not None else [s.definition() for s in synsets]
+                            shleshas.append({
+                                "line": line,
+                                "line_number": i + 1,
+                                "word": word,
+                                "meanings": meanings,
+                                "type": "shlesha"
+                            })
+            except Exception:
+                pass
+            top_k = self._rules.get("shlesha_top_k")
+            return shleshas[: int(top_k)] if top_k is not None else shleshas
 
-        return shleshas[:10]
+        try:
+            from pyiwn import IndoWordNet, Language
+            lang_map = {
+                "hi": Language.HINDI,
+                "gu": Language.GUJARATI,
+                "ur": Language.URDU,
+                "mr": Language.MARATHI,
+                "bn": Language.BENGALI,
+                "sa": Language.SANSKRIT,
+            }
+            iwn = IndoWordNet(lang=lang_map.get(self.language, Language.HINDI))
+            for i, line in enumerate(self.lines):
+                tokens = re.findall(r"[\w\u0900-\u097F\u0600-\u06FF]+", line)
+                for word in tokens:
+                    synsets = iwn.synsets(word)
+                    if len(synsets) >= 2:
+                        meanings = [s.gloss() for s in synsets[: int(self._rules.get("shlesha_meaning_top_k"))] if getattr(s, "gloss", None)] if self._rules.get("shlesha_meaning_top_k") is not None else [s.gloss() for s in synsets if getattr(s, "gloss", None)]
+                        shleshas.append({
+                            "line": line,
+                            "line_number": i + 1,
+                            "word": word,
+                            "meanings": meanings,
+                            "type": "shlesha"
+                        })
+        except Exception:
+            pass
+
+        top_k = self._rules.get("shlesha_top_k")
+        return shleshas[: int(top_k)] if top_k is not None else shleshas
 
     def _detect_utpreksha(self) -> List[Dict[str, Any]]:
         """
         Utpreksha: Imaginative comparison/fanciful identification
         Example: "Her face is the moon"
         """
-        utprekshas = []
-        # Common imaginative comparisons
-        utpreksha_patterns = [
-            r'face.*moon', r'eyes.*star', r'hair.*night', r'lips.*rose',
-            r'cheek.*rose', r'walk.*swan', r'voice.*cuckoo', r'waist.*lightning'
-        ]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for pattern in utpreksha_patterns:
-                if re.search(pattern, line_lower):
-                    utprekshas.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "type": "utpreksha"
-                    })
-
-        return utprekshas[:10]
+        return self._detect_zero_shot_device("utpreksha", limit=10)
 
     def _detect_vibhavana(self) -> List[Dict[str, Any]]:
         """
         Vibhavana: Effect described without cause (or cause without effect)
         Example: "Tears flow" (without saying why)
         """
-        vibhavanas = []
-        effect_words = ["tears", "weep", "cry", "tremble", "blush", "faint", "swoon"]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for word in effect_words:
-                if word in line_lower:
-                    # Check if cause is NOT mentioned
-                    if not any(cause in line_lower for cause in ["because", "since", "for", "why"]):
-                        vibhavanas.append({
-                            "line": line,
-                            "line_number": i + 1,
-                            "effect": word,
-                            "type": "vibhavana"
-                        })
-
-        return vibhavanas[:10]
+        return self._detect_zero_shot_device("vibhavana", limit=10)
 
     def _detect_vishesokti(self) -> List[Dict[str, Any]]:
         """
         Vishesokti: Contradiction of natural sequence
         Example: "Fire burns cold"
         """
-        vishesoktis = []
-        contradictions = [
-            ("fire", "cold"), ("ice", "hot"), ("sun", "night"), ("moon", "heat"),
-            ("water", "dry"), ("stone", "soft"), ("feather", "heavy")
-        ]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for w1, w2 in contradictions:
-                if w1 in line_lower and w2 in line_lower:
-                    vishesoktis.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "contradiction": f"{w1}-{w2}",
-                        "type": "vishesokti"
-                    })
-
-        return vishesoktis[:10]
+        return self._detect_zero_shot_device("vishesokti", limit=10)
 
     def _detect_rupak(self) -> List[Dict[str, Any]]:
         """
         Rupak: Metaphor (direct identification)
         Example: "She is a goddess"
         """
-        rupaks = []
-        # Common metaphorical identifications
-        metaphor_patterns = [
-            r'is\s+a\s+(goddess|god|angel|moon|star|flower)',
-            r'was\s+a\s+(goddess|god|angel|moon|star)',
-            r'are\s+(goddesses|gods|angels|flowers)'
-        ]
-
-        for i, line in enumerate(self.lines):
-            for pattern in metaphor_patterns:
-                matches = re.finditer(pattern, line.lower())
-                for match in matches:
-                    rupaks.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "metaphor": match.group(),
-                        "type": "rupak"
-                    })
-
-        return rupaks[:10]
+        return self._detect_zero_shot_device("rupak", limit=10)
 
     def _detect_upama(self) -> List[Dict[str, Any]]:
         """
         Upama: Simile (comparison using like/as)
         Example: "Fair as a star"
         """
-        upamas = []
-        simile_patterns = [
-            r'\blike\s+\w+',
-            r'\bas\s+\w+\s+as\b',
-            r'\bजैसा\b',
-            r'\bसा\b',
-            r'\bसमान\b',
-            r'\bतुल्य\b',
-            r'\bइव\b',
-            r'\bयथा\b',
-            r'\bसदृश\b'
-        ]
-
-        for i, line in enumerate(self.lines):
-            for pattern in simile_patterns:
-                matches = re.finditer(pattern, line.lower())
-                for match in matches:
-                    upamas.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "simile": match.group(),
-                        "type": "upama"
-                    })
-
-        return upamas[:10]
+        return self._detect_zero_shot_device("upama", limit=10)
 
     # ==================== RASA THEORY ====================
 
@@ -1012,35 +941,29 @@ class LiteraryDevicesAnalyzer:
         Analyze Rasa (aesthetic emotion) based on Navarasa theory
         From Bharata's Natyashastra
         """
-        rasa_scores = {
-            "shringara": 0.0,  # Love/Beauty
-            "hasya": 0.0,      # Laughter/Comedy
-            "karuna": 0.0,     # Compassion/Sorrow
-            "raudra": 0.0,     # Fury/Anger
-            "veera": 0.0,      # Heroism/Courage
-            "bhayanaka": 0.0,  # Terror/Fear
-            "bibhatsa": 0.0,   # Disgust
-            "adbhuta": 0.0,    # Wonder/Awe
-            "shanta": 0.0      # Peace/Serenity
+        rasa_scores = {k: 0.0 for k in [
+            "shringara", "hasya", "karuna", "raudra", "veera",
+            "bhayanaka", "bibhatsa", "adbhuta", "shanta"
+        ]}
+
+        rasa_labels = {
+            "shringara": "shringara (love/beauty)",
+            "hasya": "hasya (laughter/comedy)",
+            "karuna": "karuna (compassion/sorrow)",
+            "raudra": "raudra (fury/anger)",
+            "veera": "veera (heroism/courage)",
+            "bhayanaka": "bhayanaka (fear/terror)",
+            "bibhatsa": "bibhatsa (disgust)",
+            "adbhuta": "adbhuta (wonder/awe)",
+            "shanta": "shanta (peace/serenity)"
         }
 
-        text_lower = self.text.lower()
-
-        # Keywords for each Rasa (English + Sanskrit/Hindi)
-        rasa_keywords = {
-            "shringara": ["love", "beautiful", "beloved", "passion", "romance", "kiss", "embrace", "charm", "delight", "pleasure", "श्रृंगार", "प्रेम", "सुंदर", "प्रिया", "कान्त", "रति"],
-            "hasya": ["laugh", "funny", "joke", "humor", "comic", "ridiculous", "absurd", "merry", "giggle", "हास्य", "हंसी", "मजाक", "प्रहसन", "हास्यम", "अट्टहास"],
-            "karuna": ["sad", "sorrow", "tear", "weep", "cry", "grief", "pain", "suffer", "mourn", "tragic", "compassion", "करुण", "शोक", "दुख", "रुदन", "आँसू", "वियोग", "दया"],
-            "raudra": ["anger", "fury", "rage", "wrath", "hate", "destroy", "kill", "violent", "cruel", "fierce", "terrible", "रौद्र", "क्रोध", "क्रुद्ध", "कोप", "प्रतिशोध", "विध्वंस"],
-            "veera": ["hero", "brave", "courage", "valor", "victory", "triumph", "glory", "honor", "noble", "warrior", "strength", "वीर", "उत्साह", "साहस", "पराक्रम", "शौर्य", "विजय"],
-            "bhayanaka": ["fear", "terror", "horror", "dread", "fright", "panic", "tremble", "nightmare", "danger", "भयानक", "भय", "डर", "भीति", "त्रास", "कांपना"],
-            "bibhatsa": ["disgust", "revolting", "foul", "vile", "nasty", "repulsive", "loathsome", "ugly", "dirty", "बीभत्स", "जुगुप्सा", "घृणा", "घिनौना", "अशुचि"],
-            "adbhuta": ["wonder", "amazing", "marvel", "miracle", "awe", "magnificent", "splendid", "glorious", "divine", "अद्भुत", "विस्मय", "आश्चर्य", "अनोखा", "अलौकिक", "दिव्य"],
-            "shanta": ["peace", "calm", "quiet", "serene", "tranquil", "still", "silence", "bliss", "content", "harmony", "शांत", "शम", "शांति", "निर्वेद", "मोक्ष", "मुक्ति", "परमपद"]
-        }
-
-        for rasa, keywords in rasa_keywords.items():
-            rasa_scores[rasa] = self._calculate_rasa_score(text_lower, keywords)
+        for line in self.lines:
+            scores = self._zero_shot_labels(line, list(rasa_labels.values()), threshold=0.3)
+            for label, score in scores:
+                for rasa, rasa_label in rasa_labels.items():
+                    if label == rasa_label:
+                        rasa_scores[rasa] += float(score)
 
         # Find dominant rasa
         dominant_rasa = max(rasa_scores, key=rasa_scores.get) if any(v > 0 for v in rasa_scores.values()) else None
@@ -1068,47 +991,66 @@ class LiteraryDevicesAnalyzer:
     def _detect_vibhava(self) -> List[Dict[str, str]]:
         """Detect Vibhava (determinant/cause of emotion)"""
         vibavas = []
-        stimuli = {
-            "nature": ["moon", "spring", "garden", "flower", "river", "wind", "rain"],
-            "person": ["beloved", "hero", "enemy", "king", "friend"],
-            "event": ["battle", "festival", "departure", "arrival", "death"]
-        }
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return vibavas
+
         for i, line in enumerate(self.lines):
-            for category, words in stimuli.items():
-                for word in words:
-                    if word in line.lower():
-                        vibavas.append({"line_number": i+1, "stimulus": word, "category": category})
-        return vibavas[:5]
+            doc = nlp(line)
+            for token in doc:
+                if token.pos_ in {"NOUN", "PROPN"}:
+                    syns = wn.synsets(token.lemma_, pos=wn.NOUN)
+                    lexnames = {s.lexname() for s in syns}
+                    if lexnames & {"noun.person", "noun.location", "noun.event", "noun.object", "noun.group"}:
+                        vibavas.append({
+                            "line_number": i + 1,
+                            "stimulus": token.text,
+                            "category": next(iter(lexnames)) if lexnames else "entity"
+                        })
+        top_k = self._rules.get("vibava_top_k")
+        return vibavas[: int(top_k)] if top_k is not None else vibavas
 
     def _detect_anubhava(self) -> List[Dict[str, str]]:
         """Detect Anubhava (consequent/physical reaction)"""
         anubhavas = []
-        reactions = {
-            "physical": ["tear", "smile", "tremble", "sweat", "blush", "faint", "sigh", "gasp", "stare"],
-            "vocal": ["cry", "laugh", "shout", "whisper", "sing", "stammer", "stutter"]
-        }
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return anubhavas
+
         for i, line in enumerate(self.lines):
-            for category, words in reactions.items():
-                for word in words:
-                    if word in line.lower():
-                        anubhavas.append({"line_number": i+1, "reaction": word, "category": category})
-        return anubhavas[:5]
+            doc = nlp(line)
+            for token in doc:
+                if token.pos_ in {"VERB", "ADJ"}:
+                    syns = wn.synsets(token.lemma_, pos=wn.VERB if token.pos_ == "VERB" else wn.ADJ)
+                    lexnames = {s.lexname() for s in syns}
+                    if lexnames & {"verb.emotion", "verb.body", "verb.perception"} or "adj.feeling" in lexnames:
+                        anubhavas.append({
+                            "line_number": i + 1,
+                            "reaction": token.text,
+                            "category": next(iter(lexnames)) if lexnames else "reaction"
+                        })
+        top_k = self._rules.get("anubhava_top_k")
+        return anubhavas[: int(top_k)] if top_k is not None else anubhavas
 
     def _detect_vyabhichari_bhava(self) -> List[Dict[str, str]]:
         """Detect Vyabhichari Bhava (transitory states)"""
         vyabhichari = []
-        transitory = ["anxiety", "joy", "shame", "arrogance", "despair", "envy", "doubt", "pride", "weakness"]
+        nlp = self._ensure_nlp()
+        if not nlp:
+            return vyabhichari
         for i, line in enumerate(self.lines):
-            for state in transitory:
-                if state in line.lower():
-                    vyabhichari.append({"line_number": i+1, "state": state})
-        return vyabhichari[:5]
+            doc = nlp(line)
+            for token in doc:
+                if token.pos_ in {"NOUN", "ADJ"}:
+                    syns = wn.synsets(token.lemma_, pos=wn.NOUN if token.pos_ == "NOUN" else wn.ADJ)
+                    if any(s.lexname() == "noun.feeling" or s.lexname().startswith("adj.") for s in syns):
+                        vyabhichari.append({"line_number": i + 1, "state": token.text})
+        top_k = self._rules.get("vyabhichari_top_k")
+        return vyabhichari[: int(top_k)] if top_k is not None else vyabhichari
 
     def _calculate_rasa_score(self, text: str, word_list: List[str]) -> float:
         """Calculate score for a specific rasa"""
-        count = sum(text.count(word) for word in word_list)
-        total_words = len(text.split())
-        return min(1.0, count / max(1, total_words) * 100)
+        return 0.0
 
     def _get_rasa_colors(self) -> Dict[str, str]:
         """Get traditional colors associated with each rasa"""
@@ -1137,21 +1079,7 @@ class LiteraryDevicesAnalyzer:
 
     def _detect_foreshadowing(self) -> List[Dict[str, Any]]:
         """Detect foreshadowing"""
-        foreshadowing = []
-        markers = ["will", "shall", "would", "could", "might", "future", "tomorrow", "someday", "one day", "eventually", "never", "always", "remember", "warning", "ominous", "premonition", "destiny", "fate"]
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for marker in markers:
-                if marker in line_lower:
-                    foreshadowing.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "marker": marker,
-                        "type": "foreshadowing"
-                    })
-
-        return foreshadowing[:15]
+        return self._detect_zero_shot_device("foreshadowing")
 
     def _detect_symbolism(self) -> List[Dict[str, Any]]:
         """Detect symbolism"""
@@ -1159,69 +1087,11 @@ class LiteraryDevicesAnalyzer:
 
     def _detect_symbol(self) -> List[Dict[str, Any]]:
         """Detect symbols"""
-        symbols = []
-        symbol_dict = {
-            "rose": "love/passion",
-            "dove": "peace",
-            "eagle": "freedom/strength",
-            "serpent": "evil/temptation",
-            "moon": "femininity/change",
-            "sun": "vitality/masculinity",
-            "star": "hope/guidance",
-            "rain": "cleansing/renewal",
-            "storm": "conflict/turmoil",
-            "fire": "passion/destruction",
-            "water": "life/purification",
-            "ocean": "emotions/infinity",
-            "mountain": "stability/obstacle",
-            "road": "life journey",
-            "door": "opportunity",
-            "window": "perspective",
-            "cross": "sacrifice/suffering",
-            "phoenix": "rebirth/resurrection",
-            "owl": "wisdom",
-            "lion": "courage/royalty"
-        }
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for symbol, meaning in symbol_dict.items():
-                if symbol in line_lower:
-                    symbols.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "symbol": symbol,
-                        "meaning": meaning,
-                        "type": "symbolism"
-                    })
-
-        return symbols[:15]
+        return self._detect_zero_shot_device("symbolism")
 
     def _detect_allusion(self) -> List[Dict[str, Any]]:
         """Detect allusion (reference to other works/events)"""
-        allusions = []
-        references = {
-            "adam": "biblical", "eve": "biblical", "moses": "biblical", "jesus": "biblical",
-            "odysseus": "greek", "achilles": "greek", "athena": "greek", "venus": "roman",
-            "apollo": "greek", "artemis": "greek", "prometheus": "greek", "icarus": "greek",
-            "shakespeare": "literary", "dante": "literary", "homer": "literary",
-            "robin hood": "folklore", "king arthur": "folklore", "medusa": "greek",
-            "garden of eden": "biblical", "trojan": "greek", "olympus": "greek"
-        }
-
-        for i, line in enumerate(self.lines):
-            line_lower = line.lower()
-            for ref, category in references.items():
-                if ref in line_lower:
-                    allusions.append({
-                        "line": line,
-                        "line_number": i + 1,
-                        "reference": ref,
-                        "category": category,
-                        "type": "allusion"
-                    })
-
-        return allusions[:15]
+        return self._detect_zero_shot_device("allusion")
 
     def _detect_motif(self) -> List[Dict[str, Any]]:
         """Detect recurring motifs"""
@@ -1229,14 +1099,24 @@ class LiteraryDevicesAnalyzer:
         word_freq = Counter(self.words)
 
         # Find words that appear multiple times
-        recurring = [(word, count) for word, count in word_freq.items() if count >= 3 and len(word) > 3]
+        min_count = self._rules.get("motif_min_count")
+        min_len = self._rules.get("motif_min_length")
+        if min_count is None or min_len is None:
+            return motifs
+        recurring = [
+            (word, count)
+            for word, count in word_freq.items()
+            if count >= int(min_count) and len(word) >= int(min_len)
+        ]
 
-        for word, count in recurring[:10]:
+        motif_top_k = self._rules.get("motif_top_k")
+        line_top_k = self._rules.get("motif_line_top_k")
+        for word, count in recurring[: int(motif_top_k)] if motif_top_k is not None else recurring:
             lines_with_word = [i+1 for i, line in enumerate(self.lines) if word in line.lower()]
             motifs.append({
                 "word": word,
                 "occurrences": count,
-                "line_numbers": lines_with_word[:10],
+                "line_numbers": lines_with_word[: int(line_top_k)] if line_top_k is not None else lines_with_word,
                 "type": "motif"
             })
 
@@ -1245,20 +1125,27 @@ class LiteraryDevicesAnalyzer:
 
 def analyze_idioms_and_proverbs(text: str) -> Dict[str, List[str]]:
     """Detect idioms and proverbs"""
-    idioms = [
-        "break the ice", "bite the bullet", "beat around the bush", "burn the midnight oil",
-        "cost an arm and a leg", "hit the nail on the head", "kill two birds with one stone",
-        "let the cat out of the bag", "make a long story short", "once in a blue moon",
-        "piece of cake", "rain cats and dogs", "spill the beans", "take it with a grain of salt"
-    ]
+    analyzer = LiteraryDevicesAnalyzer()
+    analyzer.text = text
+    analyzer.lines = [l.strip() for l in text.split("\n") if l.strip()]
 
-    proverbs = [
-        "a stitch in time saves nine", "actions speak louder than words", "all that glitters is not gold",
-        "an apple a day keeps the doctor away", "birds of a feather flock together", "better safe than sorry"
-    ]
+    idioms = []
+    proverbs = []
+    for i, line in enumerate(analyzer.lines):
+        idiom_labels = get_labels("idiom")
+        proverb_labels = get_labels("proverb")
+        if not idiom_labels or not proverb_labels:
+            return result
+        idiom_scores = analyzer._zero_shot_labels(line, idiom_labels)
+        proverb_scores = analyzer._zero_shot_labels(line, proverb_labels)
+        if idiom_scores:
+            idioms.append(line)
+        if proverb_scores:
+            proverbs.append(line)
 
-    text_lower = text.lower()
+    rules = analyzer._rules or {}
+    top_k = rules.get("idiom_proverb_top_k")
     return {
-        "idioms": [idiom for idiom in idioms if idiom in text_lower],
-        "proverbs": [proverb for proverb in proverbs if proverb in text_lower]
+        "idioms": idioms[: int(top_k)] if top_k is not None else idioms,
+        "proverbs": proverbs[: int(top_k)] if top_k is not None else proverbs,
     }

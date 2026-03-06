@@ -5,7 +5,26 @@ Based on quantitative_poetry_metrics.md Section 4.2
 """
 
 import math
+import json
+from pathlib import Path
+import syllables
 from typing import Dict, List, Any, Optional
+from app.services.rule_loader import get_structural_rules
+from app.services.phonology_resources import (
+    get_phonology,
+    count_syllables_from_ipa,
+)
+
+
+def _load_json(path: Path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "constraints"
+FIBONACCI_STRUCTURAL = _load_json(_DATA_DIR / "fibonacci_structural.json")
 
 
 class StructuralAnalyzer:
@@ -17,7 +36,8 @@ class StructuralAnalyzer:
     def __init__(self):
         self.text = ""
         self.lines: List[str] = []
-        self.golden_ratio = 1.618033988749895
+        rules = get_structural_rules()
+        self.golden_ratio = rules.get("golden_ratio") if rules else None
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Run complete structural analysis"""
@@ -40,41 +60,29 @@ class StructuralAnalyzer:
         - Often at line ≈ 0.618 of total line count
         - Most aesthetically pleasing point for shift in logic
         """
+        rules = get_structural_rules()
         total_lines = len(self.lines)
-        if total_lines < 2:
+        if not rules:
+            return {"present": False, "reason": "Missing structural rules"}
+        min_lines = rules.get("min_lines_for_golden")
+        golden_fraction = rules.get("golden_ratio_fraction")
+        if min_lines is None or golden_fraction is None or total_lines < int(min_lines):
             return {"present": False, "reason": "Insufficient lines"}
 
         # Calculate golden section points
-        golden_section_line = int(total_lines * (1 - 0.618))
-        golden_section_line_alt = int(total_lines * 0.618)
+        golden_section_line = int(total_lines * (1 - float(golden_fraction)))
+        golden_section_line_alt = int(total_lines * float(golden_fraction))
 
-        # Check if there's a structural shift at golden ratio point
+        # Strict: golden shift only if stanza break occurs exactly at golden section line
         has_golden_shift = self._detect_shift_at_line(golden_section_line)
 
-        # Calculate ratio of line lengths
-        line_lengths = [len(l.split()) for l in self.lines]
-        if len(line_lengths) >= 2:
-            max_length = max(line_lengths)
-            min_length = min(line_lengths)
-            if min_length > 0:
-                length_ratio = max_length / min_length
-                is_golden = abs(length_ratio - self.golden_ratio) < 0.2
-            else:
-                length_ratio = 0
-                is_golden = False
-        else:
-            length_ratio = 0
-            is_golden = False
-
         return {
-            "present": has_golden_shift or is_golden,
+            "present": has_golden_shift,
             "golden_section_line": golden_section_line,
             "golden_section_line_alt": golden_section_line_alt,
             "total_lines": total_lines,
-            "golden_ratio_position": round((1 - 0.618) * 100, 1),
+            "golden_ratio_position": round((1 - float(golden_fraction)) * 100, 1),
             "has_shift_at_golden_point": has_golden_shift,
-            "length_ratio": round(length_ratio, 3),
-            "is_golden_ratio": is_golden,
             "analysis": f"Golden ratio analysis for {total_lines}-line poem"
         }
 
@@ -86,23 +94,27 @@ class StructuralAnalyzer:
         - Syllables per line follow Fibonacci: 1, 1, 2, 3, 5, 8, 13...
         - Minimum 6 lines
         """
-        fibonacci_sequence = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+        fibonacci_sequence = FIBONACCI_STRUCTURAL if FIBONACCI_STRUCTURAL else []
 
-        # Count syllables per line (simplified)
+        # Count syllables per line (IPA-driven when available)
         syllable_counts = []
+        phon = get_phonology("en")
         for line in self.lines:
             words = line.split()
-            # Simplified syllable counting
-            syllables = sum(self._count_syllables_simple(word) for word in words)
-            syllable_counts.append(syllables)
+            syllable_total = 0
+            for word in words:
+                ipa = phon.ipa(word)
+                if ipa:
+                    count = count_syllables_from_ipa(ipa)
+                    if count:
+                        syllable_total += count
+                        continue
+                syllable_total += self._count_syllables_simple(word)
+            syllable_counts.append(syllable_total)
 
-        # Check if syllable counts match Fibonacci
+        # Strict Fibonacci compliance (exact match, minimum 6 lines)
         is_fibonacci = self._matches_fibonacci(syllable_counts, fibonacci_sequence)
-
-        # Check for Fibonacci-like patterns
-        has_fibonacci_pattern = self._has_fibonacci_pattern(syllable_counts)
-
-        # Calculate Fibonacci compliance score
+        has_fibonacci_pattern = is_fibonacci
         compliance = self._calculate_fibonacci_compliance(syllable_counts, fibonacci_sequence)
 
         return {
@@ -117,8 +129,12 @@ class StructuralAnalyzer:
 
     def _analyze_proportions(self) -> Dict[str, Any]:
         """Analyze various proportional relationships"""
+        rules = get_structural_rules()
         total_lines = len(self.lines)
-        if total_lines < 2:
+        if not rules:
+            return {}
+        min_lines = rules.get("min_lines_for_golden")
+        if min_lines is None or total_lines < int(min_lines):
             return {}
 
         # Stanza proportions
@@ -142,13 +158,22 @@ class StructuralAnalyzer:
             "stanza_count": len(stanzas),
             "stanza_ratios": stanza_ratios,
             "line_proportion_ratio": round(proportion_ratio, 3),
-            "has_balanced_proportions": 0.8 <= proportion_ratio <= 1.2 if proportion_ratio > 0 else False
+            "has_balanced_proportions": (
+                (rules.get("balance_ratio_min") <= proportion_ratio <= rules.get("balance_ratio_max"))
+                if rules and proportion_ratio > 0 and rules.get("balance_ratio_min") is not None
+                and rules.get("balance_ratio_max") is not None
+                else False
+            )
         }
 
     def _analyze_symmetry(self) -> Dict[str, Any]:
         """Analyze symmetry in poem structure"""
+        rules = get_structural_rules()
         total_lines = len(self.lines)
-        if total_lines < 2:
+        if not rules:
+            return {"symmetric": False}
+        min_lines = rules.get("min_lines_for_golden")
+        if min_lines is None or total_lines < int(min_lines):
             return {"symmetric": False}
 
         # Check for line length symmetry
@@ -165,13 +190,25 @@ class StructuralAnalyzer:
         is_symmetric_rhyme = self._is_symmetric_scheme(rhyme_scheme)
 
         # Calculate overall symmetry score
-        symmetry_score = (
-            (is_palindromic * 0.5) +
-            (is_symmetric_rhyme * 0.5)
-        )
+        if rules:
+            w_pal = rules.get("symmetry_weight_palindrome")
+            w_rhyme = rules.get("symmetry_weight_rhyme")
+        else:
+            w_pal = None
+            w_rhyme = None
+        if w_pal is None or w_rhyme is None:
+            return {
+                "is_symmetric": False,
+                "symmetry_score": 0.0,
+                "is_palindromic": is_palindromic,
+                "is_rhyme_symmetric": is_symmetric_rhyme,
+                "line_length_symmetry": is_palindromic,
+                "rhyme_scheme": rhyme_scheme
+            }
+        symmetry_score = (is_palindromic * float(w_pal)) + (is_symmetric_rhyme * float(w_rhyme))
 
         return {
-            "is_symmetric": symmetry_score > 0.5,
+            "is_symmetric": symmetry_score > float(rules.get("symmetry_threshold")) if rules and rules.get("symmetry_threshold") is not None else False,
             "symmetry_score": round(symmetry_score, 3),
             "is_palindromic": is_palindromic,
             "is_rhyme_symmetric": is_symmetric_rhyme,
@@ -180,58 +217,49 @@ class StructuralAnalyzer:
         }
 
     def _count_syllables_simple(self, word: str) -> int:
-        """Simple syllable counter"""
-        word = word.lower()
-        vowels = "aeiouy"
-        count = 0
-        prev_is_vowel = False
-        
-        for char in word:
-            is_vowel = char in vowels
-            if is_vowel and not prev_is_vowel:
-                count += 1
-            prev_is_vowel = is_vowel
-        
-        if word.endswith('e') and count > 1:
-            count -= 1
-        
-        return max(1, count)
+        """Syllable counter using syllables library (strict input)"""
+        word = word.lower().strip()
+        if not word:
+            return 0
+        try:
+            return max(1, syllables.estimate(word))
+        except Exception:
+            return 0
 
     def _matches_fibonacci(self, counts: List[int], fib: List[int]) -> bool:
-        """Check if counts match Fibonacci sequence"""
-        if len(counts) < 3:
+        """Check if counts match Fibonacci sequence exactly (min 6 lines)"""
+        rules = get_structural_rules()
+        if not rules:
             return False
-        
+        min_lines = rules.get("min_lines_for_fibonacci")
+        if min_lines is None or len(counts) < int(min_lines):
+            return False
         for i, count in enumerate(counts):
             if i < len(fib):
-                if abs(count - fib[i]) > 1:  # Allow small variance
+                if count != fib[i]:
                     return False
         return True
 
     def _has_fibonacci_pattern(self, counts: List[int]) -> bool:
-        """Check for Fibonacci-like pattern (each = sum of previous two)"""
-        if len(counts) < 3:
+        """Strict Fibonacci pattern check (exact recurrence)"""
+        rules = get_structural_rules()
+        if not rules:
             return False
-        
-        matches = 0
+        min_lines = rules.get("min_lines_for_fib_pattern")
+        if min_lines is None or len(counts) < int(min_lines):
+            return False
         for i in range(2, len(counts)):
-            if counts[i] == counts[i-1] + counts[i-2]:
-                matches += 1
-        
-        return matches >= len(counts) - 2
+            if counts[i] != counts[i - 1] + counts[i - 2]:
+                return False
+        return True
 
     def _calculate_fibonacci_compliance(self, counts: List[int], fib: List[int]) -> float:
-        """Calculate compliance with Fibonacci pattern"""
+        """Calculate strict compliance ratio (exact matches / total)"""
         if not counts:
             return 0.0
-        
-        total_diff = sum(abs(counts[i] - fib[i]) for i in range(min(len(counts), len(fib))))
-        max_possible_diff = sum(fib[:len(counts)])
-        
-        if max_possible_diff == 0:
-            return 0.0
-        
-        return 1.0 - (total_diff / max_possible_diff)
+        total = min(len(counts), len(fib))
+        matches = sum(1 for i in range(total) if counts[i] == fib[i])
+        return matches / total if total > 0 else 0.0
 
     def _detect_stanzas(self) -> List[List[int]]:
         """Detect stanza breaks"""
@@ -252,22 +280,12 @@ class StructuralAnalyzer:
         return stanzas
 
     def _detect_shift_at_line(self, line_num: int) -> bool:
-        """Detect if there's a thematic/tonal shift at given line"""
-        if line_num < 1 or line_num >= len(self.lines):
-            return False
-        
-        # Simplified: check for punctuation or line break
-        prev_line = self.lines[line_num - 1] if line_num > 0 else ""
-        curr_line = self.lines[line_num]
-        
-        # Check for punctuation indicating shift
-        shift_markers = [".", "!", "?", "—", "..."]
-        has_punctuation = any(prev_line.endswith(m) for m in shift_markers)
-        
-        # Check for line length change
-        length_change = abs(len(curr_line.split()) - len(prev_line.split())) > 3
-        
-        return has_punctuation or length_change
+        """Strict shift: stanza break exactly at given line"""
+        stanzas = self._detect_stanzas()
+        for stanza in stanzas:
+            if stanza and stanza[-1] == line_num - 1:
+                return True
+        return False
 
     def _extract_rhyme_scheme(self) -> str:
         """Extract rhyme scheme"""
@@ -304,16 +322,12 @@ class StructuralAnalyzer:
         """Check if words rhyme"""
         if not word1 or not word2:
             return False
-        
-        vowels = "aeiouy"
-        
-        def get_ending(word):
-            for i in range(len(word) - 1, -1, -1):
-                if word[i] in vowels:
-                    return word[i:]
-            return word[-2:] if len(word) > 1 else word
-        
-        return get_ending(word1) == get_ending(word2)
+        from app.services.phonology_resources import get_phonology
+
+        phon = get_phonology("en")
+        part1 = phon.rhyme_key(word1)
+        part2 = phon.rhyme_key(word2)
+        return bool(part1 and part2 and part1 == part2)
 
     def _is_symmetric_scheme(self, scheme: str) -> bool:
         """Check if rhyme scheme is symmetric"""

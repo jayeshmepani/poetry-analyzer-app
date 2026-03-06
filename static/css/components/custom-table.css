@@ -13,6 +13,8 @@
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         overflow: hidden;
+        width: 100%;
+        min-width: 0;
         container-type: inline-size;
         container-name: data-table;
         /* Skip rendering off-screen tables */
@@ -183,6 +185,8 @@
     .table-scroll-area {
         overflow-x: auto;
         scrollbar-gutter: stable;
+        width: 100%;
+        min-width: 0;
 
         &::-webkit-scrollbar {
             height: 6px;

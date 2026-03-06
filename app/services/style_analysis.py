@@ -6,6 +6,12 @@ Covers Dimension 4 and 5 of the Ultimate Literary Master System
 import re
 from typing import Dict, List, Any, Optional
 from collections import Counter
+from transformers import pipeline
+from app.config import Settings
+from app.services.label_loader import get_labels
+from app.services.rule_loader import get_style_rules, get_thresholds, get_performance_rules
+from app.services.text_chunker import aggregate_zero_shot
+import spacy
 
 class StyleToneAnalyzer:
     """
@@ -14,21 +20,32 @@ class StyleToneAnalyzer:
 
     def __init__(self, language: str = "en"):
         self.language = language
-        self.tone_lexicon = {
-            "melancholic": ["sad", "dark", "death", "lost", "gone", "sorrow", "tear", "mourn"],
-            "lyrical": ["soft", "beauty", "light", "gentle", "sweet", "sing", "flow", "grace"],
-            "contemplative": ["think", "mind", "soul", "wonder", "deep", "quiet", "still", "nature"],
-            "celebratory": ["joy", "praise", "great", "wonderful", "bright", "glory", "triumph"],
-            "satirical": ["ironic", "mock", "fool", "ridiculous", "absurd", "clever", "sharp"],
-            "aggressive": ["war", "strike", "blood", "kill", "fierce", "rage", "hard", "sharp"]
-        }
-        
-        self.style_categories = {
-            "minimalist": lambda text: len(text.split()) / max(1, len(text.split('\n'))) < 5,
-            "ornate": lambda text: any(len(w) > 10 for w in text.split()),
-            "baroque": lambda text: text.count(',') > len(text.split('\n')) * 2,
-            "stream_of_consciousness": lambda text: text.count('.') < len(text.split('\n')) / 2
-        }
+        self._settings = Settings()
+        self._zero_shot = None
+        self._nlp = None
+
+        self.style_rules = get_style_rules()
+        self.perf_rules = get_performance_rules()
+
+    def _ensure_zero_shot(self):
+        if self._zero_shot is not None:
+            return self._zero_shot
+        try:
+            model_name = self._settings.transformer.generalist_zero_shot_model
+            self._zero_shot = pipeline("zero-shot-classification", model=model_name, device=-1)
+        except Exception:
+            self._zero_shot = None
+        return self._zero_shot
+
+    def _ensure_nlp(self):
+        if self._nlp is not None:
+            return self._nlp
+        try:
+            model = self._settings.spacy.english_model if self.language == "en" else self._settings.spacy.multilingual_model
+            self._nlp = spacy.load(model)
+        except Exception:
+            self._nlp = None
+        return self._nlp
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Run complete style, tone, and register analysis"""
@@ -46,9 +63,19 @@ class StyleToneAnalyzer:
 
     def _analyze_voice(self, text: str, lines: List[str]) -> Dict[str, Any]:
         """Analyze point of view and consistency"""
-        first_person = len(re.findall(r'\b(i|me|my|mine|we|us|our)\b', text.lower()))
-        second_person = len(re.findall(r'\b(you|your|yours)\b', text.lower()))
-        third_person = len(re.findall(r'\b(he|she|it|they|him|her|them|his|hers|their)\b', text.lower()))
+        first_person = second_person = third_person = 0
+        nlp = self._ensure_nlp()
+        if nlp:
+            doc = nlp(text)
+            for token in doc:
+                if token.pos_ == "PRON":
+                    person = token.morph.get("Person")
+                    if "1" in person:
+                        first_person += 1
+                    elif "2" in person:
+                        second_person += 1
+                    elif "3" in person:
+                        third_person += 1
 
         total = first_person + second_person + third_person
         if total == 0:
@@ -70,7 +97,18 @@ class StyleToneAnalyzer:
 
     def _analyze_tone(self, words: List[str]) -> Dict[str, Any]:
         """Analyze emotional tone"""
-        scores = {tone: sum(1 for w in words if w in lexicon) for tone, lexicon in self.tone_lexicon.items()}
+        zs = self._ensure_zero_shot()
+        labels = get_labels("style_tone")
+        if not labels:
+            return {"scores": {}, "dominant_tone": "neutral", "tonal_shifts": "low"}
+        scores = {l: 0.0 for l in labels}
+        if zs:
+            try:
+                chunk_size = self.perf_rules.get("zero_shot_chunk_words")
+                out = aggregate_zero_shot(zs, labels, " ".join(words), chunk_size)
+                scores = {label: float(score) for label, score in zip(out["labels"], out["scores"])}
+            except Exception:
+                pass
         dominant_tone = max(scores, key=scores.get) if any(scores.values()) else "neutral"
         
         return {
@@ -99,26 +137,99 @@ class StyleToneAnalyzer:
 
     def _identify_style(self, text: str) -> str:
         """Identify literary style category"""
-        for cat, check in self.style_categories.items():
-            if check(text):
-                return cat
+        rules = self.style_rules or {}
+        if not rules:
+            return "classical/balanced"
+
+        lines = max(1, len(text.split("\n")))
+        words = text.split()
+        avg_words_per_line = len(words) / lines if lines else 0
+
+        for cat, rule in rules.items():
+            rtype = rule.get("type")
+            threshold = float(rule.get("threshold", 0))
+            if rtype == "avg_words_per_line_lt":
+                if avg_words_per_line < threshold:
+                    return cat
+            elif rtype == "any_word_length_gt":
+                if any(len(w) > threshold for w in words):
+                    return cat
+            elif rtype == "comma_per_line_gt":
+                if (text.count(",") / lines) > threshold:
+                    return cat
+            elif rtype == "period_per_line_lt":
+                if (text.count(".") / lines) < threshold:
+                    return cat
         return "classical/balanced"
 
     def _analyze_narrative(self, text: str, lines: List[str]) -> Dict[str, Any]:
         """Analyze narrative architecture and techniques"""
-        # Look for plot markers
-        has_intro = any(w in text.lower()[:100] for w in ["once", "when", "first", "in the"])
-        has_climax = "!" in text or any(w in text.lower() for w in ["suddenly", "finally", "moment"])
+        zs = self._ensure_zero_shot()
+        plot_arch = "linear"
+        if zs:
+            try:
+                plot_labels = get_labels("plot_arch")
+                if not plot_labels:
+                    return {
+                        "plot_architecture": plot_arch,
+                        "pacing": "fast" if len(lines) > 20 else "slow",
+                        "narrative_techniques": techniques,
+                        "character_presence": "implied" if len(lines) < 10 else "distinct",
+                    }
+                chunk_size = self.perf_rules.get("zero_shot_chunk_words")
+                out = aggregate_zero_shot(zs, plot_labels, text, chunk_size)
+                plot_arch = "nonlinear" if out["labels"][0] == "nonlinear narrative" else "linear"
+            except Exception:
+                pass
+
+        techniques = []
+        if zs:
+            try:
+                narrative_labels = get_labels("narrative_mode")
+                if not narrative_labels:
+                    return {
+                        "plot_architecture": plot_arch,
+                        "pacing": "fast" if len(lines) > 20 else "slow",
+                        "narrative_techniques": techniques,
+                        "character_presence": "implied" if len(lines) < 10 else "distinct",
+                    }
+                chunk_size = self.perf_rules.get("zero_shot_chunk_words")
+                out = aggregate_zero_shot(zs, narrative_labels, text, chunk_size)
+                thresholds = get_thresholds()
+                min_conf = thresholds.get("zero_shot_min_confidence")
+                if min_conf is None:
+                    return {
+                        "plot_architecture": plot_arch,
+                        "pacing": "fast" if len(lines) > 20 else "slow",
+                        "narrative_techniques": techniques,
+                        "character_presence": "implied" if len(lines) < 10 else "distinct",
+                    }
+                for label, score in zip(out["labels"], out["scores"]):
+                    if score >= min_conf:
+                        techniques.append(label)
+            except Exception:
+                pass
 
         return {
-            "plot_architecture": "linear" if not "remembered" in text.lower() else "nonlinear",
+            "plot_architecture": plot_arch,
             "pacing": "fast" if len(lines) > 20 else "slow",
-            "narrative_techniques": ["focalization"] if len(lines) > 10 else [],
+            "narrative_techniques": techniques,
             "character_presence": "implied" if len(lines) < 10 else "distinct"
         }
 
     def _calculate_formality(self, words: List[str]) -> float:
         """Calculate formality score (0-1)"""
-        formal_markers = ["therefore", "thus", "shall", "moreover", "consequently"]
-        count = sum(1 for w in words if w in formal_markers)
-        return min(1.0, count / 5.0)
+        zs = self._ensure_zero_shot()
+        if zs:
+            try:
+                register_labels = get_labels("register")
+                if not register_labels:
+                    return 0.5
+                chunk_size = self.perf_rules.get("zero_shot_chunk_words")
+                out = aggregate_zero_shot(zs, register_labels, " ".join(words), chunk_size)
+                if out["labels"][0] == "formal register":
+                    return float(out["scores"][0])
+                return 1.0 - float(out["scores"][0])
+            except Exception:
+                pass
+        return 0.5

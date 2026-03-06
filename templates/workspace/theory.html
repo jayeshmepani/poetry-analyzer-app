@@ -119,6 +119,12 @@
                 </svg> Execute Deconstruction
             </button>
         </div>
+        <div id="theoryProgress" class="d-none mt-6">
+            <div class="progress-track">
+                <div id="theoryProgressBar" class="progress-fill"></div>
+            </div>
+            <div id="theoryProgressText" class="text-xs text-slate-500 mt-2">Waiting to start...</div>
+        </div>
     </div>
 
     <!-- Results Surface -->
@@ -356,6 +362,112 @@
         showToast('Theory selection cleared', 'info');
     }
 
+    const progressWrap = document.getElementById('theoryProgress');
+    const progressBar = document.getElementById('theoryProgressBar');
+    const progressText = document.getElementById('theoryProgressText');
+
+    function setTheoryProgress(percent, message) {
+        if (!progressWrap || !progressBar || !progressText) return;
+        progressWrap.classList.remove('d-none');
+        progressBar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+        progressText.textContent = message || '';
+    }
+
+    function resetTheoryProgress() {
+        if (!progressWrap || !progressBar || !progressText) return;
+        progressBar.style.width = '0%';
+        progressText.textContent = 'Waiting to start...';
+        progressWrap.classList.add('d-none');
+    }
+
+    function renderTheoryResults(result, theories) {
+        const frameworkResults = result.framework_results || {};
+        const applied = Array.isArray(result.frameworks_applied) ? result.frameworks_applied : [];
+        const synthesisText = buildSynthesis(applied, frameworkResults);
+        const hasFrameworkCards = applied.length > 0;
+        const sections = [];
+        let totalFindings = 0;
+
+        sections.push(`
+            <div class="theory-summary-panel">
+                <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Synthesis Summary</h4>
+                <p class="theory-summary-text">${escapeHtml(synthesisText)}</p>
+            </div>
+        `);
+
+        if (hasFrameworkCards) {
+            sections.push(`
+                <div class="space-y-6 col-span-full">
+                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Framework Cards</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${applied.map((frameworkId) => {
+                            const f = frameworkResults[frameworkId] || {};
+                            const score = (typeof f.score === 'number') ? f.score.toFixed(1) : '-';
+                            let findingItems = Array.isArray(f.key_findings) ? f.key_findings.map(cleanFinding).filter(Boolean) : [];
+                            const highSignal = findingItems.filter((x) => !isLowSignalFinding(x));
+                            findingItems = (highSignal.length ? highSignal : findingItems).slice(0, 4);
+                            totalFindings += findingItems.length;
+                            const analysis = cleanFinding(f.descriptive_summary || f.analysis || '');
+                            const evidence = Array.isArray(f.evidence_points) ? f.evidence_points.slice(0, 2).map(cleanFinding).filter(Boolean) : [];
+                            const diagnostics = f.diagnostics || {};
+                            const confidence = diagnostics.confidence || '';
+                            const scoreBand = diagnostics.score_band || '';
+                            const scriptProfile = diagnostics.script_profile || '';
+                            return `
+                                <article class="framework-card">
+                                    <div class="framework-head">
+                                        <h5 class="framework-title">${escapeHtml(titleCaseTheory(frameworkId))}</h5>
+                                        <span class="badge badge-primary">Score: ${score}</span>
+                                    </div>
+                                    ${analysis ? `<p class="framework-analysis">${escapeHtml(analysis)}</p>` : ''}
+                                    <div class="framework-meta-row">
+                                        ${confidence ? `<span class="badge badge-neutral">Confidence: ${escapeHtml(confidence)}</span>` : ''}
+                                        ${scoreBand ? `<span class="badge badge-neutral">Band: ${escapeHtml(scoreBand)}</span>` : ''}
+                                        ${scriptProfile ? `<span class="badge badge-neutral">Script: ${escapeHtml(scriptProfile)}</span>` : ''}
+                                    </div>
+                                    ${findingItems.length ? `
+                                        <ul class="framework-findings">
+                                            ${findingItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                                        </ul>
+                                    ` : `<p class="text-sm text-slate-500 m-0">No strong markers detected for this lens in this input.</p>`}
+                                    ${evidence.length ? `
+                                        <div class="evidence-box">
+                                            <p class="evidence-title">Evidence Cues</p>
+                                            <ul class="evidence-list">
+                                                ${evidence.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                </article>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `);
+        }
+
+        if (!sections.length && !hasFrameworkCards) {
+            sections.push(`
+                <div class="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Analysis Status</h4>
+                    <p class="text-slate-700 m-0">No synthesis output was returned for this input and theory combination.</p>
+                </div>
+            `);
+        }
+
+        document.getElementById('resultsContent').innerHTML = `
+            <div class="theory-meta-row">
+                <span class="badge badge-primary">${applied.length || theories.length} FRAMEWORKS</span>
+                <span class="badge badge-neutral">Findings: ${totalFindings}</span>
+                <span class="badge badge-neutral">Summary: Available</span>
+            </div>
+            <div class="theory-results-grid">
+                ${sections.join('')}
+            </div>
+        `;
+        document.getElementById('theoryResults').classList.remove('hidden');
+    }
+
     async function analyzeWithTheory() {
         if (!selectedTheories.size) {
             showToast('System Protocol: Please select at least one critical framework first', 'warning');
@@ -371,99 +483,47 @@
         if (typeof showLoading === 'function') {
             showLoading('Running theoretical analysis...');
         }
+        setTheoryProgress(5, 'Preparing analysis payload...');
         try {
             const theories = THEORY_ORDER.filter(t => selectedTheories.has(t));
-            const response = await axios.post('/theory-analyze', { poem: poem, theories });
-            const result = response.data.success ? response.data.data : response.data;
-            const frameworkResults = result.framework_results || {};
-            const applied = Array.isArray(result.frameworks_applied) ? result.frameworks_applied : [];
-            const synthesisText = buildSynthesis(applied, frameworkResults);
-            const hasFrameworkCards = applied.length > 0;
-            const sections = [];
-            let totalFindings = 0;
+            const payload = { poem: poem, theories };
 
-            sections.push(`
-                <div class="theory-summary-panel">
-                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Synthesis Summary</h4>
-                    <p class="theory-summary-text">${escapeHtml(synthesisText)}</p>
-                </div>
-            `);
-
-            if (hasFrameworkCards) {
-                sections.push(`
-                    <div class="space-y-6" style="grid-column: 1 / -1;">
-                        <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Framework Cards</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            ${applied.map((frameworkId) => {
-                                const f = frameworkResults[frameworkId] || {};
-                                const score = (typeof f.score === 'number') ? f.score.toFixed(1) : '-';
-                                let findingItems = Array.isArray(f.key_findings) ? f.key_findings.map(cleanFinding).filter(Boolean) : [];
-                                const highSignal = findingItems.filter((x) => !isLowSignalFinding(x));
-                                findingItems = (highSignal.length ? highSignal : findingItems).slice(0, 4);
-                                totalFindings += findingItems.length;
-                                const analysis = cleanFinding(f.descriptive_summary || f.analysis || '');
-                                const evidence = Array.isArray(f.evidence_points) ? f.evidence_points.slice(0, 2).map(cleanFinding).filter(Boolean) : [];
-                                const diagnostics = f.diagnostics || {};
-                                const confidence = diagnostics.confidence || '';
-                                const scoreBand = diagnostics.score_band || '';
-                                const scriptProfile = diagnostics.script_profile || '';
-                                return `
-                                    <article class="framework-card">
-                                        <div class="framework-head">
-                                            <h5 class="framework-title">${escapeHtml(titleCaseTheory(frameworkId))}</h5>
-                                            <span class="badge badge-primary">Score: ${score}</span>
-                                        </div>
-                                        ${analysis ? `<p class="framework-analysis">${escapeHtml(analysis)}</p>` : ''}
-                                        <div class="framework-meta-row">
-                                            ${confidence ? `<span class="badge badge-neutral">Confidence: ${escapeHtml(confidence)}</span>` : ''}
-                                            ${scoreBand ? `<span class="badge badge-neutral">Band: ${escapeHtml(scoreBand)}</span>` : ''}
-                                            ${scriptProfile ? `<span class="badge badge-neutral">Script: ${escapeHtml(scriptProfile)}</span>` : ''}
-                                        </div>
-                                        ${findingItems.length ? `
-                                            <ul class="framework-findings">
-                                                ${findingItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
-                                            </ul>
-                                        ` : `<p class="text-sm text-slate-500 m-0">No strong markers detected for this lens in this input.</p>`}
-                                        ${evidence.length ? `
-                                            <div class="evidence-box">
-                                                <p class="evidence-title">Evidence Cues</p>
-                                                <ul class="evidence-list">
-                                                    ${evidence.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
-                                                </ul>
-                                            </div>
-                                        ` : ''}
-                                    </article>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `);
+            const start = await axios.post('/theory-analyze?async=1', payload);
+            const jobId = start.data?.data?.job_id;
+            if (!jobId) {
+                throw new Error('Failed to start analysis job');
             }
 
-            if (!sections.length && !hasFrameworkCards) {
-                sections.push(`
-                    <div class="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                        <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Analysis Status</h4>
-                        <p class="text-slate-700 m-0">No synthesis output was returned for this input and theory combination.</p>
-                    </div>
-                `);
+            let result = null;
+            let attempts = 0;
+            while (!result && attempts < 300) { // up to ~5 minutes
+                const statusRes = await axios.post(`/theory-analyze?status=1&job_id=${jobId}`, {});
+                const status = statusRes.data?.data || {};
+                setTheoryProgress(status.percent || 0, status.message || 'Working...');
+
+                if (status.status === 'done') {
+                    result = status.result;
+                    break;
+                }
+                if (status.status === 'error') {
+                    throw new Error(status.error || 'Analysis failed');
+                }
+                attempts += 1;
+                await new Promise(r => setTimeout(r, 1000));
             }
 
-            document.getElementById('resultsContent').innerHTML = `
-            <div class="theory-meta-row">
-                <span class="badge badge-primary">${applied.length || theories.length} FRAMEWORKS</span>
-                <span class="badge badge-neutral">Findings: ${totalFindings}</span>
-                <span class="badge badge-neutral">Summary: Available</span>
-            </div>
-            <div class="theory-results-grid">
-                ${sections.join('')}
-            </div>
-        `;
-            document.getElementById('theoryResults').classList.remove('hidden');
+            if (!result) {
+                throw new Error('No analysis output returned');
+            }
+
+            renderTheoryResults(result, theories);
+            setTheoryProgress(100, 'Complete.');
+            setTimeout(resetTheoryProgress, 1200);
             showToast('Deconstruction successful', 'success');
         } catch (error) {
             console.error('Synthesis failure:', error);
             showToast('Critical engine error', 'error');
+            resetTheoryProgress();
         } finally {
             if (typeof hideLoading === 'function') {
                 hideLoading();

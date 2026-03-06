@@ -1,0 +1,12 @@
+{
+  "golden_ratio": 1.618033988749895,
+  "golden_ratio_fraction": 0.618,
+  "min_lines_for_golden": 2,
+  "min_lines_for_fibonacci": 6,
+  "min_lines_for_fib_pattern": 4,
+  "balance_ratio_min": 0.8,
+  "balance_ratio_max": 1.2,
+  "symmetry_weight_palindrome": 0.5,
+  "symmetry_weight_rhyme": 0.5,
+  "symmetry_threshold": 0.5
+}

@@ -1,0 +1,6 @@
+{
+  "zero_shot_chunk_words": 500,
+  "zero_shot_max_chunks": null,
+  "analysis_text_preview_chars": 200,
+  "analysis_input_max_chars": null
+}

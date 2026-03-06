@@ -1,0 +1,18 @@
+{
+  "minimalist": {
+    "type": "avg_words_per_line_lt",
+    "threshold": 5
+  },
+  "ornate": {
+    "type": "any_word_length_gt",
+    "threshold": 10
+  },
+  "baroque": {
+    "type": "comma_per_line_gt",
+    "threshold": 2
+  },
+  "stream_of_consciousness": {
+    "type": "period_per_line_lt",
+    "threshold": 0.5
+  }
+}

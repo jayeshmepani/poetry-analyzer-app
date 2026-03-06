@@ -14,6 +14,11 @@ from datetime import datetime
 import uuid
 import json
 from pathlib import Path
+import time
+import logging
+
+THEORY_TASKS: Dict[str, Dict[str, Any]] = {}
+logger = logging.getLogger(__name__)
 
 
 class WorkspaceController(BaseController):
@@ -526,80 +531,210 @@ class WorkspaceController(BaseController):
     async def analyze_with_theory_api(self, request: Request):
         """Theoretical analysis"""
         try:
-            data = await request.json()
+            import asyncio
+            import json
+            from fastapi.responses import StreamingResponse
             from app.services.literary_theory import LiteraryTheoryAnalyzer
             from app.services.literary_theory import CriticismType
             from app.services.analysis_service import create_analysis_service
 
-            analyzer = LiteraryTheoryAnalyzer()
-            poem = data.get("poem", "")
-            requested = data.get("theories")
-            if not isinstance(requested, list) or not requested:
-                single = data.get("theory", "formalism")
-                requested = [single]
+            data = await request.json()
 
-            valid = {c.value for c in CriticismType}
-            theories = [t for t in requested if isinstance(t, str) and t in valid]
-            if not theories:
-                theories = ["formalism"]
+            def run_analysis(payload: Dict[str, Any], progress_cb=None) -> Dict[str, Any]:
+                total_start = time.perf_counter()
+                if progress_cb:
+                    progress_cb(10, "Validating inputs...")
+                analyzer = LiteraryTheoryAnalyzer()
+                poem = payload.get("poem", "")
+                requested = payload.get("theories")
+                if not isinstance(requested, list) or not requested:
+                    single = payload.get("theory", "formalism")
+                    requested = [single]
 
-            # Build dynamic support signals from the full analysis pipeline.
-            support_signals: Dict[str, Any] = {"support_factor": 0.65}
-            try:
-                language = self._analysis_language(data.get("language", "")) if data.get("language") else self._infer_language_from_text(poem)
-                pipeline = create_analysis_service(language=language, strictness=int(data.get("strictness", 7) or 7))
-                full = pipeline.analyze(poem, title="Theory Probe")
+                valid = {c.value for c in CriticismType}
+                theories = [t for t in requested if isinstance(t, str) and t in valid]
+                if not theories:
+                    theories = ["formalism"]
 
-                tr = (full.get("additional", {}) or {}).get("transformer_analysis", {}) or {}
-                tr_supported = tr.get("status") not in ("unsupported_or_failed", "failed", None)
+                if progress_cb:
+                    progress_cb(20, "Preparing analysis pipeline...")
+                # Build dynamic support signals from the full analysis pipeline.
+                support_signals: Dict[str, Any] = {"support_factor": 0.65}
+                try:
+                    language = self._analysis_language(payload.get("language", "")) if payload.get("language") else self._infer_language_from_text(poem)
+                    if progress_cb:
+                        progress_cb(30, "Running linguistic analysis...")
+                    pipeline = create_analysis_service(language=language, strictness=int(payload.get("strictness", 7) or 7))
+                    pipeline_start = time.perf_counter()
+                    full = pipeline.analyze(poem, title="Theory Probe", progress_cb=progress_cb)
+                    pipeline_time = time.perf_counter() - pipeline_start
+                    logger.info("[theory] pipeline.analyze completed in %.2fs", pipeline_time)
+                    if progress_cb:
+                        progress_cb(60, f"Pipeline complete ({pipeline_time:.1f}s). Building theory synthesis...")
 
-                lex = ((full.get("quantitative", {}) or {}).get("lexical_metrics", {}) or {})
-                rhyme = ((full.get("prosody", {}) or {}).get("rhyme", {}) or {})
-                schemes = ((full.get("literary_devices", {}) or {}).get("schemes", {}) or {})
-                tropes = ((full.get("literary_devices", {}) or {}).get("tropes", {}) or {})
+                    tr = (full.get("additional", {}) or {}).get("transformer_analysis", {}) or {}
+                    tr_supported = tr.get("status") not in ("unsupported_or_failed", "failed", None)
 
-                trope_count = sum(len(v) for v in tropes.values() if isinstance(v, list))
-                scheme_count = sum(len(v) for v in schemes.values() if isinstance(v, list))
-                support_signals.update(
-                    {
-                        "support_factor": 1.0 if tr_supported else 0.7,
-                        "lexical_density": float(lex.get("lexical_density", 0.0) or 0.0),
-                        "ttr": float(lex.get("type_token_ratio", 0.0) or 0.0),
-                        "rhyme_density": float(rhyme.get("rhyme_density", 0.0) or 0.0),
-                        "trope_count": trope_count,
-                        "scheme_count": scheme_count,
-                        "quantitative": full.get("quantitative", {}) or {},
-                        "prosody": full.get("prosody", {}) or {},
-                        "linguistic": full.get("linguistic", {}) or {},
-                        "literary_devices": full.get("literary_devices", {}) or {},
-                        "advanced": full.get("advanced", {}) or {},
-                        "additional": full.get("additional", {}) or {},
-                        "structural": full.get("structural", {}) or {},
-                        "sentiment_analysis": full.get("sentiment_analysis", {}) or {},
-                        "evaluation": full.get("evaluation", {}) or {},
-                    }
-                )
-            except Exception:
-                # Keep endpoint responsive even if support pipeline partially fails.
-                support_signals = {"support_factor": 0.65}
+                    lex = ((full.get("quantitative", {}) or {}).get("lexical_metrics", {}) or {})
+                    rhyme = ((full.get("prosody", {}) or {}).get("rhyme", {}) or {})
+                    schemes = ((full.get("literary_devices", {}) or {}).get("schemes", {}) or {})
+                    tropes = ((full.get("literary_devices", {}) or {}).get("tropes", {}) or {})
 
-            analyzed = analyzer.analyze(poem, theories, signals=support_signals)
-            framework_results = analyzed.get("results", {})
-            aggregated_insights: List[str] = []
-            for framework_id in analyzed.get("frameworks_applied", []):
-                findings = framework_results.get(framework_id, {}).get("key_findings", [])
-                for finding in findings[:3]:
-                    aggregated_insights.append(f"[{framework_id}] {finding}")
+                    trope_count = sum(len(v) for v in tropes.values() if isinstance(v, list))
+                    scheme_count = sum(len(v) for v in schemes.values() if isinstance(v, list))
+                    available_keys = [
+                        "quantitative",
+                        "prosody",
+                        "linguistic",
+                        "literary_devices",
+                        "advanced",
+                        "additional",
+                        "structural",
+                        "sentiment_analysis",
+                        "evaluation",
+                    ]
+                    available_count = sum(1 for k in available_keys if full.get(k))
+                    support_factor = (available_count / max(1, len(available_keys))) if tr_supported else (available_count / max(1, len(available_keys)))
 
-            return self.success(
-                {
+                    support_signals.update(
+                        {
+                            "support_factor": support_factor,
+                            "lexical_density": float(lex.get("lexical_density", 0.0) or 0.0),
+                            "ttr": float(lex.get("type_token_ratio", 0.0) or 0.0),
+                            "rhyme_density": float(rhyme.get("rhyme_density", 0.0) or 0.0),
+                            "trope_count": trope_count,
+                            "scheme_count": scheme_count,
+                            "quantitative": full.get("quantitative", {}) or {},
+                            "prosody": full.get("prosody", {}) or {},
+                            "linguistic": full.get("linguistic", {}) or {},
+                            "literary_devices": full.get("literary_devices", {}) or {},
+                            "advanced": full.get("advanced", {}) or {},
+                            "additional": full.get("additional", {}) or {},
+                            "structural": full.get("structural", {}) or {},
+                            "sentiment_analysis": full.get("sentiment_analysis", {}) or {},
+                            "evaluation": full.get("evaluation", {}) or {},
+                        }
+                    )
+                except Exception:
+                    # Keep endpoint responsive even if support pipeline partially fails.
+                    support_signals = {"support_factor": 0.65}
+
+                if progress_cb:
+                    progress_cb(75, "Synthesizing theory outputs...")
+                theory_start = time.perf_counter()
+                analyzed = analyzer.analyze(poem, theories, signals=support_signals)
+                theory_time = time.perf_counter() - theory_start
+                logger.info("[theory] theory.analyze completed in %.2fs", theory_time)
+                if progress_cb:
+                    progress_cb(90, f"Theory synthesis complete ({theory_time:.1f}s). Finalizing...")
+                framework_results = analyzed.get("results", {})
+                aggregated_insights: List[str] = []
+                for framework_id in analyzed.get("frameworks_applied", []):
+                    findings = framework_results.get(framework_id, {}).get("key_findings", [])
+                    for finding in findings[:3]:
+                        aggregated_insights.append(f"[{framework_id}] {finding}")
+
+                return {
                     "frameworks_applied": analyzed.get("frameworks_applied", []),
                     "framework_results": framework_results,
                     "insights": aggregated_insights[:20],
                     "interpretation": analyzed.get("synthesis", ""),
                     "synthesis": analyzed.get("synthesis", ""),
                 }
-            )
+
+            if request.query_params.get("async") == "1":
+                job_id = str(uuid.uuid4())
+                THEORY_TASKS[job_id] = {
+                    "status": "running",
+                    "percent": 5,
+                    "message": "Queued...",
+                    "result": None,
+                    "error": None,
+                    "updated": time.time(),
+                }
+
+                def update_job(pct: int, message: str) -> None:
+                    task = THEORY_TASKS.get(job_id)
+                    if not task:
+                        return
+                    task["percent"] = int(pct)
+                    task["message"] = message
+                    task["updated"] = time.time()
+
+                async def runner():
+                    try:
+                        result = await asyncio.to_thread(run_analysis, data, update_job)
+                        task = THEORY_TASKS.get(job_id)
+                        if task is not None:
+                            task["status"] = "done"
+                            task["percent"] = 100
+                            task["message"] = "Complete."
+                            task["result"] = result
+                            task["updated"] = time.time()
+                    except Exception as e:
+                        task = THEORY_TASKS.get(job_id)
+                        if task is not None:
+                            task["status"] = "error"
+                            task["error"] = str(e)
+                            task["message"] = "Failed."
+                            task["updated"] = time.time()
+
+                asyncio.create_task(runner())
+                return self.success({"job_id": job_id})
+
+            if request.query_params.get("status") == "1":
+                job_id = request.query_params.get("job_id", "")
+                task = THEORY_TASKS.get(job_id)
+                if not task:
+                    return self.error("Job not found", 404)
+                return self.success({
+                    "status": task["status"],
+                    "percent": task["percent"],
+                    "message": task["message"],
+                    "result": task["result"],
+                    "error": task["error"],
+                })
+
+            if request.query_params.get("stream") == "1":
+                async def event_stream():
+                    def sse(event: str, payload: Dict[str, Any]) -> str:
+                        return f"event: {event}\\ndata: {json.dumps(payload)}\\n\\n"
+
+                    try:
+                        yield sse("progress", {"percent": 5, "message": "Validating request..."})
+                        await asyncio.sleep(0.1)
+                        yield sse("progress", {"percent": 15, "message": "Preparing theory engines..."})
+
+                        task = asyncio.create_task(asyncio.to_thread(run_analysis, data))
+                        progress = 20
+                        keepalive_tick = 0
+                        while not task.done():
+                            await asyncio.sleep(1)
+                            progress = min(progress + 5, 90)
+                            yield sse("progress", {"percent": progress, "message": "Running theoretical synthesis..."})
+                            keepalive_tick += 1
+                            if keepalive_tick % 5 == 0:
+                                yield ": keep-alive\\n\\n"
+
+                        result = await task
+                        yield sse("progress", {"percent": 95, "message": "Finalizing results..."})
+                        yield sse("done", result)
+                    except Exception as stream_err:
+                        yield sse("error", {"message": str(stream_err)})
+                        yield ": close\\n\\n"
+
+                return StreamingResponse(
+                    event_stream(),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "X-Accel-Buffering": "no",
+                        "Connection": "keep-alive",
+                    },
+                )
+
+            payload = await asyncio.to_thread(run_analysis, data, None)
+            return self.success(payload)
         except Exception as e:
             import traceback
             traceback.print_exc()

@@ -1,0 +1,113 @@
+{
+  "summary": {
+    "keyword_top_k": 10,
+    "evidence_max_items": 4,
+    "evidence_fallback_anchors": 4,
+    "evidence_block_even": 1,
+    "evidence_block_odd": 1,
+    "hit_weight": 2.5,
+    "token_count_scale": 8.0,
+    "token_count_cap": 1.5,
+    "punctuation_cap": 1.0,
+    "punctuation_scale": 20.0,
+    "novelty_bonus": 1.0,
+    "score_band_strong": 7.5,
+    "score_band_moderate": 5.0,
+    "score_band_emergent": 2.5,
+    "confidence_high_signal": 12,
+    "confidence_high_score": 5.0,
+    "confidence_medium_signal": 6,
+    "summary_findings_top": 3,
+    "summary_evidence_top": 2,
+    "punctuation_chars": ",;:.?!",
+    "script_devanagari": "[\\u0900-\\u097F]",
+    "script_arabic": "[\\u0600-\\u06FF]",
+    "script_latin": "[A-Za-z]",
+    "script_labels": {
+      "devanagari": "Devanagari-dominant",
+      "arabic": "Arabic-script dominant",
+      "latin": "Latin-script dominant",
+      "mixed": "Mixed/undetermined"
+    },
+    "narrative_template": "{analysis} This lens currently scores {score:.1f}/10 with {confidence} confidence. Most relevant observations: {findings} Representative textual cues: {evidence}",
+    "evidence_default": "No direct evidence lines were extracted.",
+    "findings_default": "No dominant markers were detected.",
+    "synthesis_template": "Multi-framework synthesis across {count} lenses. Mean score is {avg:.1f}/10, with strongest alignment in {top_name} ({top_score:.1f}) and weakest in {low_name} ({low_score:.1f}). Use higher-scoring lenses for interpretive emphasis and lower-scoring lenses as revision targets to strengthen symbolic density, thematic contrast, and rhetorical force.",
+    "synthesis_empty": "No frameworks applied"
+  },
+  "weights": {
+    "lexical_recurrence": 0.35,
+    "refrain_density": 0.2,
+    "focus": 0.2,
+    "richness": 0.15,
+    "rhyme": 0.1
+  },
+  "scales": {
+    "ratio_scale": 0.18,
+    "line_sentence_ratio_scale": 0.18,
+    "dependency_node_scale": 200.0,
+    "imagery_total_scale": 8.0,
+    "readability_scale": 100.0,
+    "quality_rounding": 2
+  },
+  "quality_weights": {
+    "lex": 0.35,
+    "ttr": 0.2,
+    "imagery": 0.2,
+    "rhyme": 0.15,
+    "readability": 0.1
+  },
+  "new_criticism": {
+    "framework": "New Criticism / Formalism",
+    "analysis": "Analysis based on intrinsic textual qualities, focusing on internal tensions, paradox, irony, and unity",
+    "score_weights": {
+      "unity": 0.3,
+      "imagery": 0.3,
+      "paradox_presence": 0.2,
+      "irony_presence": 0.2,
+      "scale": 10.0
+    },
+    "key_findings": {
+      "paradoxes": "Detected {count} paradoxes",
+      "ironies": "Detected {count} instances of irony",
+      "ambiguities": "Detected {count} ambiguities",
+      "unity": "Unity score: {score:.2f}/1.0",
+      "imagery": "Imagery coherence: {score:.2f}/1.0"
+    },
+    "recommendations": [
+      "Focus on resolving internal tensions for greater unity",
+      "Consider how paradoxes contribute to thematic depth",
+      "Evaluate whether ambiguities are productive or confusing"
+    ],
+    "fallacies_avoided": [
+      "Intentional Fallacy (author's intent not considered)",
+      "Affective Fallacy (reader response not considered)"
+    ]
+  },
+  "formalism": {
+    "framework": "Formalism",
+    "analysis": "Formalist analysis focusing on structural elements, literary devices, and formal properties",
+    "form_elements": {
+      "structure": "Analyzed",
+      "literary_devices": "Analyzed",
+      "prosody": "Analyzed"
+    }
+  },
+  "structuralism": {
+    "framework": "Structuralism",
+    "analysis": "Structuralist analysis focusing on underlying patterns, binary oppositions, and language systems",
+    "score_weights": {
+      "binary_presence": 0.4,
+      "structure_presence": 0.3,
+      "language_coherence": 0.3,
+      "scale": 10.0
+    },
+    "key_findings": {
+      "binaries": "Detected {count} binary oppositions",
+      "narrative": "Narrative structure: {state}",
+      "coherence": "Language coherence: {score:.2f}"
+    },
+    "narrative_present": "Present",
+    "narrative_absent": "Absent"
+  }
+}

@@ -6,10 +6,10 @@
 # =============================================================================
 
 # --- Web Framework ----------------------------------------------------------
-fastapi>=0.135.0,<1.0.0
+fastapi>=0.135.1
 uvicorn[standard]>=0.41.0,<1.0.0
 jinja2>=3.1.6,<4.0.0
-python-dotenv>=1.2.1,<2.0.0
+python-dotenv>=1.2.2
 python-multipart>=0.0.22,<1.0.0
 
 # --- Data Validation --------------------------------------------------------
@@ -42,10 +42,22 @@ pyphen>=0.17.2,<1.0.0
 
 # --- Poetry Analysis --------------------------------------------------------
 pronouncing>=0.2.0,<1.0.0
-setuptools>=69.5.1,<70.0.0       # Required for pkg_resources by pronouncing in Python 3.12
+setuptools>=82.0.0       # Required for pkg_resources by pronouncing in Python 3.12
 
 # --- Sentiment Analysis ------------------------------------------------------
 vaderSentiment>=3.3.2,<4.0.0
+
+# --- Lexicons & Phonology ---------------------------------------------------
+panphon>=0.22.2,<0.23.0
+epitran>=1.34.0,<2.0.0
+phonemizer>=3.3.0,<4.0.0
+g2p-plus>=0.1.6,<0.2.0
+inltk>=0.9,<1.0.0
+pyiwn>=0.0.5,<0.1.0
+pypinyin>=0.55.0,<0.56.0
+datasets>=4.5.0,<5.0.0
+phyme>=0.0.9
+wiktra @ git+https://github.com/kbatsuren/wiktra.git
 
 # --- Data Processing --------------------------------------------------------
 pandas>=3.0.1,<4.0.0
@@ -53,7 +65,7 @@ numpy>=1.26.4,<2.0.0             # Prevent NumPy 2.0 crashes
 
 # --- Visualization ----------------------------------------------------------
 matplotlib>=3.10.8,<4.0.0
-plotly>=6.5.2,<7.0.0
+plotly>=6.6.0
 
 # --- Machine Learning / Scientific ------------------------------------------
 
@@ -63,9 +75,11 @@ plotly>=6.5.2,<7.0.0
 tqdm>=4.67.3,<5.0.0
 filelock>=3.25.0,<4.0.0
 imagesize>=2.0.0,<3.0.0
+multiprocess<0.70.19
+dill<0.4.1
 
 # --- Database ----------------------------------------------------------------
-sqlalchemy>=2.0.47,<3.0.0
+sqlalchemy>=2.0.48
 alembic>=1.18.4,<2.0.0
 psycopg[binary]>=3.3.3,<4.0.0
 pymysql>=1.1.2,<2.0.0
@@ -79,17 +93,4 @@ thinc>=8.3.10,<8.4.0
 tokenizers>=0.21.4,<0.22.0
 curated-transformers>=0.1.1,<0.2.0
 curated-tokenizers>=0.0.9,<0.1.0
-huggingface-hub>=0.36.2,<1.0.0
-
-# =============================================================================
-# POST-INSTALLATION
-# =============================================================================
-# Required spaCy models (download after installation):
-#   python -m spacy download en_core_web_trf  # English transformer (primary)
-#   python -m spacy download xx_sent_ud_sm    # Multilingual (Hindi, Gujarati, Urdu, etc.)
-#
-# For NLTK (in Python):
-#   import nltk
-#   nltk.download('punkt')
-#   nltk.download('averaged_perceptron_tagger')
-# =============================================================================
+huggingface-hub<1.0.0

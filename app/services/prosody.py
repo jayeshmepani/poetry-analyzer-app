@@ -5,234 +5,42 @@ Based on Quantitative Poetry Metrics - Section 4 & Ultimate Literary Master Syst
 """
 
 import re
+import json
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
 from collections import Counter
 import pronouncing
 import syllables  # Use library for English syllable counting
+from app.services.phonology_resources import (
+    get_phonology,
+    IPA_VOWELS,
+    count_syllables_from_ipa,
+    fallback_syllable_count,
+    syllabify_ipa,
+)
+from app.services.rule_loader import get_form_rules, get_output_limits
+
+
+def _load_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "prosody"
+_CONSTRAINTS_DIR = Path(__file__).resolve().parents[2] / "data" / "constraints"
+METER_PATTERNS = _load_json(_DATA_DIR / "meter_patterns.json")
+HAIKU_SYLLABLES = _load_json(_CONSTRAINTS_DIR / "haiku_syllables.json")
+EN_VOWELS = set(_load_json(_DATA_DIR / "english_vowels.json").get("vowels", []))
 
 
 # =============================================================================
 # ENGLISH METER PATTERNS
 # =============================================================================
 
-METER_PATTERNS = {
-    "iambic": {
-        "name": "Iambic",
-        "pattern": ["da", "DUM"],
-        "feet_name": "iamb",
-        "description": "unstressed-stressed (da-DUM)",
-    },
-    "trochaic": {
-        "name": "Trochaic",
-        "pattern": ["DUM", "da"],
-        "feet_name": "trochee",
-        "description": "stressed-unstressed (DUM-da)",
-    },
-    "anapestic": {
-        "name": "Anapestic",
-        "pattern": ["da", "da", "DUM"],
-        "feet_name": "anapest",
-        "description": "unstressed-unstressed-stressed",
-    },
-    "dactylic": {
-        "name": "Dactylic",
-        "pattern": ["DUM", "da", "da"],
-        "feet_name": "dactyl",
-        "description": "stressed-unstressed-unstressed",
-    },
-    "spondaic": {
-        "name": "Spondaic",
-        "pattern": ["DUM", "DUM"],
-        "feet_name": "spondee",
-        "description": "stressed-stressed",
-    },
-    "pyrrhic": {
-        "name": "Pyrrhic",
-        "pattern": ["da", "da"],
-        "feet_name": "pyrrhus",
-        "description": "unstressed-unstressed",
-    },
-}
 
 # Comprehensive stress dictionary (CMU Pronouncing Dictionary subset)
-STRESS_DICT = {
-    # 1-syllable words
-    "day": "DUM",
-    "night": "DUM",
-    "love": "DUM",
-    "heart": "DUM",
-    "soul": "DUM",
-    "life": "DUM",
-    "death": "DUM",
-    "light": "DUM",
-    "dark": "DUM",
-    "fire": "DUM",
-    "water": "DUM",
-    "wind": "DUM",
-    "sea": "DUM",
-    "star": "DUM",
-    "moon": "DUM",
-    "sun": "DUM",
-    "earth": "DUM",
-    "sky": "DUM",
-    "road": "DUM",
-    "way": "DUM",
-    "home": "DUM",
-    "door": "DUM",
-    "hand": "DUM",
-    "foot": "DUM",
-    "head": "DUM",
-    "eye": "DUM",
-    "face": "DUM",
-    "world": "DUM",
-    "time": "DUM",
-    "year": "DUM",
-    "man": "DUM",
-    "woman": "DUM",
-    "child": "DUM",
-    "friend": "DUM",
-    "mother": "DUM",
-    "father": "DUM",
-    "king": "DUM",
-    "queen": "DUM",
-    "god": "DUM",
-    "lord": "DUM",
-    "dream": "DUM",
-    "sleep": "DUM",
-    "song": "DUM",
-    "voice": "DUM",
-    "tear": "DUM",
-    "smile": "DUM",
-    "hope": "DUM",
-    "fear": "DUM",
-    "joy": "DUM",
-    "pain": "DUM",
-    "sorrow": "DUM",
-    "beauty": "DUM",
-    "truth": "DUM",
-    "grace": "DUM",
-    # 2-syllable words - first stress
-    "beauty": "DUM-da",
-    "summer": "DUM-da",
-    "winter": "DUM-da",
-    "autumn": "DUM-da",
-    "morning": "DUM-da",
-    "evening": "DUM-da",
-    "shadow": "DUM-da",
-    "flower": "DUM-da",
-    "garden": "DUM-da",
-    "window": "DUM-da",
-    "table": "DUM-da",
-    "chair": "DUM-da",
-    "memory": "DUM-da",
-    "silver": "DUM-da",
-    "golden": "DUM-da",
-    "yellow": "DUM-da",
-    "purple": "DUM-da",
-    "crimson": "DUM-da",
-    "crystal": "DUM-da",
-    "gentle": "DUM-da",
-    "silent": "DUM-da",
-    "bitter": "DUM-da",
-    "sweet": "DUM-da",
-    "lovely": "DUM-da",
-    "happy": "DUM-da",
-    "lonely": "DUM-da",
-    "holy": "DUM-da",
-    "glory": "DUM-da",
-    "story": "DUM-da",
-    "power": "DUM-da",
-    "hour": "DUM-da",
-    "heaven": "DUM-da",
-    "earth": "DUM-da",
-    "nature": "DUM-da",
-    "ocean": "DUM-da",
-    "mountain": "DUM-da",
-    "valley": "DUM-da",
-    "forest": "DUM-da",
-    "river": "DUM-da",
-    "thunder": "DUM-da",
-    "lightning": "DUM-da",
-    "winter": "DUM-da",
-    "spring": "DUM-da",
-    "season": "DUM-da",
-    "poet": "DUM-da",
-    "poetry": "DUM-da-da",
-    "verse": "DUM",
-    "rhyme": "DUM",
-    "meter": "DUM-da",
-    "rhythm": "DUM-da",
-    # 2-syllable words - second stress
-    "alone": "da-DUM",
-    "become": "da-DUM",
-    "believe": "da-DUM",
-    "receive": "da-DUM",
-    "appear": "da-DUM",
-    "ensure": "da-DUM",
-    "inspire": "da-DUM",
-    "adore": "da-DUM",
-    "emerge": "da-DUM",
-    "conceal": "da-DUM",
-    "befall": "da-DUM",
-    "again": "da-DUM",
-    "upon": "da-DUM",
-    "within": "da-DUM",
-    "without": "da-DUM",
-    "around": "da-DUM",
-    "about": "da-DUM",
-    "across": "da-DUM",
-    "along": "da-DUM",
-    "among": "da-DUM",
-    "before": "da-DUM",
-    "behind": "da-DUM",
-    "below": "da-DUM",
-    "above": "da-DUM",
-    "afar": "da-DUM",
-    "alive": "da-DUM",
-    "asleep": "da-DUM",
-    "awake": "da-DUM",
-    "await": "da-DUM",
-    "arise": "da-DUM",
-    # 3-syllable words
-    "beautiful": "DUM-da-da",
-    "wonderful": "DUM-da-da",
-    "powerful": "DUM-da-da",
-    "colorful": "DUM-da-da",
-    "meaningful": "DUM-da-da",
-    "delightful": "da-DUM-da",
-    "remember": "da-DUM-da",
-    "together": "da-DUM-da",
-    "forever": "da-DUM-da",
-    "infinite": "da-DUM-da",
-    "eternal": "da-DUM-da",
-    "enemy": "DUM-da-da",
-    "silently": "DUM-da-da",
-    "quietly": "DUM-da-da",
-    "gently": "DUM-da",
-    "softly": "DUM-da",
-    # Poetry common words
-    "compare": "da-DUM",
-    "temperate": "DUM-da-da",
-    "summer's": "DUM-da",
-    "lovely": "DUM-da",
-    "rough": "DUM",
-    "winds": "DUM",
-    "shake": "DUM",
-    "lease": "DUM",
-    "owe": "DUM",
-    "decline": "da-DUM",
-    "eternal": "da-DUM",
-    "chance": "DUM",
-    "nature": "DUM-da",
-    "course": "DUM",
-    "find": "DUM",
-    "untrimm'd": "da-DUM",
-    "thy": "da",
-    "thee": "DUM",
-    "thou": "DUM",
-    "art": "DUM",
-    "shall": "DUM",
-}
 
 
 class ProsodyAnalyzer:
@@ -257,9 +65,12 @@ class ProsodyAnalyzer:
                 "rhyme": self._analyze_rhyme(),
                 "scansion": self._generate_scansion(),
             }
-        elif self.language in ["hi", "mr", "bn", "gu", "sa"]:
+        elif self.language in ["hi", "mr", "bn", "sa"]:
             hindi_analyzer = HindiProsodyAnalyzer()
             return hindi_analyzer.analyze(text)
+        elif self.language == "gu":
+            gujarati_analyzer = GujaratiProsodyAnalyzer()
+            return gujarati_analyzer.analyze(text)
         elif self.language == "ur":
             urdu_analyzer = UrduProsodyAnalyzer()
             return urdu_analyzer.analyze(text)
@@ -275,7 +86,9 @@ class ProsodyAnalyzer:
         if not self.lines:
             return {"detected_meter": None, "error": "No lines to analyze"}
 
-        sample_lines = self.lines[: min(8, len(self.lines))]
+        limits = get_output_limits()
+        sample_limit = limits.get("prosody_meter_sample_lines") if limits else None
+        sample_lines = self.lines[: int(sample_limit)] if sample_limit is not None else self.lines
         line_patterns = []
 
         for line in sample_lines:
@@ -287,17 +100,28 @@ class ProsodyAnalyzer:
             line_patterns.append(pattern)
 
         detected_meter = self._detect_meter_type(line_patterns)
-        regularity = self._calculate_regularity(line_patterns, detected_meter)
+        regularity = self._calculate_regularity(line_patterns, detected_meter, tolerance_subs=0)
+        regularity_tolerant = self._calculate_regularity(line_patterns, detected_meter, tolerance_subs=1)
         foot_dist = self._foot_distribution(line_patterns)
 
         # Detect line length (monometer through hexameter)
         line_length = self._detect_line_length(line_patterns)
+        sample_pattern_limit = limits.get("prosody_sample_patterns") if limits else None
+        sample_patterns = (
+            line_patterns[: int(sample_pattern_limit)]
+            if sample_pattern_limit is not None
+            else line_patterns
+        )
 
         return {
             "detected_meter": detected_meter,
             "metrical_regularity": round(regularity, 2),
+            "metrical_regularity_tolerant": round(regularity_tolerant, 2),
+            "metrical_regularity_strict": round(regularity, 2),
+            "scansion_adherence_percent": round(regularity * 100, 2),
+            "scansion_adherence_percent_tolerant": round(regularity_tolerant * 100, 2),
             "foot_count_distribution": foot_dist,
-            "sample_patterns": ["-".join(p) for p in line_patterns[:2]],
+            "sample_patterns": ["-".join(p) for p in sample_patterns],
             "line_length": line_length,
             "full_meter_name": f"{detected_meter} {line_length}"
             if detected_meter and line_length
@@ -320,9 +144,6 @@ class ProsodyAnalyzer:
                 )
         except:
             pass
-
-        if word_lower in STRESS_DICT:
-            return STRESS_DICT[word_lower]
 
         # Estimate based on syllable count
         syllable_count = self._count_syllables(word)
@@ -352,7 +173,7 @@ class ProsodyAnalyzer:
                 pass  # Fall back to manual
 
         # Manual vowel counting for non-English or fallback
-        vowels = "aeiouy"
+        vowels = EN_VOWELS
         count = 0
         prev_is_vowel = False
 
@@ -417,7 +238,7 @@ class ProsodyAnalyzer:
         return dominant_meter
 
     def _calculate_regularity(
-        self, patterns: List[List[str]], meter_type: str
+        self, patterns: List[List[str]], meter_type: str, tolerance_subs: int = 0
     ) -> float:
         """Calculate metrical regularity score"""
         if not patterns or meter_type in ["free_verse", "unknown"]:
@@ -428,16 +249,20 @@ class ProsodyAnalyzer:
         )
         if not expected:
             return 0.0
-
         matches = 0
-        total = 0
+        total = len(patterns)
 
         for pattern in patterns:
-            for i in range(len(pattern) - len(expected) + 1):
-                segment = pattern[i : i + len(expected)]
-                if segment == expected:
+            if len(pattern) % len(expected) != 0:
+                continue
+            repeated = expected * (len(pattern) // len(expected))
+            if pattern == repeated:
+                matches += 1
+            else:
+                # allow tolerance_subs substitutions
+                mismatches = sum(1 for a, b in zip(pattern, repeated) if a != b)
+                if mismatches <= tolerance_subs:
                     matches += 1
-                total += 1
 
         return matches / total if total > 0 else 0.0
 
@@ -582,30 +407,32 @@ class ProsodyAnalyzer:
         """Check if two words rhyme"""
         if not word1 or not word2:
             return False
+        from app.services.phonology_resources import get_phonology
 
-        def get_rhyme_part(word):
-            vowels = "aeiouy"
-            for i in range(len(word) - 1, -1, -1):
-                if word[i] in vowels:
-                    return word[i:]
-            return word[-2:] if len(word) > 1 else word
-
-        part1 = get_rhyme_part(word1)
-        part2 = get_rhyme_part(word2)
-
-        return part1 == part2 or part1[-2:] == part2[-2:]
+        phon = get_phonology(self.language)
+        part1 = phon.rhyme_key(word1)
+        part2 = phon.rhyme_key(word2)
+        return bool(part1 and part2 and part1 == part2)
 
     def _calculate_rhyme_density(self, rhyme_groups: Dict) -> float:
-        """Calculate ratio of rhymed lines to total lines"""
+        """Calculate exact rhyme density: R / (n(n-1)/2)"""
         if not rhyme_groups:
             return 0.0
 
-        rhymed_lines = sum(
-            len(group) for group in rhyme_groups.values() if len(group) > 1
-        )
-        total_lines = sum(len(group) for group in rhyme_groups.values())
-
-        return rhymed_lines / total_lines if total_lines > 0 else 0.0
+        # Flatten last words
+        last_words = []
+        for group in rhyme_groups.values():
+            last_words.extend(group)
+        n = len(last_words)
+        if n < 2:
+            return 0.0
+        total_pairs = n * (n - 1) / 2
+        r = 0
+        for i in range(n):
+            for j in range(i + 1, n):
+                if self._rhymes_with(last_words[i], last_words[j]):
+                    r += 1
+        return r / total_pairs
 
     def _assess_rhyme_quality(self, last_words: List[str], rhyme_groups: Dict) -> str:
         """Assess rhyme quality"""
@@ -651,73 +478,88 @@ class HindiProsodyAnalyzer:
     Implements Doha, Chaupai, Soratha, Kundaliya, etc.
     """
 
-    LAGHU_VOWELS = ["अ", "इ", "उ", "ऋ"]
-    GURU_VOWELS = ["आ", "ई", "ऊ", "ए", "ऐ", "ओ", "औ"]
-
-    CHHAND_PATTERNS = {
-        "doha": {
-            "matra": [13, 11],
-            "charan": 2,
-            "description": "13+11 matras per line",
-        },
-        "chaupai": {
-            "matra": [16, 16, 16, 16],
-            "charan": 4,
-            "description": "16 matras per charan",
-        },
-        "soratha": {
-            "matra": [11, 13],
-            "charan": 2,
-            "description": "11+13 matras (inverse of Doha)",
-        },
-        "kundaliya": {
-            "matra": [24, 24, 24, 24, 24, 24],
-            "charan": 6,
-            "description": "24 matras × 6 charans",
-        },
-        "rola": {
-            "matra": [24, 24, 24, 24],
-            "charan": 4,
-            "description": "24 matras per charan",
-        },
-        "harigitika": {
-            "matra": [28, 28, 28, 28],
-            "charan": 4,
-            "description": "28 matras (16+12)",
-        },
-        "barvai": {"matra": [12, 7], "charan": 2, "description": "12+7 matras"},
-        "savaiya": {
-            "matra": [23, 23, 23, 23],
-            "charan": 4,
-            "description": "23 varnas (Mattagayand)",
-        },
-        "kavitt": {
-            "matra": [31, 31, 31, 31],
-            "charan": 4,
-            "description": "31-33 varnas",
-        },
-    }
+    def __init__(self) -> None:
+        vowels = _load_json(_DATA_DIR / "hindi_vowels.json")
+        signs = _load_json(_DATA_DIR / "hindi_signs.json")
+        self.laghu_vowels = set(vowels.get("laghu", []))
+        self.guru_vowels = set(vowels.get("guru", []))
+        self.laghu_signs = set(signs.get("laghu_signs", []))
+        self.guru_signs = set(signs.get("guru_signs", []))
+        self.anusvara_visarga = set(signs.get("anusvara_visarga", []))
+        self.virama = signs.get("virama", "्")
+        self.chhand_patterns = _load_json(_DATA_DIR / "chhand_patterns.json")
+        self.lines: List[str] = []
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Analyze Hindi text for chhand (meter)"""
         lines = [line.strip() for line in text.split("\n") if line.strip()]
+        self.lines = lines
 
         matra_counts = []
+        lg_sequences = []
+        gana_sequences = []
         for line in lines:
+            lg = self._lg_sequence(line)
+            lg_sequences.append(lg)
+            gana_sequences.append(self._gana_sequence(lg))
             matra = self._count_matras(line)
             matra_counts.append(matra)
 
         detected_chhand = self._detect_chhand(matra_counts)
         is_valid = detected_chhand is not None and detected_chhand != "free_verse"
+        end_rule_ok = self._check_end_rules(lines, lg_sequences, detected_chhand)
+        is_valid_chhand = bool(is_valid and end_rule_ok)
+
+        expected = self.chhand_patterns.get(detected_chhand, {}).get("matra") if detected_chhand else None
+        if expected:
+            total = min(len(matra_counts), len(expected))
+            matches = sum(1 for i in range(total) if matra_counts[i] == expected[i])
+            metrical_regularity = matches / total if total > 0 else 0.0
+        else:
+            metrical_regularity = 0.0
+
+        last_words = []
+        end_patterns = []
+        for line in lines:
+            words = line.split()
+            if words:
+                last_word = words[-1].lower().strip(".,!?;:'\"")
+                last_words.append(last_word)
+                pattern = self._end_syllable_pattern(last_word)
+                if pattern:
+                    end_patterns.append(pattern)
+        n = len(last_words)
+        if n >= 2:
+            total_pairs = n * (n - 1) / 2
+            r = 0
+            for i in range(n):
+                for j in range(i + 1, n):
+                    if self._rhymes_with(last_words[i], last_words[j]):
+                        r += 1
+            rhyme_density = r / total_pairs
+        else:
+            rhyme_density = 0.0
+
+        antyanuprasa_density = 0.0
+        if end_patterns:
+            pattern_counts = Counter(end_patterns)
+            dominant_pattern = max(pattern_counts, key=pattern_counts.get)
+            matching_lines = sum(1 for p in end_patterns if p == dominant_pattern)
+            antyanuprasa_density = matching_lines / len(lines) if lines else 0.0
 
         # Map to common prosody keys for front-end compatibility
         return {
             "meter": {
                 "detected_meter": detected_chhand or "free_verse",
-                "metrical_regularity": 0.9 if is_valid else 0.5,
+                "metrical_regularity": round(metrical_regularity, 4),
+                "scansion_adherence_percent": round(metrical_regularity * 100, 2),
                 "foot_pattern": "Matra-based",
                 "matra_counts": matra_counts,
-                "description": self.CHHAND_PATTERNS.get(detected_chhand, {}).get(
+                "lg_sequences": lg_sequences,
+                "gana_sequences": gana_sequences,
+                "end_rule_ok": end_rule_ok,
+                "is_valid_chhand": is_valid_chhand,
+                "description": self.chhand_patterns.get(detected_chhand, {}).get(
                     "description"
                 )
                 if detected_chhand
@@ -725,7 +567,8 @@ class HindiProsodyAnalyzer:
             },
             "rhyme": {
                 "detected_scheme": "AABB" if is_valid and len(lines) >= 2 else "None",
-                "rhyme_density": 0.8 if is_valid else 0.2,
+                "rhyme_density": round(rhyme_density, 4),
+                "antyanuprasa_density": round(antyanuprasa_density, 4),
             },
             "scansion": [
                 {"line_number": i + 1, "text": line, "matras": m}
@@ -734,6 +577,129 @@ class HindiProsodyAnalyzer:
             "detected_chhand": detected_chhand,
             "is_valid": is_valid,
         }
+
+    def _lg_sequence(self, line: str) -> List[str]:
+        """Compute L/G sequence for a line based on matra rules."""
+        laghu = self.laghu_vowels
+        guru = self.guru_vowels
+        laghu_signs = self.laghu_signs
+        guru_signs = self.guru_signs
+        anusvara_visarga = self.anusvara_visarga
+        sequence: List[str] = []
+
+        chars = list(line)
+        for i, ch in enumerate(chars):
+            if ch in laghu:
+                sequence.append("L")
+            elif ch in guru:
+                sequence.append("G")
+            elif ch in laghu_signs:
+                sequence.append("L")
+            elif ch in guru_signs:
+                sequence.append("G")
+            elif ch == self.virama:  # conjunct: previous short becomes guru
+                if sequence:
+                    sequence[-1] = "G"
+            elif ch in anusvara_visarga:
+                if sequence:
+                    sequence[-1] = "G"
+
+        # End-of-line short vowel optionally guru (strictly apply)
+        if sequence and sequence[-1] == "L":
+            sequence[-1] = "G"
+        return sequence
+
+    def _gana_sequence(self, lg: List[str]) -> List[str]:
+        """Pingala's 8 Gana system mapping from L/G triplets."""
+        mapping = {
+            "LGG": "Ya",
+            "GGG": "Ma",
+            "GGL": "Ta",
+            "GLG": "Ra",
+            "LGL": "Ja",
+            "GLL": "Bha",
+            "LLL": "Na",
+            "LLG": "Sa",
+        }
+        gana = []
+        for i in range(0, len(lg), 3):
+            triplet = "".join(lg[i : i + 3])
+            if len(triplet) == 3:
+                gana.append(mapping.get(triplet, ""))
+        return gana
+
+    def _check_end_rules(self, lines: List[str], lg_sequences: List[List[str]], chhand: Optional[str]) -> bool:
+        if not chhand or chhand not in self.chhand_patterns:
+            return False
+
+        # Helper to get last syllables of a sequence
+        def last_syllables(seq: List[str], n: int) -> List[str]:
+            return seq[-n:] if len(seq) >= n else seq
+
+        if chhand == "doha":
+            # even charan ends with Guru-Laghu (S|)
+            for idx, seq in enumerate(lg_sequences):
+                if not seq:
+                    return False
+                if last_syllables(seq, 2) != ["G", "L"]:
+                    return False
+            return True
+        if chhand == "chaupai":
+            # last two syllables NOT Guru-Laghu
+            for seq in lg_sequences:
+                if last_syllables(seq, 2) == ["G", "L"]:
+                    return False
+            return True
+        if chhand == "harigitika":
+            # ends with Laghu-Guru
+            for seq in lg_sequences:
+                if last_syllables(seq, 2) != ["L", "G"]:
+                    return False
+            return True
+        if chhand == "barvai":
+            # even charan ends with Jagana (LGL)
+            for seq in lg_sequences:
+                if last_syllables(seq, 3) != ["L", "G", "L"]:
+                    return False
+            return True
+        if chhand == "soratha":
+            # rhyme on odd charans: require line 1 and 2 end rhyme
+            if len(lines) >= 2:
+                last_words = [l.split()[-1] for l in lines if l.split()]
+                if len(last_words) >= 2:
+                    return self._rhymes_with(last_words[0], last_words[1])
+            return False
+        if chhand == "kavitt":
+            # yati at 16-15 or 8-8-8-7 (approx via matra count)
+            for line in lines:
+                weights = self._matra_weights(line)
+                total = sum(weights)
+                if total not in {31, 32, 33}:
+                    return False
+                cum = 0
+                positions = []
+                for w in weights:
+                    cum += w
+                    positions.append(cum)
+                if not (16 in positions or (8 in positions and 16 in positions and 24 in positions)):
+                    return False
+            return True
+        if chhand == "savaiya":
+            # Example Mattagayand: 7 Bha Ganas + GG = 23 varnas
+            for seq in lg_sequences:
+                if len(seq) != 23:
+                    return False
+                gana = self._gana_sequence(seq)
+                if gana[:7] != ["Bha"] * 7:
+                    return False
+                if seq[-2:] != ["G", "G"]:
+                    return False
+            return True
+        return True
+
+    def _matra_weights(self, line: str) -> List[int]:
+        lg = self._lg_sequence(line)
+        return [1 if x == "L" else 2 for x in lg]
 
     def _count_matras(self, line: str) -> int:
         """
@@ -761,16 +727,16 @@ class HindiProsodyAnalyzer:
                 m = 1
 
                 # Check for Guru (Long) vowels/matras
-                if char in self.GURU_VOWELS:
+                if char in self.guru_vowels:
                     m = 2
-                elif char in "ाीूेैोौ":
+                elif char in self.guru_signs:
                     m = 2
-                elif char in "ंः":
+                elif char in self.anusvara_visarga:
                     m = 1  # Adds to previous
 
                 # Conjunct consonant (Samyukta Akshara) rule:
                 # Syllable before a conjunct becomes Guru
-                if i + 1 < len(chars) and chars[i + 1] == "्":
+                if i + 1 < len(chars) and chars[i + 1] == self.virama:
                     m = 2
 
                 word_matras += m
@@ -784,33 +750,56 @@ class HindiProsodyAnalyzer:
 
         return count
 
+    def _rhymes_with(self, word1: str, word2: str) -> bool:
+        """Simple end-syllable rhyme check for Hindi (Devanagari)."""
+        if not word1 or not word2:
+            return False
+        from app.services.phonology_resources import get_phonology
+
+        phon = get_phonology("hi")
+        part1 = phon.rhyme_key(word1)
+        part2 = phon.rhyme_key(word2)
+        return bool(part1 and part2 and part1 == part2)
+
+    def _end_syllable_pattern(self, word: str) -> Optional[str]:
+        """Return end-syllable pattern for Antyanuprasa density."""
+        if not word:
+            return None
+        from app.services.phonology_resources import get_phonology
+
+        phon = get_phonology("hi")
+        return phon.rhyme_key(word)
+
     def _detect_chhand(self, matra_counts: List[int]) -> Optional[str]:
         """Detect chhand type from matra counts"""
         if not matra_counts:
             return None
-
-        # Check exact matches first
-        for chhand, pattern in self.CHHAND_PATTERNS.items():
+        for chhand, pattern in self.chhand_patterns.items():
             expected = pattern["matra"]
-            if len(matra_counts) >= len(expected):
-                # Check if first N matra counts match
-                if all(
-                    abs(m - e) <= 1
-                    for m, e in zip(matra_counts[: len(expected)], expected)
-                ):
+            if chhand in {"doha", "soratha", "barvai"}:
+                ok = True
+                for line in self.lines:
+                    if not self._line_matches_matra_pattern(line, expected):
+                        ok = False
+                        break
+                if ok:
                     return chhand
-
-        # Check for variants (within 2 matras tolerance)
-        for chhand, pattern in self.CHHAND_PATTERNS.items():
-            expected = pattern["matra"]
-            if len(matra_counts) >= len(expected):
-                if all(
-                    abs(m - e) <= 2
-                    for m, e in zip(matra_counts[: len(expected)], expected)
-                ):
-                    return f"{chhand}_variant"
-
+            else:
+                if all(m == expected[0] for m in matra_counts):
+                    return chhand
         return "free_verse"
+
+    def _line_matches_matra_pattern(self, line: str, targets: List[int]) -> bool:
+        weights = self._matra_weights(line)
+        idx = 0
+        for t in targets:
+            total = 0
+            while idx < len(weights) and total < t:
+                total += weights[idx]
+                idx += 1
+            if total != t:
+                return False
+        return True
 
 
 class UrduProsodyAnalyzer:
@@ -819,86 +808,149 @@ class UrduProsodyAnalyzer:
     Implements Mutaqaarib, Hazaj, Ramal, Kaamil, Mujtass
     """
 
-    BAHR_PATTERNS = {
-        "mutaqaarib": {
-            "pattern": "˘—— ˘—— ˘—— ˘—",
-            "feet": ["فعولن"],
-            "description": "Fa'ūlun Fa'ūlun Fa'ūlun Fa'ūl",
-        },
-        "hazaj": {
-            "pattern": "˘—— — ˘—— —",
-            "feet": ["مفاعیلن"],
-            "description": "Mafā'īlun Mafā'īlun",
-        },
-        "ramal": {
-            "pattern": "—˘—— —˘—— —˘—— —˘—",
-            "feet": ["فاعلاتن"],
-            "description": "Fā'ilātun Fā'ilātun Fā'ilātun Fā'ilun",
-        },
-        "kaamil": {
-            "pattern": "˘˘—˘— ˘˘—˘— ˘˘—˘—",
-            "feet": ["متفاعلن"],
-            "description": "Mafā'ilun Mafā'ilun Mafā'ilun",
-        },
-        "mujtass": {
-            "pattern": "——˘— —˘——",
-            "feet": ["مستفعلن", "فاعلاتن"],
-            "description": "Mustaf'ilun Fā'ilātun",
-        },
-    }
+    def __init__(self) -> None:
+        self.bahr_patterns = _load_json(_DATA_DIR / "bahr_patterns.json")
+        self.rules = _load_json(_DATA_DIR / "urdu_aruz_rules.json")
+        symbols = self.rules.get("symbols", {})
+        self.sym_short = symbols.get("short", "˘")
+        self.sym_long = symbols.get("long", "—")
+        self.sym_overlong = symbols.get("overlong", "—˘")
+        self.length_markers = set(self.rules.get("length_markers", []))
+        self.ignore_chars = set(self.rules.get("ignore_chars", []))
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Analyze Urdu text for bahr (meter)"""
         lines = [line.strip() for line in text.split("\n") if line.strip()]
+        limits = get_output_limits()
 
-        # Syllable weight analysis
+        # Syllable weight analysis (Taqti)
         syllable_patterns = []
+        line_details: List[Dict[str, Any]] = []
         for line in lines:
-            pattern = self._analyze_syllable_weights(line)
+            pattern, details = self._taqti_line(line)
             syllable_patterns.append(pattern)
+            line_details.append(details)
 
-        # Detect bahr
-        detected_bahr = self._detect_bahr(syllable_patterns)
+        # Detect bahr using DFA-style exact matching
+        detected_bahr, score = self._detect_bahr(syllable_patterns)
+
+        syllable_limit = limits.get("urdu_syllable_patterns") if limits else None
+        syllable_patterns_out = (
+            syllable_patterns[: int(syllable_limit)]
+            if syllable_limit is not None
+            else syllable_patterns
+        )
 
         return {
             "detected_bahr": detected_bahr,
-            "syllable_patterns": syllable_patterns[:4],
-            "bahr_description": self.BAHR_PATTERNS.get(detected_bahr, {}).get(
+            "bahr_score": round(score, 3),
+            "syllable_patterns": syllable_patterns_out,
+            "taqti": line_details,
+            "bahr_description": self.bahr_patterns.get(detected_bahr, {}).get(
                 "description"
             )
             if detected_bahr
             else None,
-            "analysis": "Urdu Aruz analysis (simplified - full implementation requires Arabic script processing)",
         }
 
-    def _analyze_syllable_weights(self, line: str) -> str:
-        """
-        Analyze syllable weights in Urdu line
-        Short (˘) = 1, Long (—) = 2, Overlong (—˘) = 3
-        """
-        # Simplified analysis - full implementation needs proper Urdu tokenization
-        weights = []
-        for char in line:
-            if char in "َ ُ ِ":  # Zabar, Zer, Pesh (short vowels)
-                weights.append("˘")
-            elif char in "ا و ی":  # Alif, Waw, Ye (long vowels)
-                weights.append("—")
+    def _taqti_line(self, line: str) -> Tuple[str, Dict[str, Any]]:
+        tokens = re.findall(r"[\u0600-\u06FF']+", line)
+        phon = get_phonology("ur")
+        ipa_words = []
+        for word in tokens:
+            ipa = phon.ipa(word)
+            if ipa:
+                ipa_words.append(ipa)
+            else:
+                ipa_words.append(word)
 
-        return "".join(weights) if weights else "unknown"
+        ipa_line = " ".join(ipa_words).strip()
+        syllables = syllabify_ipa(ipa_line)
+        weights = [self._syllable_weight(syl) for syl in syllables]
+        pattern = "".join(weights) if weights else "unknown"
+        return pattern, {
+            "line": line,
+            "ipa": ipa_line,
+            "syllables": syllables,
+            "weights": weights,
+            "pattern": pattern,
+        }
 
-    def _detect_bahr(self, patterns: List[str]) -> Optional[str]:
-        """Detect bahr from syllable patterns"""
+    def _syllable_weight(self, syllable: str) -> str:
+        if not syllable:
+            return self.sym_short
+        vowel_positions = [i for i, ch in enumerate(syllable) if ch in IPA_VOWELS]
+        if not vowel_positions:
+            return self.sym_short
+        vpos = vowel_positions[0]
+        long_vowel = False
+        if vpos + 1 < len(syllable) and syllable[vpos + 1] in self.length_markers:
+            long_vowel = True
+        coda = False
+        for ch in syllable[vpos + 1 :]:
+            if ch in self.ignore_chars:
+                continue
+            if ch not in IPA_VOWELS:
+                coda = True
+                break
+        if long_vowel and coda:
+            return self.sym_overlong
+        if long_vowel or coda:
+            return self.sym_long
+        return self.sym_short
+
+    def _tokenize_pattern(self, pattern: str) -> List[str]:
+        compact = pattern.replace(" ", "")
+        tokens: List[str] = []
+        i = 0
+        while i < len(compact):
+            if compact[i : i + 2] == self.sym_overlong:
+                tokens.append(self.sym_overlong)
+                i += 2
+            else:
+                tokens.append(compact[i])
+                i += 1
+        return tokens
+
+    def _dfa_match(self, tokens: List[str], target: List[str]) -> bool:
+        if not tokens or not target:
+            return False
+        state = 0
+        for tok in tokens:
+            if state >= len(target):
+                return False
+            if tok == target[state]:
+                state += 1
+            else:
+                return False
+        return state == len(target)
+
+    def _detect_bahr(self, patterns: List[str]) -> Tuple[Optional[str], float]:
+        """Detect bahr from syllable patterns (Taqti DFA match)"""
         if not patterns:
-            return None
+            return None, 0.0
 
-        # Pattern matching (simplified)
-        combined = " ".join(patterns[:4])
+        normalized = [p.replace(" ", "") for p in patterns if p and p != "unknown"]
+        if not normalized:
+            return None, 0.0
 
-        for bahr, info in self.BAHR_PATTERNS.items():
-            if info["pattern"] in combined or len(patterns) > 0:
-                return bahr
+        best_bahr = None
+        best_score = 0.0
+        for bahr, info in self.bahr_patterns.items():
+            target_tokens = self._tokenize_pattern(info["pattern"])
+            matches = 0
+            total = 0
+            for p in normalized:
+                tokens = self._tokenize_pattern(p)
+                total += 1
+                if self._dfa_match(tokens, target_tokens):
+                    matches += 1
+            score = matches / total if total else 0.0
+            if score > best_score:
+                best_score = score
+                best_bahr = bahr
 
-        return None
+        return best_bahr, best_score
 
 
 class GujaratiProsodyAnalyzer:
@@ -907,21 +959,11 @@ class GujaratiProsodyAnalyzer:
     Shares matra system with Hindi, includes Garbi, Raas forms
     """
 
-    GUJARATI_CHHANDS = {
-        "padyabandh": {
-            "matra": [24, 24, 24, 24],
-            "description": "Classical structured verse",
-        },
-        "garbi": {
-            "matra": [16, 16, 16, 16],
-            "description": "Devotional cyclic song (Navratri)",
-        },
-        "raas": {"matra": [14, 14, 14, 14], "description": "Circular dance-song form"},
-        "ghazal": {
-            "matra": [13, 11, 13, 11],
-            "description": "Ghazal form (adapted from Urdu)",
-        },
-    }
+    def __init__(self) -> None:
+        self.gujarati_chhands = _load_json(_DATA_DIR / "gujarati_chhands.json")
+        signs = _load_json(_DATA_DIR / "gujarati_signs.json")
+        self.gujarati_laghu = set(signs.get("laghu", []))
+        self.gujarati_guru = set(signs.get("guru", []))
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Analyze Gujarati text for chhand"""
@@ -937,7 +979,7 @@ class GujaratiProsodyAnalyzer:
         return {
             "detected_form": detected_form,
             "matra_counts": matra_counts,
-            "form_description": self.GUJARATI_CHHANDS.get(detected_form, {}).get(
+            "form_description": self.gujarati_chhands.get(detected_form, {}).get(
                 "description"
             )
             if detected_form
@@ -947,13 +989,10 @@ class GujaratiProsodyAnalyzer:
     def _count_matras_gujarati(self, line: str) -> int:
         """Count matras in Gujarati text"""
         count = 0
-        gujarati_laghu = "િ ઉ ઋ"
-        gujarati_guru = "ા ી ૂ ે ૈ ો ૌ આ ઈ ઊ એ ઐ ઓ ઔ"
-
         for char in line:
-            if char in gujarati_laghu:
+            if char in self.gujarati_laghu:
                 count += 1
-            elif char in gujarati_guru:
+            elif char in self.gujarati_guru:
                 count += 2
             elif ord(char) in range(0x0A80, 0x0AFF):
                 count += 1
@@ -965,7 +1004,7 @@ class GujaratiProsodyAnalyzer:
         if not matra_counts:
             return None
 
-        for form, pattern in self.GUJARATI_CHHANDS.items():
+        for form, pattern in self.gujarati_chhands.items():
             expected = pattern["matra"]
             if len(matra_counts) >= len(expected):
                 if all(
@@ -994,34 +1033,66 @@ def detect_poem_form(text: str, language: str = "en") -> Dict[str, Any]:
     # Form detection heuristics
     form_info = {"detected_forms": []}
 
-    # Haiku: 3 lines, 5-7-5 syllables
-    if len(lines) == 3:
-        syllable_counts = []
-        for line in lines:
-            count = sum(1 for c in line.lower() if c in "aeiou")
-            syllable_counts.append(count)
-        if syllable_counts == [5, 7, 5] or all(
-            abs(s - e) <= 1 for s, e in zip(syllable_counts, [5, 7, 5])
-        ):
-            form_info["detected_forms"].append("haiku")
+    def _syllables_in_line(line: str) -> int:
+        phon = get_phonology(language)
+        words = re.findall(r"[A-Za-z\u0600-\u06FF\u0900-\u097F\u0A80-\u0AFF']+", line)
+        count = 0
+        for word in words:
+            ipa = phon.ipa(word)
+            if ipa:
+                vcount = count_syllables_from_ipa(ipa)
+                if vcount:
+                    count += vcount
+            else:
+                # Fallback: English syllable lib or script-based vowel count
+                if language == "en":
+                    count += max(1, syllables.estimate(word))
+                else:
+                    count += fallback_syllable_count(word, language)
+        return count if count > 0 else 0
+
+    form_rules = get_form_rules()
+    haiku = form_rules.get("haiku", {})
+    if haiku:
+        min_lines = int(haiku.get("min_lines", 3))
+        max_lines = int(haiku.get("max_lines", 3))
+        if min_lines <= len(lines) <= max_lines:
+            syllable_counts = [_syllables_in_line(line) for line in lines]
+            target = haiku.get("syllable_pattern", HAIKU_SYLLABLES if HAIKU_SYLLABLES else [5, 7, 5])
+            tolerance = int(haiku.get("syllable_tolerance", 1))
+            if syllable_counts == target or all(
+                abs(s - e) <= tolerance for s, e in zip(syllable_counts, target)
+            ):
+                form_info["detected_forms"].append("haiku")
 
     # Sonnet: 14 lines
-    if len(lines) == 14:
-        rhyme = prosody_result.get("rhyme", {})
-        scheme = rhyme.get("detected_scheme", "")
-        if "ABAB" in scheme or "ABBA" in scheme:
-            form_info["detected_forms"].append("sonnet")
+    sonnet = form_rules.get("sonnet", {})
+    if sonnet:
+        lines_required = int(sonnet.get("lines", 14))
+        if len(lines) == lines_required:
+            rhyme = prosody_result.get("rhyme", {})
+            scheme = rhyme.get("detected_scheme", "")
+            if any(tag in scheme for tag in sonnet.get("rhyme_contains", [])):
+                form_info["detected_forms"].append("sonnet")
 
     # Villanelle: 19 lines with refrains
-    if len(lines) == 19:
-        form_info["detected_forms"].append("villanelle")
+    villanelle = form_rules.get("villanelle", {})
+    if villanelle:
+        lines_required = int(villanelle.get("lines", 19))
+        if len(lines) == lines_required:
+            form_info["detected_forms"].append("villanelle")
 
     # Ghazal: Minimum 5 couplets, AA BA CA scheme
-    if len(lines) >= 10 and len(lines) % 2 == 0:
-        rhyme = prosody_result.get("rhyme", {})
-        scheme = rhyme.get("detected_scheme", "")
-        if scheme and scheme[0] == scheme[1]:  # Matla (opening couplet)
-            form_info["detected_forms"].append("ghazal")
+    ghazal = form_rules.get("ghazal", {})
+    if ghazal:
+        min_lines = int(ghazal.get("min_lines", 10))
+        even_only = bool(ghazal.get("even_lines_only", True))
+        requires_matla = bool(ghazal.get("requires_matla", True))
+        if len(lines) >= min_lines and (len(lines) % 2 == 0 if even_only else True):
+            rhyme = prosody_result.get("rhyme", {})
+            scheme = rhyme.get("detected_scheme", "")
+            if (not requires_matla) or (scheme and scheme[0] == scheme[1]):
+                form_info["detected_forms"].append("ghazal")
 
     # Doha: 2 lines, 13+11 matras
     if len(lines) == 2 and language in ["hi", "mr", "bn"]:
