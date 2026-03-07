@@ -344,6 +344,23 @@ class EvaluationEngine:
                 "impact": tmpl["impact"]
             })
 
+        # Check rule-based form compliance
+        form_info = self.metrics.get("form_detected", {})
+        detected_forms = form_info.get("detected_forms", [])
+        if detected_forms and "free_verse" not in detected_forms:
+            tmpl = self._templates["strengths"].get("form_compliance", {
+                "category": "Structural Integrity",
+                "description": "The poem successfully adheres to the strict rules of a traditional poetic form ({form}).",
+                "evidence": "Detected strict compliance with {form} constraints.",
+                "impact": "Demonstrates advanced technical control and mastery of established poetic structures."
+            })
+            strengths.append({
+                "category": tmpl["category"],
+                "description": tmpl["description"].format(form=detected_forms[0].replace("_", " ").title()),
+                "evidence": tmpl["evidence"].format(form=detected_forms[0].replace("_", " ").title()),
+                "impact": tmpl["impact"]
+            })
+
         limit = self._output_limits.get("evaluation_strengths")
         if limit is None:
             return strengths
@@ -383,6 +400,34 @@ class EvaluationEngine:
                 "impact_analysis": tmpl["impact_analysis"],
                 "evidence": tmpl["evidence"],
                 "suggested_fix": tmpl["suggested_fix"],
+                "why_it_matters": tmpl["why_it_matters"]
+            })
+
+        # Check for near-miss form compliance
+        form_info = self.metrics.get("form_detected", {})
+        detected_forms = form_info.get("detected_forms", [])
+        
+        # If no strict forms detected but rhyme scheme suggests an attempt:
+        rhyme_form = prosody.get("rhyme", {}).get("detected_form")
+        if rhyme_form and not detected_forms:
+            tmpl = self._templates["issues"].get("form_near_miss", {
+                "location": "Overall Structure",
+                "issue_type": "Form Constraint Violation",
+                "severity": "medium",
+                "technical_explanation": "The rhyme scheme matches a {form}, but meter/syllable/line-count constraints are violated.",
+                "impact_analysis": "The poem attempts a traditional form but breaks required rules, disrupting expected aesthetic patterns.",
+                "evidence": "Detected {form} rhyme scheme without full structural compliance.",
+                "suggested_fix": "Review the strict rules for {form} (meter, syllable count, stanza breaks) and revise non-compliant lines.",
+                "why_it_matters": "Traditional forms derive power from the tension between strict constraints and creative expression."
+            })
+            issues.append({
+                "location": tmpl["location"],
+                "issue_type": tmpl["issue_type"],
+                "severity": tmpl["severity"],
+                "technical_explanation": tmpl["technical_explanation"].format(form=rhyme_form.replace("_", " ").title()),
+                "impact_analysis": tmpl["impact_analysis"],
+                "evidence": tmpl["evidence"].format(form=rhyme_form.replace("_", " ").title()),
+                "suggested_fix": tmpl["suggested_fix"].format(form=rhyme_form.replace("_", " ").title()),
                 "why_it_matters": tmpl["why_it_matters"]
             })
 

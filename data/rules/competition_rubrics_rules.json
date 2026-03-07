@@ -1,0 +1,44 @@
+{
+  "descriptions": {
+    "slam": "Slam scoring favors raw emotional intensity, memorable imagery, and performance-ready rhythmic structures.",
+    "pol": "Poetry Out Loud rubrics adapted to assess the text's inherent recitation potential and linguistic complexity.",
+    "academic": "Standard academic grading system based on structural coherence, diction quality, thematic depth, and originality.",
+    "fitness_high": "High — poem demonstrates strong metrical precision, rich imagery, and sustained emotional resonance.",
+    "fitness_medium": "Medium — poem shows adequate poetic structure with room to deepen emotional and sonic impact.",
+    "fitness_low": "Low — poem may benefit from greater formal consistency and heightened lexical or imagistic density."
+  },
+  "scales": {
+    "slam": {
+      "max_score": 10.0,
+      "emotion_weight": 0.6,
+      "sentiment_weight": 0.4,
+      "originality_multiplier": 15.0,
+      "rhythm_multiplier": 12.0
+    },
+    "pol": {
+      "max_score": 10.0,
+      "voice_rhyme_weight": 0.4,
+      "voice_rhythm_weight": 0.6,
+      "understanding_multiplier": 1.5
+    },
+    "academic": {
+      "max_structure": 20,
+      "max_vocab": 20,
+      "max_theme": 30,
+      "max_original": 30,
+      "structure_scale": 1.2
+    }
+  },
+  "fitness_thresholds": {
+    "high": 0.7,
+    "medium": 0.4
+  },
+  "weights": {
+    "structural_alignment": 0.4,
+    "rhyme_density": 0.2,
+    "poetic_intensity": 0.4,
+    "lexical_diversity": 0.4,
+    "imagery": 0.4,
+    "sentiment_intensity": 0.2
+  }
+}

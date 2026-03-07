@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Optional, Tuple, List
@@ -18,6 +19,11 @@ from typing import Dict, Optional, Tuple, List
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+try:
+    import pronouncing as _pronouncing
+except Exception:
+    _pronouncing = None
 
 
 def _load_json(path: Path) -> dict:
@@ -132,16 +138,27 @@ class PhonologyResources:
             import epitran
 
             lang_map = {
-                "hi": "hin",
-                "gu": "guj",
-                "ur": "urd",
+                "hi": "hin-Deva",
+                "gu": "guj-Gujr",
+                "ur": "urd-Arab",
                 "en": None,
             }
             code = lang_map.get(self.language)
             if code:
+                # On Windows, non-UTF8 runtime can break Indic map loading.
+                if os.name == "nt" and getattr(sys.flags, "utf8_mode", 0) != 1:
+                    logger.debug(
+                        "Epitran deferred for %s; UTF-8 mode required on Windows.",
+                        self.language,
+                    )
+                    return
                 self._epitran = epitran.Epitran(code)
         except Exception as e:
-            logger.warning(f"Epitran init failed for {self.language}: {e}")
+            logger.debug(
+                "Epitran not enabled for %s; using alternate phonology path (%s).",
+                self.language,
+                e,
+            )
 
     def _init_phyme(self) -> None:
         if self.language != "en":
@@ -151,7 +168,7 @@ class PhonologyResources:
 
             self._phyme = Phyme()
         except Exception as e:
-            logger.warning(f"Phyme init failed: {e}")
+            logger.info("Phyme not enabled; using other English rhyme strategies (%s).", e)
 
     @staticmethod
     def _load_urdu_g2p_map() -> Dict[str, str]:
@@ -162,13 +179,13 @@ class PhonologyResources:
                 with open(cache_path, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
-                logger.warning(f"Failed to read Urdu G2P cache: {e}")
+                logger.info(f"Urdu G2P cache read path not active; rebuilding map: {e}")
 
         # Attempt to build mapping on demand (real dataset load)
         try:
             from datasets import load_dataset
         except Exception as e:
-            logger.warning(f"datasets unavailable for Urdu G2P: {e}")
+            logger.info(f"HF datasets client not active for Urdu G2P: {e}")
             return {}
 
         os.makedirs(cache_dir, exist_ok=True)
@@ -207,7 +224,7 @@ class PhonologyResources:
                     json.dump(mapping, f, ensure_ascii=False)
             return mapping
         except Exception as e:
-            logger.warning(f"Urdu G2P mapping build failed: {e}")
+            logger.info(f"Urdu G2P mapping was not built in this run: {e}")
             return {}
 
     def _get_urdu_map(self) -> Dict[str, str]:
@@ -238,14 +255,13 @@ class PhonologyResources:
 
         script = _detect_script(clean)
         if self.language == "en" or script == "latin":
-            try:
-                import pronouncing
-
-                phones = pronouncing.phones_for_word(clean.lower())
-                if phones:
-                    return phones[0]
-            except Exception:
-                pass
+            if _pronouncing is not None:
+                try:
+                    phones = _pronouncing.phones_for_word(clean.lower())
+                    if phones:
+                        return phones[0]
+                except Exception:
+                    pass
 
         if script == "arabic":
             urdu_map = self._get_urdu_map()
@@ -272,16 +288,15 @@ class PhonologyResources:
             return None
 
         if self.language == "en":
-            try:
-                import pronouncing
-
-                phones = pronouncing.phones_for_word(clean.lower())
-                if phones:
-                    part = pronouncing.rhyming_part(phones[0])
-                    if part:
-                        return part
-            except Exception:
-                pass
+            if _pronouncing is not None:
+                try:
+                    phones = _pronouncing.phones_for_word(clean.lower())
+                    if phones:
+                        part = _pronouncing.rhyming_part(phones[0])
+                        if part:
+                            return part
+                except Exception:
+                    pass
 
             if self._phyme:
                 try:

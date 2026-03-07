@@ -18,7 +18,7 @@
         </div>
         {% endif %}
 
-        <form action="/register" method="POST" id="registerForm" class="d-flex flex-col gap-5">
+        <form action="{{ route('register') }}" method="POST" id="registerForm" class="d-flex flex-col gap-5">
             <div class="form-group">
                 <label for="name" class="form-label">Full Name</label>
                 <input type="text" id="name" name="name" class="form-input" required placeholder="John Doe" autofocus
@@ -84,7 +84,7 @@
         </form>
 
         <div class="text-center mt-8 text-sm text-soft">
-            Already have an account? <a href="/login" class="text-primary font-medium hover:underline">Sign in
+            Already have an account? <a href="{{ route('login') }}" class="text-primary font-medium hover:underline">Sign in
                 instead</a>
         </div>
 
@@ -125,3 +125,5 @@
     });
 </script>
 {% endblock %}
+
+

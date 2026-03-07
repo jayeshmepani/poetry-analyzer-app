@@ -100,9 +100,14 @@
 
 {% block page_js %}
 <script>
+    function cssVar(name, fallback = '') {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+    }
+
     async function fetchDashboardData() {
         try {
-            const response = await axios.get('/stats');
+            const response = await axios.get('{{ route('data.stats') }}');
             const data = response.data.success ? response.data.data : response.data;
             updateDashboard(data);
         } catch (e) {
@@ -124,16 +129,23 @@
         const lineHost = document.getElementById('analysesChart');
         const pieHost = document.getElementById('languageChart');
         if (!lineHost || !pieHost || typeof Plotly === 'undefined') return;
+        const primary = cssVar('--color-primary', '#A83CAE');
+        const accent = cssVar('--color-accent', '#007D8B');
+        const success = cssVar('--color-success', '#0F835B');
+        const warning = cssVar('--color-warning', '#D39200');
+        const danger = cssVar('--color-danger', '#D9364A');
+        const info = cssVar('--color-info', '#0FA4B4');
+        const border = cssVar('--color-border', 'rgba(138,155,168,0.15)');
 
         const lineTrace = {
             x: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             y: dayData,
             type: 'scatter',
             mode: 'lines+markers',
-            line: { width: 4, color: '#C6A14A', shape: 'spline', smoothing: 1.2 },
-            marker: { size: 8, color: '#0EA5E9' },
+            line: { width: 4, color: primary, shape: 'spline', smoothing: 1.2 },
+            marker: { size: 8, color: accent },
             fill: 'tozeroy',
-            fillcolor: 'rgba(198,161,74,0.18)',
+            fillcolor: cssVar('--color-primary-subtle', 'rgba(168,60,174,0.18)'),
             name: 'Analyses'
         };
 
@@ -141,14 +153,14 @@
             margin: { l: 40, r: 16, t: 12, b: 36 },
             paper_bgcolor: 'transparent',
             plot_bgcolor: 'transparent',
-            xaxis: { gridcolor: 'rgba(148,163,184,0.15)', zeroline: false },
-            yaxis: { gridcolor: 'rgba(148,163,184,0.15)', zeroline: false, rangemode: 'tozero' },
+            xaxis: { gridcolor: border, zeroline: false },
+            yaxis: { gridcolor: border, zeroline: false, rangemode: 'tozero' },
             showlegend: false
         }, { displayModeBar: false, responsive: true });
 
         const labels = Object.keys(langs).map((l) => l.toUpperCase());
         const values = Object.values(langs);
-        const colors = ['#C6A14A', '#0EA5E9', '#22C55E', '#F59E0B', '#EF4444', '#7C3AED', '#14B8A6'];
+        const colors = [primary, accent, success, warning, danger, cssVar('--color-secondary', '#0F835B'), info];
 
         Plotly.react(pieHost, [{
             labels,
@@ -187,7 +199,7 @@
             </td>
             <td class="text-sm font-medium text-soft">${formatDate(a.created_at)}</td>
             <td class="text-right">
-                <a href="/results/${a.uuid}" class="btn btn-outline size-40 p-0 d-flex items-center justify-center rounded-lg">
+                <a href="{{ route('results') }}/${a.uuid}" class="btn btn-outline size-40 p-0 d-flex items-center justify-center rounded-lg">
                     <svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>
                 </a>
             </td>
@@ -198,3 +210,5 @@
     document.addEventListener('DOMContentLoaded', fetchDashboardData);
 </script>
 {% endblock %}
+
+

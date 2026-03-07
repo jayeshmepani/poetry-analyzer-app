@@ -69,9 +69,9 @@ class StructuralAnalyzer:
         if min_lines is None or golden_fraction is None or total_lines < int(min_lines):
             return {"present": False, "reason": "Insufficient lines"}
 
-        # Calculate golden section points
-        golden_section_line = int(total_lines * (1 - float(golden_fraction)))
-        golden_section_line_alt = int(total_lines * float(golden_fraction))
+        # Golden position follows the documented 0.618 proportion of total lines.
+        golden_section_line = int(total_lines * float(golden_fraction))
+        golden_section_line_alt = int(total_lines * (1.0 - float(golden_fraction)))
 
         # Strict: golden shift only if stanza break occurs exactly at golden section line
         has_golden_shift = self._detect_shift_at_line(golden_section_line)
@@ -81,7 +81,7 @@ class StructuralAnalyzer:
             "golden_section_line": golden_section_line,
             "golden_section_line_alt": golden_section_line_alt,
             "total_lines": total_lines,
-            "golden_ratio_position": round((1 - float(golden_fraction)) * 100, 1),
+            "golden_ratio_position": round(float(golden_fraction) * 100, 1),
             "has_shift_at_golden_point": has_golden_shift,
             "analysis": f"Golden ratio analysis for {total_lines}-line poem"
         }

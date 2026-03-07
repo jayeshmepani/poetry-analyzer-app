@@ -34,13 +34,19 @@
 
 class CustomTable {
     constructor(tableEl, options = {}) {
+        const pageList = this._normalizePageList(
+            tableEl.dataset.pageList || options.pageList || '[5,10,25,50,100,"all"]'
+        );
+        const initialPageSizeRaw = tableEl.dataset.pageSize || options.pageSize || 10;
+        const initialPageSize = this._normalizePageSize(initialPageSizeRaw, pageList);
+
         this.table = tableEl;
         this.opts = {
             url: tableEl.dataset.url || options.url || null,
             sort: tableEl.dataset.sort || options.sort || 'id',
             order: tableEl.dataset.order || options.order || 'asc',
-            pageSize: parseInt(tableEl.dataset.pageSize || options.pageSize || 10),
-            pageList: JSON.parse(tableEl.dataset.pageList || options.pageList || '[10,25,50,100]'),
+            pageSize: initialPageSize,
+            pageList,
             search: tableEl.dataset.search === 'true',
             clickToSelect: tableEl.dataset.clickToSelect === 'true',
             toolbar: tableEl.dataset.toolbar || options.toolbar || null,
@@ -62,6 +68,58 @@ class CustomTable {
         this._parseColumns();
         this._build();
         this._refresh();
+    }
+
+    _normalizePageList(rawValue) {
+        let parsed = rawValue;
+        if (typeof rawValue === 'string') {
+            try {
+                parsed = JSON.parse(rawValue);
+            } catch (_) {
+                parsed = [5, 10, 25, 50, 100, 'all'];
+            }
+        }
+        if (!Array.isArray(parsed) || !parsed.length) {
+            parsed = [5, 10, 25, 50, 100, 'all'];
+        }
+
+        const seen = new Set();
+        const normalized = [];
+        parsed.forEach(item => {
+            if (typeof item === 'string' && item.toLowerCase() === 'all') {
+                if (!seen.has('all')) {
+                    normalized.push('all');
+                    seen.add('all');
+                }
+                return;
+            }
+            const numeric = parseInt(item, 10);
+            if (Number.isFinite(numeric) && numeric > 0 && !seen.has(String(numeric))) {
+                normalized.push(numeric);
+                seen.add(String(numeric));
+            }
+        });
+
+        if (!normalized.length) return [5, 10, 25, 50, 100, 'all'];
+        return normalized;
+    }
+
+    _normalizePageSize(rawValue, pageList) {
+        if (typeof rawValue === 'string' && rawValue.toLowerCase() === 'all') return null;
+        const numeric = parseInt(rawValue, 10);
+        if (Number.isFinite(numeric) && numeric > 0) return numeric;
+
+        const firstNumeric = pageList.find(v => typeof v === 'number');
+        return Number.isFinite(firstNumeric) ? firstNumeric : 10;
+    }
+
+    _formatPageOption(value) {
+        return value === 'all' ? 'All' : String(value);
+    }
+
+    _isSameLimit(optionValue, currentLimit) {
+        if (optionValue === 'all') return currentLimit === null;
+        return optionValue === currentLimit;
     }
 
     // ------------------------------------
@@ -152,16 +210,16 @@ class CustomTable {
                     Per page:
                     <div class="ct-select" data-open="false">
                         <button type="button" class="ct-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                            <span class="ct-select-value">${this.opts.pageSize}</span>
+                            <span class="ct-select-value">${this.opts.pageSize === null ? 'All' : this.opts.pageSize}</span>
                             <svg class="ct-select-caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path d="M6 8l4 4 4-4"></path>
                             </svg>
                         </button>
                         <ul class="ct-select-menu" role="listbox" tabindex="-1">
-                            ${this.opts.pageList.map(n => `
-                                <li role="option" aria-selected="${n === this.opts.pageSize ? 'true' : 'false'}">
-                                    <button type="button" class="ct-select-option ${n === this.opts.pageSize ? 'is-selected' : ''}" data-value="${n}">
-                                        ${n}
+                            ${this.opts.pageList.map(option => `
+                                <li role="option" aria-selected="${this._isSameLimit(option, this.opts.pageSize) ? 'true' : 'false'}">
+                                    <button type="button" class="ct-select-option ${this._isSameLimit(option, this.opts.pageSize) ? 'is-selected' : ''}" data-value="${option}">
+                                        ${this._formatPageOption(option)}
                                     </button>
                                 </li>
                             `).join('')}
@@ -330,13 +388,16 @@ class CustomTable {
                 requestAnimationFrame(placeSelectMenu);
             };
 
-            const setLimit = (nextLimit) => {
+            const setLimit = (nextLimitRaw) => {
+                const nextLimit = nextLimitRaw === 'all' ? null : parseInt(nextLimitRaw, 10);
+                if (nextLimitRaw !== 'all' && Number.isNaN(nextLimit)) return;
                 this.state.limit = nextLimit;
                 this.state.offset = 0;
-                selectValue.textContent = String(nextLimit);
+                selectValue.textContent = nextLimit === null ? 'All' : String(nextLimit);
 
                 optionButtons.forEach(btn => {
-                    const isActive = parseInt(btn.dataset.value, 10) === nextLimit;
+                    const btnValue = btn.dataset.value === 'all' ? 'all' : parseInt(btn.dataset.value, 10);
+                    const isActive = (btnValue === 'all' && nextLimit === null) || (btnValue !== 'all' && btnValue === nextLimit);
                     btn.classList.toggle('is-selected', isActive);
                     btn.parentElement?.setAttribute('aria-selected', isActive ? 'true' : 'false');
                 });
@@ -355,8 +416,7 @@ class CustomTable {
             optionButtons.forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const nextLimit = parseInt(btn.dataset.value, 10);
-                    if (!Number.isNaN(nextLimit)) setLimit(nextLimit);
+                    setLimit(btn.dataset.value);
                 });
             });
 
@@ -385,12 +445,15 @@ class CustomTable {
         try {
             // ── All params sent to server — nothing filtered client-side ──
             const params = new URLSearchParams({
-                limit: this.state.limit,
-                offset: this.state.offset,
                 sort: this.state.sort,
                 order: this.state.order,
                 search: this.state.search,
             });
+
+            if (this.state.limit !== null) {
+                params.set('limit', String(this.state.limit));
+                params.set('offset', String(this.state.offset));
+            }
 
             // Append any active filters as individual query params
             Object.entries(this.state.filters).forEach(([k, v]) => {
@@ -486,6 +549,10 @@ class CustomTable {
         const total = this.state.total;
         const limit = this.state.limit;
         const offset = this.state.offset;
+        if (limit === null) {
+            pages.innerHTML = '';
+            return;
+        }
         const current = Math.floor(offset / limit);
         const totalPages = Math.ceil(total / limit);
 
@@ -537,8 +604,10 @@ class CustomTable {
     }
 
     _updateInfo() {
-        const start = this.state.total === 0 ? 0 : this.state.offset + 1;
-        const end = Math.min(this.state.offset + this.state.limit, this.state.total);
+        const start = this.state.total === 0 ? 0 : (this.state.limit === null ? 1 : this.state.offset + 1);
+        const end = this.state.limit === null
+            ? this.state.total
+            : Math.min(this.state.offset + this.state.limit, this.state.total);
         this._bottomBar.querySelector('.ct-start').textContent = start;
         this._bottomBar.querySelector('.ct-end').textContent = end;
         this._bottomBar.querySelector('.ct-total').textContent = this.state.total;

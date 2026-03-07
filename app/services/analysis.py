@@ -13,6 +13,9 @@ from app.services.quantitative import QuantitativeMetricsCalculator
 from app.services.prosody import ProsodyAnalyzer, HindiProsodyAnalyzer, detect_poem_form
 from app.services.linguistic import LinguisticAnalyzer
 from app.services.literary_devices import LiteraryDevicesAnalyzer
+from app.services.stylometry import StylometryAnalyzer
+from app.services.competition_rubrics import CompetitionRubricsAnalyzer
+from app.services.evolutionary import EvolutionaryFitnessAnalyzer
 from app.services.rule_loader import get_analysis_rules
 
 
@@ -25,6 +28,9 @@ class AnalysisService:
         self.hindi_prosody = HindiProsodyAnalyzer()
         self.linguistic_analyzer = LinguisticAnalyzer()
         self.literary_devices = LiteraryDevicesAnalyzer()
+        self.stylometry_analyzer = StylometryAnalyzer()
+        self.competition_rubrics = CompetitionRubricsAnalyzer()
+        self.evolutionary_fitness = EvolutionaryFitnessAnalyzer()
         self._rules = get_analysis_rules()
 
     def analyze(self, text: str, language: str = "en", strictness: int = 7) -> Dict:
@@ -61,7 +67,32 @@ class AnalysisService:
         )
 
         # TP-CASTT analysis
-        tp_castt = self._tp_castt(self.text, linguistic)
+        tp_castt = self._tp_castt(text, linguistic)
+
+        # Stylometry
+        stylometry = self.stylometry_analyzer.analyze(text)
+
+        # Competition Rubrics
+        scoring = self._rules.get("scoring", {})
+        aggregated_metrics = {
+            "rhyme_density": prosody.get("rhyme", {}).get("rhyme_density", 0.0),
+            "readability": quantitative.get("readability_metrics", {}).get(
+                "flesch_reading_ease", float(scoring.get("comparison_default_readability", 50.0))
+            ),
+            "imagery_score": ratings.get(
+                "imagery_voice", float(scoring.get("comparison_default_imagery_score", 0.0)) * 10.0
+            ) / 10.0,
+            "sentiment_intensity": abs(linguistic.get("sentiment", {}).get("compound", 0.0)),
+            "lexical_diversity": stylometry.get("ttr", 0.0),
+            "metrical_regularity": prosody.get("meter", {}).get("metrical_regularity", 0.0),
+            "thematic_depth": ratings.get(
+                "originality", float(scoring.get("comparison_default_thematic_depth", 0.0)) * 10.0
+            ) / 10.0
+        }
+        competition_scores = self.competition_rubrics.analyze(text, aggregated_metrics)
+        
+        # Evolutionary algorithms fitness
+        evolutionary = self.evolutionary_fitness.analyze(text, aggregated_metrics)
 
         # Pritchard Scale + Transaction Formula
         pritchard = self._pritchard_scale(ratings)
@@ -77,6 +108,9 @@ class AnalysisService:
             "pritchard_scale": pritchard,
             "transaction_formula": transaction,
             "tp_castt": tp_castt,
+            "stylometry": stylometry,
+            "competition_rubrics": competition_scores,
+            "evolutionary_fitness": evolutionary,
             "executive_summary": summary,
             "strengths": strengths,
             "suggestions": suggestions,
@@ -128,38 +162,41 @@ class AnalysisService:
 
     def _calculate_cultural_score(self, literary: Dict, linguistic: Dict) -> float:
         rules = self._rules
-        score = 5.0
+        scoring = (rules or {}).get("scoring", {})
+        score = float(scoring.get("base_score", 5.0))
         sanskrit = literary.get("sanskrit_alankar", {})
         rasa = literary.get("rasa", {})
         alankar_count = sum(len(v) for v in sanskrit.values()) if isinstance(sanskrit, dict) else 0
         rasa_strength = sum(rasa.values()) if isinstance(rasa, dict) else 0
         if alankar_count > 5:
-            score += 2.0
+            score += float(scoring.get("cultural_alankar_high_bonus", 2.0))
         elif alankar_count > 0:
-            score += 1.0
+            score += float(scoring.get("cultural_alankar_low_bonus", 1.0))
         if rasa_strength > 0:
-            score += 1.0
+            score += float(scoring.get("cultural_rasa_bonus", 1.0))
         return min(10.0, max(1.0, score))
 
     def _calculate_technical_score(self, quantitative: Dict, linguistic: Dict) -> float:
         """Calculate technical craft score"""
-        score = 5.0
+        rules = self._rules
+        scoring = (rules or {}).get("scoring", {})
+        score = float(scoring.get("base_score", 5.0))
 
         # Adjust based on sentence complexity
         if linguistic.get("syntax", {}).get("clauses", {}).get("has_complex_sentences"):
-            score += 1.0
+            score += float(scoring.get("technical_complex_bonus", 1.0))
 
         # Adjust based on sentence variety
         sentence_types = linguistic.get("syntax", {}).get("sentence_types", {})
         min_variety = rules.get("technical_sentence_variety_min") if rules else None
         if min_variety is not None and sum(sentence_types.values()) > int(min_variety):
-            score += 0.5
+            score += float(scoring.get("technical_sentence_variety_bonus", 0.5))
 
         # Adjust based on morphological complexity
         morph = linguistic.get("morphology", {})
         morph_min = rules.get("technical_morph_complexity_min") if rules else None
         if morph_min is not None and (morph.get("prefix_count", 0) + morph.get("suffix_count", 0) > int(morph_min)):
-            score += 0.5
+            score += float(scoring.get("technical_morph_bonus", 0.5))
 
         if not rules:
             return score
@@ -167,19 +204,21 @@ class AnalysisService:
 
     def _calculate_language_score(self, linguistic: Dict) -> float:
         """Calculate language and diction score"""
-        score = 5.0
+        rules = self._rules
+        scoring = (rules or {}).get("scoring", {})
+        score = float(scoring.get("base_score", 5.0))
 
         # Check for varied vocabulary
         lexical = linguistic.get("semantics", {})
         sem_min = rules.get("language_semantic_density_min") if rules else None
         if sem_min is not None and lexical.get("semantic_density", 0) > float(sem_min):
-            score += 1.0
+            score += float(scoring.get("language_semantic_bonus", 1.0))
 
         # Check for rich synonyms
         lex_relations = linguistic.get("lexical_relations", {})
         syn_min = rules.get("language_synonym_min") if rules else None
         if syn_min is not None and len(lex_relations.get("synonyms", {})) > int(syn_min):
-            score += 1.0
+            score += float(scoring.get("language_synonym_bonus", 1.0))
 
         if not rules:
             return score
@@ -187,7 +226,9 @@ class AnalysisService:
 
     def _calculate_imagery_score(self, literary: Dict, linguistic: Dict) -> float:
         """Calculate imagery and voice score"""
-        score = 5.0
+        rules = self._rules
+        scoring = (rules or {}).get("scoring", {})
+        score = float(scoring.get("base_score", 5.0))
 
         # Check for imagery variety
         imagery = literary.get("imagery", {})
@@ -196,9 +237,9 @@ class AnalysisService:
         high = rules.get("imagery_types_high") if rules else None
         mid = rules.get("imagery_types_mid") if rules else None
         if high is not None and imagery_types > int(high):
-            score += 1.5
+            score += float(scoring.get("imagery_high_bonus", 1.5))
         elif mid is not None and imagery_types > int(mid):
-            score += 0.5
+            score += float(scoring.get("imagery_mid_bonus", 0.5))
 
         # Check for figurative language
         tropes = literary.get("tropes", {})
@@ -207,9 +248,9 @@ class AnalysisService:
         th = rules.get("tropes_count_high") if rules else None
         tm = rules.get("tropes_count_mid") if rules else None
         if th is not None and tropes_count > int(th):
-            score += 1.5
+            score += float(scoring.get("tropes_high_bonus", 1.5))
         elif tm is not None and tropes_count > int(tm):
-            score += 0.5
+            score += float(scoring.get("tropes_mid_bonus", 0.5))
 
         if not rules:
             return score
@@ -217,15 +258,17 @@ class AnalysisService:
 
     def _calculate_emotional_score(self, literary: Dict, linguistic: Dict) -> float:
         """Calculate emotional impact score"""
-        score = 5.0
+        rules = self._rules
+        scoring = (rules or {}).get("scoring", {})
+        score = float(scoring.get("base_score", 5.0))
         sentiment = linguistic.get("sentiment", {})
         compound = sentiment.get("compound", 0)
         strong = rules.get("compound_strong") if rules else None
         mid = rules.get("compound_mid") if rules else None
         if strong is not None and (compound >= float(strong) or compound <= -float(strong)):
-            score += 1.5
+            score += float(scoring.get("emotion_strong_bonus", 1.5))
         elif mid is not None and (compound >= float(mid) or compound <= -float(mid)):
-            score += 0.5
+            score += float(scoring.get("emotion_mid_bonus", 0.5))
 
         if not rules:
             return score
@@ -265,6 +308,7 @@ class AnalysisService:
 
     def _tp_castt(self, text: str, linguistic: Dict) -> Dict[str, Any]:
         """TP-CASTT analysis (Title, Paraphrase, Connotation, Attitude, Shifts, Title, Theme)."""
+        rules = self._rules
         lines = [l.strip() for l in text.split("\n") if l.strip()]
         title_limit = rules.get("tp_castt_title_preview_chars") if rules else None
         title = lines[0][: int(title_limit)] if lines and title_limit is not None else (lines[0] if lines else "")
@@ -325,7 +369,9 @@ class AnalysisService:
         self, quantitative: Dict, linguistic: Dict
     ) -> float:
         """Calculate originality score"""
-        score = 5.0
+        rules = self._rules
+        scoring = (rules or {}).get("scoring", {})
+        score = float(scoring.get("base_score", 5.0))
 
         # Check lexical diversity
         lex = quantitative.get("lexical_metrics", {})
@@ -334,9 +380,9 @@ class AnalysisService:
         ttr_high = rules.get("ttr_high") if rules else None
         ttr_mid = rules.get("ttr_mid") if rules else None
         if ttr_high is not None and ttr > float(ttr_high):
-            score += 1.5
+            score += float(scoring.get("originality_high_bonus", 1.5))
         elif ttr_mid is not None and ttr > float(ttr_mid):
-            score += 0.5
+            score += float(scoring.get("originality_mid_bonus", 0.5))
 
         if not rules:
             return score

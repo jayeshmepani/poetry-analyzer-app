@@ -203,7 +203,7 @@ def register_web_routes(app: FastAPI, templates: Jinja2Templates):
     route.get('/logout', auth.logout, name='logout')
     
     # ==================== PUBLIC ROUTES ====================
-    route.redirect('/', '/login', name='home')
+    route.get('/', web.home, name='home')
 
     # ==================== PROTECTED WORKSPACE ROUTES ====================
     # All of these routes require get_current_user
@@ -232,6 +232,7 @@ def register_web_routes(app: FastAPI, templates: Jinja2Templates):
     route.get('/results-data', workspace.list_results, name='data.results.list', protected=True)
     route.get('/result/{result_id}', workspace.get_result, name='data.result.get', protected=True)
     route.delete('/result/{result_id}', workspace.delete_result, name='data.result.delete', protected=True)
+    route.post('/results-delete-multiple', workspace.delete_results_multiple, name='data.results.destroy_multiple', protected=True)
     route.post('/results-clear', workspace.clear_results, name='data.results.clear', protected=True)
     
     # ⭐ Advanced Tools
@@ -244,6 +245,7 @@ def register_web_routes(app: FastAPI, templates: Jinja2Templates):
     
     # ⭐ Database 
     route.get('/database-status', workspace.database_status_api, name='data.database.status', protected=True)
+    route.get('/backend-symbols', workspace.backend_symbols_api, name='data.backend.symbols', protected=True)
     route.post('/database-init', workspace.database_init, name='data.database.init', protected=True)
     
     # ⭐ Settings 

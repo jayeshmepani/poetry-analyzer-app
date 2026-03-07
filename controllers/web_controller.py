@@ -21,6 +21,6 @@ class WebController(BaseController):
         Home page
         GET /
         """
-        # This is now just a redirect (handled in routes)
-        # Kept for backwards compatibility
-        return self.redirect('/dashboard')
+        if getattr(request.state, "user", None):
+            return self.redirect("/dashboard")
+        return self.redirect("/login")

@@ -25,13 +25,13 @@
             </p>
 
             <div class="hero-actions scroll-reveal">
-                <a href="/analyze" class="btn btn-primary btn-lg">
+                <a href="{{ route('analyze') }}" class="btn btn-primary btn-lg">
                     <svg class="icon" aria-hidden="true">
                         <use href="#icon-search"></use>
                     </svg>
                     Start Analysis
                 </a>
-                <a href="/dashboard" class="btn btn-secondary btn-lg">
+                <a href="{{ route('dashboard') }}" class="btn btn-secondary btn-lg">
                     <svg class="icon" aria-hidden="true">
                         <use href="#icon-chart-line"></use>
                     </svg>
@@ -59,37 +59,19 @@
         </div>
 
         <div class="hero-panel scroll-reveal">
-            <div class="hero-panel-card">
-                <div class="hero-panel-header">
-                    <p class="text-2xs font-bold uppercase tracking-widest text-muted">Sample Output</p>
-                    <span class="badge badge-primary">Preview</span>
+        <div class="hero-panel scroll-reveal">
+            <div class="hero-panel-card feature-card bg-subtle" style="padding: 2rem;">
+                <div class="feature-icon-box icon-box-primary mb-4" style="background: var(--color-primary-100); color: var(--color-primary); padding: 1rem; border-radius: 0.75rem; display: inline-flex; align-items: center; justify-content: center;">
+                    <svg class="icon" aria-hidden="true" style="width: 2rem; height: 2rem;">
+                        <use href="#icon-layer-group"></use>
+                    </svg>
                 </div>
-                <div class="hero-sample">
-                    <div class="hero-poem">
-                        “I have measured out my life with coffee spoons,
-                        <br>the evening spreads like a patient on a table…”
-                    </div>
-                    <div class="hero-metrics">
-                        <div class="hero-metric">
-                            <div class="hero-metric-label">Readability</div>
-                            <div class="hero-metric-value">College+</div>
-                        </div>
-                        <div class="hero-metric">
-                            <div class="hero-metric-label">Lexical Density</div>
-                            <div class="hero-metric-value">0.62</div>
-                        </div>
-                        <div class="hero-metric">
-                            <div class="hero-metric-label">Rhyme</div>
-                            <div class="hero-metric-value">Slant</div>
-                        </div>
-                        <div class="hero-metric">
-                            <div class="hero-metric-label">Tone</div>
-                            <div class="hero-metric-value">Reflective</div>
-                        </div>
-                    </div>
-                </div>
+                <h3 class="text-xl font-bold mb-2">100% Authentic Analysis</h3>
+                <p class="text-sm text-soft leading-relaxed">
+                    Powered by transformer models, Stanza NLP, and strict deterministic algorithms.
+                    Every score and detail is derived live from text without placeholders or mock outputs.
+                </p>
             </div>
-        </div>
     </div>
 </section>
 
@@ -251,7 +233,7 @@
             and comparative views.</p>
 
         <div class="d-flex justify-center gap-4 flex-wrap mt-8">
-            <a href="/analyze" class="btn btn-primary btn-lg shadow-lg">
+            <a href="{{ route('analyze') }}" class="btn btn-primary btn-lg shadow-lg">
                 <svg class="icon" aria-hidden="true">
                     <use href="#icon-search"></use>
                 </svg>
@@ -267,3 +249,5 @@
     </div>
 </section>
 {% endblock %}
+
+

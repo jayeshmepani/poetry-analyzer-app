@@ -28,7 +28,7 @@ def load_env(path: Optional[str] = None) -> dict:
     candidates: List[str] = [path] if path else [".env", ".env.example"]
     chosen = next((p for p in candidates if p and os.path.exists(p)), None)
     if not chosen:
-        logger.warning(".env/.env.example not found — using defaults")
+        logger.warning(".env/.env.example is missing — using defaults")
         return env
     logger.info(f"Loading configuration from {chosen}")
     with open(chosen, encoding="utf-8") as f:
@@ -73,7 +73,7 @@ def download_spacy_models(env: dict) -> None:
                 logger.info(f"spaCy model already installed: {model} (skip)")
                 continue
             except Exception as e:
-                logger.warning(f"spaCy package exists but failed to load ({model}): {e}. Retrying download.")
+                logger.warning(f"spaCy package exists but did not load ({model}): {e}. Retrying download.")
 
         logger.info(f"Downloading spaCy model: {model}")
         result = subprocess.run(
@@ -84,7 +84,7 @@ def download_spacy_models(env: dict) -> None:
         if result.returncode == 0:
             logger.info(f"  ✓ {model} installed successfully")
         else:
-            logger.error(f"  ✗ {model} failed: {result.stderr.strip()}")
+            logger.error(f"  ✗ {model} not completed: {result.stderr.strip()}")
 
 
 def download_nltk_data() -> None:
@@ -187,7 +187,7 @@ def prefetch_transformer_models(env: dict) -> None:
             _ = p  # keep explicit reference to trigger full model+tokenizer load
             logger.info(f"  ✓ {model_name} cached successfully")
         except Exception as e:
-            logger.error(f"  ✗ {model_name} failed (task={task}): {e}")
+            logger.error(f"  ✗ {model_name} not completed (task={task}): {e}")
 
 
 def setup_stanza_resources(env: dict) -> None:
@@ -225,10 +225,10 @@ def setup_stanza_resources(env: dict) -> None:
                 logger.warning(f"Stanza language not available in this version: {lang_code} (skipped)")
             except Exception as lang_err:
                 skipped += 1
-                logger.warning(f"Stanza download failed for {lang_code}: {lang_err} (skipped)")
+                logger.warning(f"Stanza download not completed for {lang_code}: {lang_err} (not applied)")
         logger.info(f"  ✓ Stanza resources processed (downloaded={downloaded}, skipped={skipped})")
     except Exception as e:
-        logger.warning(f"Stanza resource setup skipped/failed: {e}")
+        logger.warning(f"Stanza resource setup not completed: {e}")
 
 
 def setup_iwn_resources(env: dict) -> None:
@@ -251,9 +251,9 @@ def setup_iwn_resources(env: dict) -> None:
         if ok:
             logger.info("  ✓ IndoWordNet data ready")
         else:
-            logger.error("  ✗ IndoWordNet download failed")
+            logger.error("  ✗ IndoWordNet download not completed")
     except Exception as e:
-        logger.warning(f"IndoWordNet setup skipped/failed: {e}")
+        logger.warning(f"IndoWordNet setup not completed: {e}")
 
 
 def setup_urdu_g2p(env: dict) -> None:
@@ -278,7 +278,7 @@ def setup_urdu_g2p(env: dict) -> None:
         logger.info(f"Downloading Urdu G2P dataset: {dataset_name} [{split}]")
         ds = load_dataset(dataset_name, split=split, cache_dir=cache_dir)
         if not ds:
-            logger.warning("Urdu G2P dataset returned empty; skipping cache build")
+            logger.warning("Urdu G2P dataset returned empty; cache build not applied")
             return
 
         # Heuristically pick likely word/ipa columns without hardcoding.
@@ -287,7 +287,7 @@ def setup_urdu_g2p(env: dict) -> None:
         word_keys = [k for k in keys if "word" in k.lower() or "grapheme" in k.lower() or "text" in k.lower()]
         ipa_keys = [k for k in keys if "ipa" in k.lower() or "phoneme" in k.lower() or "phonetic" in k.lower()]
         if not word_keys or not ipa_keys:
-            logger.warning(f"Urdu G2P columns not detected (keys={keys}); skipping cache build")
+            logger.warning(f"Urdu G2P columns not detected (keys={keys}); cache build not applied")
             return
 
         word_key = word_keys[0]
@@ -301,14 +301,14 @@ def setup_urdu_g2p(env: dict) -> None:
                 mapping[word] = ipa
 
         if not mapping:
-            logger.warning("Urdu G2P mapping empty; skipping cache build")
+            logger.warning("Urdu G2P mapping empty; cache build not applied")
             return
 
         with open(cache_path, "w", encoding="utf-8") as f:
             json.dump(mapping, f, ensure_ascii=False)
         logger.info(f"  ✓ Urdu G2P cache built: {cache_path} ({len(mapping)} entries)")
     except Exception as e:
-        logger.warning(f"Urdu G2P setup skipped/failed: {e}")
+        logger.warning(f"Urdu G2P setup not completed: {e}")
 
 
 def main() -> None:
@@ -318,12 +318,21 @@ def main() -> None:
 
     env = load_env()
 
+    # Quick dependency sanity check for runtime-used optional libraries.
+    optional_imports = ["epitran", "phyme", "urduhack", "pyiwn", "pronouncing"]
+    for mod in optional_imports:
+        try:
+            __import__(mod)
+            logger.info(f"Dependency available: {mod}")
+        except Exception as e:
+            logger.warning(f"Dependency missing/unloadable: {mod} ({e})")
+
     # 1. spaCy models
-    print("\n[1/4] spaCy models")
+    print("\n[1/6] spaCy models")
     download_spacy_models(env)
 
     # 2. NLTK data
-    print("\n[2/4] NLTK data")
+    print("\n[2/6] NLTK data")
     download_nltk_data()
 
     # 3. Stanza resources

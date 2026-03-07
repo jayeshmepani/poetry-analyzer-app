@@ -36,17 +36,17 @@
                     <option value="custom">Custom Touchstone</option>
                 </select>
                 <textarea id="touchstoneText" rows="8" placeholder="Touchstone passage will load here..."
-                    class="w-full px-4 py-3 border rounded-lg font-serif" readonly></textarea>
+                    class="w-full mt-2 px-4 py-3 border rounded-lg font-serif" readonly></textarea>
             </div>
 
-            <button type="button" onclick="comparePoems()" class="w-full gradient-bg text-white py-4 rounded-lg font-bold text-lg">
+            <button type="button" onclick="comparePoems()" class="btn btn-primary btn-lg w-full">
                 <svg class="icon mr-2" aria-hidden="true">
                     <use href="#icon-search"></use>
                 </svg>Compare
             </button>
 
             <button type="button" onclick="generateVersions()"
-                class="w-full mt-4 bg-gray-100 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-200 transition">
+                class="btn btn-secondary w-full mt-4">
                 <svg class="icon mr-2" aria-hidden="true">
                     <use href="#icon-magic"></use>
                 </svg>Generate Creative Versions
@@ -121,7 +121,7 @@
 
         showLoading('Running touchstone comparison...');
         try {
-            const response = await fetch('/touchstone-analyze', {
+            const response = await fetch('{{ route('data.touchstone.analyze') }}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ your_poem: yourPoem, touchstone: touchstone })
@@ -154,7 +154,7 @@
 
         showLoading('Generating versions...');
         try {
-            const response = await fetch('/versions-generate', {
+            const response = await fetch('{{ route('data.versions.generate') }}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ poem: poem })
@@ -173,3 +173,5 @@
     }
 </script>
 {% endblock %}
+
+

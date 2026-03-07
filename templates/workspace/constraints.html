@@ -51,10 +51,10 @@
                 </div>
             </div>
 
-            <div class="rounded-box bg-slate-900 text-white border-0 shadow-2xl relative overflow-hidden">
-                <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 relative z-10">Logic Parameters</h3>
+            <div class="rounded-box bg-slate-900 text-white border-0 shadow-2xl relative overflow-hidden p-6">
+                <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-6 relative z-10">Logic Parameters</h3>
                 <div id="constraintParams" class="space-y-6 relative z-10">
-                    <p class="text-sm text-slate-400 italic">Select a transformation vector to configure logic parameters.</p>
+                    <p class="text-sm text-slate-200 italic">Select a transformation vector to configure logic parameters.</p>
                 </div>
                 <!-- Decorative element -->
                 <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl"></div>
@@ -152,7 +152,7 @@ function selectConstraint(type) {
             </div>
         `;
     } else {
-        params.innerHTML = `<p class="text-xs text-slate-400 italic">This vector uses standard Oulipo logic with no variable parameters.</p>`;
+        params.innerHTML = `<p class="text-xs text-slate-200 italic">This vector uses standard Oulipo logic with no variable parameters.</p>`;
     }
     
     showToast(`Logic Vector Locked: ${type.toUpperCase()}`, 'info');
@@ -180,7 +180,7 @@ async function applyConstraint() {
                    activeConstraint === 'univocalism' ? {vowel: document.getElementById('param_vowel').value} : {}
         };
 
-        const response = await axios.post('/constraints-apply', payload);
+        const response = await axios.post('{{ route('data.constraints.apply') }}', payload);
         const result = response.data.success ? response.data.data : response.data;
 
         const outText = result.transformed_text || result.result || result.text;
@@ -221,3 +221,5 @@ function downloadOutput() {
 }
 </script>
 {% endblock %}
+
+

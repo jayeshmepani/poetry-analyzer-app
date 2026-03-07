@@ -17,5 +17,27 @@
   "tp_castt_paraphrase_sentences": 2,
   "tp_castt_top_content_words": 8,
   "tp_castt_shift_threshold": 0.4,
-  "tp_castt_theme_top_k": 5
+  "tp_castt_theme_top_k": 5,
+  "scoring": {
+    "base_score": 5.0,
+    "cultural_alankar_high_bonus": 2.0,
+    "cultural_alankar_low_bonus": 1.0,
+    "cultural_rasa_bonus": 1.0,
+    "technical_complex_bonus": 1.0,
+    "technical_sentence_variety_bonus": 0.5,
+    "technical_morph_bonus": 0.5,
+    "language_semantic_bonus": 1.0,
+    "language_synonym_bonus": 1.0,
+    "imagery_high_bonus": 1.5,
+    "imagery_mid_bonus": 0.5,
+    "tropes_high_bonus": 1.5,
+    "tropes_mid_bonus": 0.5,
+    "emotion_strong_bonus": 1.5,
+    "emotion_mid_bonus": 0.5,
+    "originality_high_bonus": 1.5,
+    "originality_mid_bonus": 0.5,
+    "comparison_default_imagery_score": 0.0,
+    "comparison_default_thematic_depth": 0.0,
+    "comparison_default_readability": 50.0
+  }
 }

@@ -32,6 +32,7 @@ from app.config import settings
 from app.database import init_db, SessionLocal
 from app.models.db_models import User
 from app.route_registry import route_url, WEB_ROUTE_PATHS
+from app.symbol_registry import summarize_symbol_registry
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -95,6 +96,12 @@ route_manager = register_web_routes(app, templates)
 init_db()
 
 logger.info(f"✅ Registered {len(route_manager.all())} web routes")
+registry_summary = summarize_symbol_registry()
+logger.info(
+    "🧭 Backend symbol registry: %s resolved, %s unresolved",
+    registry_summary["resolved_total_symbols"],
+    registry_summary["failed_total_symbols"],
+)
 
 # ==================== ERROR HANDLERS ====================
 
@@ -148,3 +155,13 @@ async def health_check():
         "version": settings.app.version,
         "app": settings.app.app_name
     }
+
+
+APP_RUNTIME_HOOKS = (
+    add_user_to_request_state,
+    not_found_handler,
+    internal_error_handler,
+    startup_event,
+    shutdown_event,
+    health_check,
+)

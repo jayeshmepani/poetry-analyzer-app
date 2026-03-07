@@ -18,7 +18,7 @@
         </div>
         {% endif %}
 
-        <form action="/login" method="POST" class="d-flex flex-col gap-6">
+        <form action="{{ route('login') }}" method="POST" class="d-flex flex-col gap-6">
             <div class="form-group">
                 <label for="email" class="form-label">Email Address</label>
                 <input type="email" id="email" name="email" class="form-input" required placeholder="you@example.com"
@@ -54,9 +54,11 @@
         </form>
 
         <div class="text-center mt-8 text-sm text-soft">
-            Need an account? <a href="/register" class="text-primary font-medium hover:underline">Create one now</a>
+            Need an account? <a href="{{ route('register') }}" class="text-primary font-medium hover:underline">Create one now</a>
         </div>
 
     </div>
 </div>
 {% endblock %}
+
+

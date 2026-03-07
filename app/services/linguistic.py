@@ -35,9 +35,20 @@ from transformers import pipeline
 # from gensim import corpora, models
 from indicnlp.tokenize import indic_tokenize
 from indicnlp.normalize.indic_normalize import IndicNormalizerFactory
+from app.services.iwn_resources import (
+    iwn_runtime_supported,
+    get_iwn_language_enum,
+    resolve_iwn_data_dir,
+    silence_pyiwn_info_logs,
+)
 from app.services.rule_loader import get_output_limits
 
 logger = logging.getLogger(__name__)
+
+try:
+    import pronouncing as _pronouncing
+except Exception:
+    _pronouncing = None
 
 
 class LinguisticAnalyzer:
@@ -80,36 +91,32 @@ class LinguisticAnalyzer:
                 from nltk.corpus import wordnet as wn
                 self._wn = wn
             except Exception as e:
-                logger.warning(f"NLTK WordNet unavailable: {e}")
+                logger.info(f"NLTK WordNet not active in this environment: {e}")
         if self.language in ["hi", "gu", "ur", "mr", "bn", "sa", "ta", "te", "kn", "ml", "pa"]:
+            if not iwn_runtime_supported(self.language):
+                logger.info(
+                    "IndoWordNet is disabled for language '%s' in this runtime.",
+                    self.language,
+                )
+                return
             try:
-                from pyiwn import IndoWordNet, Language
+                silence_pyiwn_info_logs()
+                from pyiwn import IndoWordNet
                 import pyiwn.constants as constants
                 from app.config import settings
 
-                iwn_dir = os.path.abspath(settings.lexical.iwn_data_dir)
+                iwn_dir = str(resolve_iwn_data_dir())
                 os.makedirs(iwn_dir, exist_ok=True)
                 constants.USER_HOME = os.path.dirname(iwn_dir)
                 constants.IWN_DATA_PATH = iwn_dir
                 constants.IWN_DATA_TEMP_PATH = os.path.join(constants.USER_HOME, "iwn_data.tar.gz")
 
-                lang_map = {
-                    "hi": Language.HINDI,
-                    "gu": Language.GUJARATI,
-                    "ur": Language.URDU,
-                    "mr": Language.MARATHI,
-                    "bn": Language.BENGALI,
-                    "sa": Language.SANSKRIT,
-                    "ta": Language.TAMIL,
-                    "te": Language.TELUGU,
-                    "kn": Language.KANNADA,
-                    "ml": Language.MALAYALAM,
-                    "pa": Language.PUNJABI,
-                }
-                lang_enum = lang_map.get(self.language, Language.HINDI)
+                lang_enum = get_iwn_language_enum(self.language)
+                if lang_enum is None:
+                    return
                 self._iwn = IndoWordNet(lang=lang_enum)
             except Exception as e:
-                logger.warning(f"IndoWordNet unavailable: {e}")
+                logger.info(f"IndoWordNet not active in this runtime: {e}")
 
     def _initialize_models(self):
         """Initialize spaCy and Stanza models"""
@@ -122,7 +129,7 @@ class LinguisticAnalyzer:
                     self.nlp = spacy.load(settings.spacy.english_model)
                     logger.info(f"Loaded spaCy model: {settings.spacy.english_model}")
                 except OSError as e:
-                    logger.warning(f"English spaCy model not found: {e}")
+                    logger.warning(f"English spaCy model could not be loaded: {e}")
                     self.nlp = None
             else:
                 # Use multilingual model for non-English languages
@@ -133,25 +140,12 @@ class LinguisticAnalyzer:
                         f"for language '{self.language}'"
                     )
                 except OSError as e:
-                    logger.warning(f"Multilingual spaCy model not found: {e}")
+                    logger.warning(f"Multilingual spaCy model could not be loaded: {e}")
                     self.nlp = None
 
-    def _ensure_zero_shot(self):
-        if self._zero_shot is not None:
-            return self._zero_shot
-        try:
-            model_name = self._settings.transformer.generalist_zero_shot_model
-            self._zero_shot = pipeline("zero-shot-classification", model=model_name, device=-1)
-        except Exception as e:
-            logger.warning(f"Zero-shot unavailable in linguistic analyzer: {e}")
-            self._zero_shot = None
-        return self._zero_shot
-
-        # Stanza initialization for multilingual
+        # Stanza initialization for multilingual fallback/dependency analysis
         if self.use_stanza:
             try:
-                import stanza
-
                 from app.config import settings
                 lang_code = self._get_stanza_lang_code()
                 resources_dir = Path(settings.stanza.resources_dir).resolve()
@@ -165,8 +159,19 @@ class LinguisticAnalyzer:
                 )
                 logger.info(f"Loaded Stanza pipeline for {lang_code}")
             except Exception as e:
-                logger.warning(f"Stanza not available: {e}")
+                logger.info(f"Stanza pipeline not initialized for this runtime: {e}")
                 self.stanza_nlp = None
+
+    def _ensure_zero_shot(self):
+        if self._zero_shot is not None:
+            return self._zero_shot
+        try:
+            model_name = self._settings.transformer.generalist_zero_shot_model
+            self._zero_shot = pipeline("zero-shot-classification", model=model_name, device=-1)
+        except Exception as e:
+            logger.info(f"Zero-shot pipeline not initialized in linguistic analyzer: {e}")
+            self._zero_shot = None
+        return self._zero_shot
 
     def _get_stanza_lang_code(self) -> str:
         """Convert language code to Stanza format"""
@@ -215,12 +220,22 @@ class LinguisticAnalyzer:
         if self.language in ["hi", "gu", "mr", "bn", "sa", "ur"]:
             try:
                 t0 = time.perf_counter()
-                factory = IndicNormalizerFactory()
-                normalizer = factory.get_normalizer(self.language)
-                self.text = normalizer.normalize(self.text)
+                if self.language == "ur":
+                    # IndicNormalizerFactory for Urdu may require optional extras;
+                    # gracefully skip when unavailable.
+                    try:
+                        import urduhack  # type: ignore
+
+                        self.text = urduhack.normalization.normalize(self.text)
+                    except Exception:
+                        pass
+                else:
+                    factory = IndicNormalizerFactory()
+                    normalizer = factory.get_normalizer(self.language)
+                    self.text = normalizer.normalize(self.text)
                 logger.info("[linguistic] indic normalization %.2fs", time.perf_counter() - t0)
             except Exception as e:
-                logger.warning(f"Indic normalization failed: {e}")
+                logger.info(f"Indic normalization skipped for language '{self.language}': {e}")
 
         self.lines = [line.strip() for line in self.text.split("\n") if line.strip()]
 
@@ -251,7 +266,7 @@ class LinguisticAnalyzer:
                     self.words = nltk.word_tokenize(self.text.lower())
                 logger.info("[linguistic] NLTK sentence/word tokenization %.2fs", time.perf_counter() - t0)
             except Exception as e:
-                logger.warning(f"NLTK tokenization failed, falling back to regex: {e}")
+                logger.info(f"NLTK tokenization path not active; regex tokenization used: {e}")
                 self.sentences = re.split(r"[.!?।]+", self.text)
                 self.sentences = [s.strip() for s in self.sentences if s.strip()]
 
@@ -321,8 +336,8 @@ class LinguisticAnalyzer:
                     }
                 )
         except (NotImplementedError, ValueError) as e:
-            logger.info(
-                "spaCy noun_chunks unavailable for language '%s' (%s). Using fallback noun phrase heuristic.",
+            logger.debug(
+                "spaCy noun_chunks not provided for language '%s' (%s); using heuristic noun-phrase extraction.",
                 self.language,
                 e,
             )
@@ -342,14 +357,6 @@ class LinguisticAnalyzer:
                     doc_len,
                     time.perf_counter() - t0,
                 )
-            logger.info(
-                "[linguistic] dep_tree token %d/%d start text=%r dep=%s head=%r",
-                i + 1,
-                doc_len,
-                token.text,
-                token.dep_,
-                token.head.text,
-            )
             t_tok = time.perf_counter()
             if token.is_space or token.is_punct:
                 lefts = []
@@ -523,7 +530,7 @@ class LinguisticAnalyzer:
                 }
             )
 
-        logger.info("[linguistic] fallback noun_chunks built in %.2fs", time.perf_counter() - t0)
+        logger.info("[linguistic] heuristic noun_chunks built in %.2fs", time.perf_counter() - t0)
         return chunks
 
     def _analyze_with_stanza(self) -> Dict[str, Any]:
@@ -565,7 +572,7 @@ class LinguisticAnalyzer:
                 "nltk_tag_distribution": dict(tag_counts)
             }
         except Exception as e:
-            logger.warning(f"NLTK POS tagging failed: {e}")
+            logger.info(f"NLTK POS tagging path not active; basic POS metrics used: {e}")
             return self._analyze_pos_basic()
 
     # ==================== PHONETICS ====================
@@ -692,10 +699,14 @@ class LinguisticAnalyzer:
 
     def _detect_onomatopoeia(self) -> List[str]:
         """Detect onomatopoeic words"""
+        if self.language != "en":
+            return []
+        words = list(dict.fromkeys(re.findall(r"[A-Za-z']+", self.text.lower())))
+        if not words:
+            return []
         zs = self._ensure_zero_shot()
         if not zs:
             return []
-        words = list(dict.fromkeys(re.findall(r"[A-Za-z']+", self.text.lower())))
         found = []
         word_limit = self._limits.get("linguistic_phonestheme_words") if self._limits else None
         for word in (words[: int(word_limit)] if word_limit is not None else words):
@@ -730,6 +741,9 @@ class LinguisticAnalyzer:
                 morph_features.append(str(token.morph))
 
         feature_counts = Counter(morph_features)
+
+        prefix_stats = self._detect_prefixes()
+        suffix_stats = self._detect_suffixes()
 
         return {
             "avg_word_length": round(
@@ -857,7 +871,7 @@ class LinguisticAnalyzer:
             else:
                 avg_deps = 0.0
         except Exception as e:
-            logger.warning("[linguistic] syntax_spacy avg_deps failed: %s", e)
+            logger.info("[linguistic] syntax_spacy avg_deps not computed: %s", e)
             avg_deps = 0.0
         logger.info("[linguistic] syntax_spacy avg_deps (%.2fs)", time.perf_counter() - t0)
 
@@ -1032,16 +1046,16 @@ class LinguisticAnalyzer:
 
     def _detect_homophones(self) -> List[List[str]]:
         """Detect homophones"""
-        try:
-            import pronouncing
-        except Exception as e:
-            logger.warning(f"Pronouncing unavailable for homophones: {e}")
+        if self.language != "en":
+            return []
+        if _pronouncing is None:
+            logger.info("Pronouncing not active; homophone detection is disabled for this run.")
             return []
 
         word_set = set(w.lower() for w in self.words if w)
         phones_map: Dict[str, List[str]] = {}
         for w in word_set:
-            phones = pronouncing.phones_for_word(w)
+            phones = _pronouncing.phones_for_word(w)
             if not phones:
                 continue
             for p in phones:

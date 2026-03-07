@@ -15,6 +15,8 @@ from enum import Enum
 
 class LanguageEnum(str, Enum):
     """Supported languages"""
+    EN = "en"
+    ENGLISH = "en"
     EN_OLD = "en_old"
     EN_MIDDLE = "en_middle"
     EN_MODERN = "en_modern"

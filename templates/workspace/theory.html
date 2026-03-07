@@ -24,78 +24,8 @@
         <span id="selectedTheoryCount" class="badge badge-neutral">0 selected</span>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <button type="button" onclick="selectTheory('new_criticism')" id="theory-new_criticism"
-            class="theory-card" title="Close reading lens: tension, irony, unity, internal coherence">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">New Criticism</div>
-        </button>
-        <button type="button" onclick="selectTheory('structuralism')" id="theory-structuralism"
-            class="theory-card" title="Find deep structures: binaries, pattern systems, formal relations">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Structuralism
-            </div>
-        </button>
-        <button type="button" onclick="selectTheory('deconstruction')" id="theory-deconstruction"
-            class="theory-card" title="Probe instability: contradictions, suppressed meaning, textual slippage">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Deconstruction
-            </div>
-        </button>
-        <button type="button" onclick="selectTheory('feminist')" id="theory-feminist"
-            class="theory-card" title="Gender-power lens: voice, agency, representation, patriarchy critique">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Feminist</div>
-        </button>
-        <button type="button" onclick="selectTheory('marxist')" id="theory-marxist"
-            class="theory-card" title="Material lens: class, labor, ideology, socio-economic conflict">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Marxist</div>
-        </button>
-        <button type="button" onclick="selectTheory('psychoanalytic')" id="theory-psychoanalytic"
-            class="theory-card" title="Psychic lens: desire, repression, symbolism, unconscious drives">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Psychoanalytic
-            </div>
-        </button>
-        <button type="button" onclick="selectTheory('reader_response')" id="theory-reader_response"
-            class="theory-card" title="Reader-centered lens: meaning emerges through reading experience">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Reader Response
-            </div>
-        </button>
-        <button type="button" onclick="selectTheory('ecocriticism')" id="theory-ecocriticism"
-            class="theory-card" title="Environmental lens: nature, ecology, human-nonhuman relation">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Ecocriticism</div>
-        </button>
-        <button type="button" onclick="selectTheory('postcolonial')" id="theory-postcolonial"
-            class="theory-card" title="Empire lens: colonial power, identity, language hierarchy, resistance">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Postcolonial
-            </div>
-        </button>
-        <button type="button" onclick="selectTheory('formalism')" id="theory-formalism"
-            class="theory-card" title="Technique lens: craft mechanics, form constraints, stylistic devices">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Formalism</div>
-        </button>
-        <button type="button" onclick="selectTheory('archetypal')" id="theory-archetypal"
-            class="theory-card" title="Mythic lens: archetypes, recurring symbolic patterns, collective motifs">
-            <div class="theory-kicker">
-                Vector</div>
-            <div class="theory-title">Archetypal</div>
-        </button>
+    <div id="theoryGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="card text-soft">Loading theory vectors...</div>
     </div>
 
     <!-- Input Area -->
@@ -254,19 +184,7 @@
     }
 </style>
 <script>
-    const THEORY_ORDER = [
-        'new_criticism',
-        'structuralism',
-        'deconstruction',
-        'feminist',
-        'marxist',
-        'psychoanalytic',
-        'reader_response',
-        'ecocriticism',
-        'postcolonial',
-        'formalism',
-        'archetypal'
-    ];
+    let THEORY_ORDER = [];
     const selectedTheories = new Set();
 
     function normalizeTheoryLabel(theory) {
@@ -342,6 +260,7 @@
     }
 
     function selectTheory(theory) {
+        if (!THEORY_ORDER.includes(theory)) return;
         if (selectedTheories.has(theory)) {
             selectedTheories.delete(theory);
         } else {
@@ -360,6 +279,37 @@
         selectedTheories.clear();
         updateSelectionUi();
         showToast('Theory selection cleared', 'info');
+    }
+
+    function renderTheorySelectionCards(theories) {
+        const theoryGrid = document.getElementById('theoryGrid');
+        if (!theoryGrid) return;
+        theoryGrid.innerHTML = theories.map((theory) => {
+            const theoryId = theory.id;
+            const theoryName = titleCaseTheory(theoryId);
+            const theoryFocus = theory.focus || `${theoryName} reading lens`;
+            return `
+                <button type="button" onclick="selectTheory('${theoryId}')" id="theory-${theoryId}" class="theory-card" title="${escapeHtml(theoryFocus)}">
+                    <div class="theory-kicker">Vector</div>
+                    <div class="theory-title">${escapeHtml(theoryName)}</div>
+                </button>
+            `;
+        }).join('');
+    }
+
+    async function loadTheoryRecommendations() {
+        const response = await axios.get('{{ route('data.theory.recommendations') }}');
+        const theories = response.data?.data?.theories || [];
+        THEORY_ORDER = theories
+            .map((t) => String(t.id || '').trim())
+            .filter(Boolean);
+        renderTheorySelectionCards(theories);
+        selectedTheories.forEach((theory) => {
+            if (!THEORY_ORDER.includes(theory)) {
+                selectedTheories.delete(theory);
+            }
+        });
+        updateSelectionUi();
     }
 
     const progressWrap = document.getElementById('theoryProgress');
@@ -488,7 +438,7 @@
             const theories = THEORY_ORDER.filter(t => selectedTheories.has(t));
             const payload = { poem: poem, theories };
 
-            const start = await axios.post('/theory-analyze?async=1', payload);
+            const start = await axios.post('{{ route('data.theory.analyze') }}?async=1', payload);
             const jobId = start.data?.data?.job_id;
             if (!jobId) {
                 throw new Error('Failed to start analysis job');
@@ -496,8 +446,9 @@
 
             let result = null;
             let attempts = 0;
-            while (!result && attempts < 300) { // up to ~5 minutes
-                const statusRes = await axios.post(`/theory-analyze?status=1&job_id=${jobId}`, {});
+            const maxAttempts = 1800; // up to ~30 minutes for heavy model initialization
+            while (!result && attempts < maxAttempts) {
+                const statusRes = await axios.post(`{{ route('data.theory.analyze') }}?status=1&job_id=${jobId}`, {});
                 const status = statusRes.data?.data || {};
                 setTheoryProgress(status.percent || 0, status.message || 'Working...');
 
@@ -513,7 +464,7 @@
             }
 
             if (!result) {
-                throw new Error('No analysis output returned');
+                throw new Error('Theory synthesis is still processing; no completed output yet');
             }
 
             renderTheoryResults(result, theories);
@@ -531,6 +482,16 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', updateSelectionUi);
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            await loadTheoryRecommendations();
+        } catch (error) {
+            console.error('Failed to load theory recommendations', error);
+            showToast('Could not load theory vectors', 'warning');
+        }
+        updateSelectionUi();
+    });
 </script>
 {% endblock %}
+
+

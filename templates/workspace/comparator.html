@@ -71,7 +71,7 @@ async function generateVersions() {
     if (submitLabel) submitLabel.textContent = 'Generating...';
 
     try {
-        const response = await fetch('/versions-generate', {
+        const response = await fetch('{{ route('data.versions.generate') }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ poem: original })
@@ -110,3 +110,5 @@ async function generateVersions() {
 }
 </script>
 {% endblock %}
+
+

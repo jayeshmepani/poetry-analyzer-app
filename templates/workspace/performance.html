@@ -14,17 +14,17 @@
         <textarea id="poemText" rows="10" placeholder="Paste poem for performance analysis..." class="w-full px-4 py-3 border rounded-lg font-serif mb-6"></textarea>
         
         <div class="grid md:grid-cols-2 gap-4 mb-8">
-            <button type="button" onclick="selectRubric('general')" class="p-4 border-2 border-primary bg-blue-50 rounded-lg hover:shadow-md transition">
+            <button type="button" onclick="selectRubric('general')" class="btn btn-outline w-full justify-start h-auto py-4 px-4">
                 <div class="font-bold">General Recitation</div>
                 <div class="text-xs">Standard scoring for classroom</div>
             </button>
-            <button type="button" onclick="selectRubric('professional')" class="p-4 border-2 border-secondary bg-teal-50 rounded-lg hover:shadow-md transition">
+            <button type="button" onclick="selectRubric('professional')" class="btn btn-outline w-full justify-start h-auto py-4 px-4">
                 <div class="font-bold">Professional Theater</div>
                 <div class="text-xs">Rigorous dramatic assessment</div>
             </button>
         </div>
 
-        <button type="button" onclick="analyzePerformance()" class="w-full gradient-bg text-white py-4 rounded-lg font-bold text-lg mb-8">
+        <button type="button" onclick="analyzePerformance()" class="btn btn-primary btn-lg w-full mb-8">
             <svg class="icon mr-2" aria-hidden="true"><use href="#icon-play"></use></svg>Analyze for Performance
         </button>
 
@@ -88,7 +88,7 @@ async function analyzePerformance() {
     }
 
     try {
-        const response = await fetch('/performance-analyze', {
+        const response = await fetch('{{ route('data.performance.analyze') }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ poem: poem })
@@ -118,3 +118,5 @@ async function analyzePerformance() {
 }
 </script>
 {% endblock %}
+
+

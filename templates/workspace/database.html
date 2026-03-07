@@ -60,6 +60,14 @@
         <p class="stat-label uppercase tracking-widest text-2xs mb-2 text-white-soft">Storage</p>
         <p class="text-4xl font-black m-0" id="storageSize">-</p>
     </div>
+    <div class="stat-card scroll-reveal bg-secondary text-white border-0 p-6">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-2 text-white-soft">Resolved Symbols</p>
+        <p class="text-4xl font-black m-0" id="resolvedSymbols">-</p>
+    </div>
+    <div class="stat-card scroll-reveal bg-danger text-white border-0 p-6">
+        <p class="stat-label uppercase tracking-widest text-2xs mb-2 text-white-soft">Unresolved Symbols</p>
+        <p class="text-4xl font-black m-0" id="unresolvedSymbols">-</p>
+    </div>
 </div>
 
 <!-- Tables Status -->
@@ -122,8 +130,12 @@
         showLoading('Loading database status...');
 
         try {
-            const response = await axios.get('/database-status');
-            const data = response.data.data || response.data;
+            const [dbResponse, symbolResponse] = await Promise.all([
+                axios.get('{{ route('data.database.status') }}'),
+                axios.get('{{ route('data.backend.symbols') }}')
+            ]);
+            const data = dbResponse.data.data || dbResponse.data;
+            const symbolData = symbolResponse.data.data || symbolResponse.data;
 
             // Update connection status
             const conn = data.connection;
@@ -164,6 +176,8 @@
                 document.getElementById('recentCount').textContent = stats.recent_24h || 0;
                 document.getElementById('storageSize').textContent = `${stats.storage_mb || 0} MB`;
             }
+            document.getElementById('resolvedSymbols').textContent = symbolData.resolved_total_symbols ?? '-';
+            document.getElementById('unresolvedSymbols').textContent = symbolData.failed_total_symbols ?? '-';
 
             // Update recent analyses table
             const recentEl = document.getElementById('recentTable');
@@ -197,7 +211,7 @@
         showLoading('Initializing database...');
 
         try {
-            const response = await axios.post('/database-init');
+            const response = await axios.post('{{ route('data.database.init') }}');
             hideLoading();
             const responseData = response.data.data || response.data;
             showToast(responseData.message || 'Database initialized', 'success');
@@ -215,7 +229,7 @@
         showLoading('Clearing all data...');
 
         try {
-            await axios.post('/results-clear');
+            await axios.post('{{ route('data.results.clear') }}');
             hideLoading();
             showToast('All data cleared', 'success');
             loadDatabaseStatus();
@@ -233,3 +247,5 @@
     }
 </script>
 {% endblock %}
+
+

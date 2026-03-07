@@ -3,7 +3,7 @@
 {% block title %}User Management - Poetry Analyzer{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8">
 
     <div class="page-header">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -34,8 +34,8 @@
     </div>
 
     <!-- Declarative custom table -->
-    <table data-table data-url="/admin/users/data" data-sort="created_at" data-order="desc" data-page-size="10"
-        data-page-list="[10,25,50,100]" data-search="true" data-click-to-select="true" data-toolbar="#toolbar"
+    <table data-table data-url="{{ route('admin.users.data') }}" data-sort="created_at" data-order="desc" data-page-size="10"
+        data-page-list="[5,10,25,50,100,&quot;all&quot;]" data-search="true" data-click-to-select="true" data-toolbar="#toolbar"
         id="usersTable">
         <thead>
             <tr>
@@ -159,7 +159,7 @@
                 const id = e.target.dataset.id;
                 const prev = !e.target.checked;
                 try {
-                    await axios.patch(`/admin/users/${id}/toggle`);
+                    await axios.patch(`{{ route('admin.users.index') }}/${id}/toggle`);
                     Toast.success('Status updated');
                 } catch (err) {
                     e.target.checked = prev;
@@ -175,7 +175,7 @@
             'click .delete-btn': async function (e, row) {
                 if (!confirm(`Permanently delete "${row.name}" and all their data?`)) return;
                 try {
-                    await axios.delete(`/admin/users/${row.id}`);
+                    await axios.delete(`{{ route('admin.users.destroy', user_uuid='') }}${row.id}`);
                     Toast.success('User deleted');
                     getTable('#usersTable').refresh();
                 } catch (err) {
@@ -196,7 +196,7 @@
             if (!ids.length) return;
             if (!confirm(`Permanently delete ${ids.length} users?`)) return;
             try {
-                await axios.post('/admin/users/delete-multiple', { ids });
+                await axios.post('{{ route('admin.users.destroy_multiple') }}', { ids });
                 Toast.success(`${ids.length} users deleted`);
                 getTable('#usersTable').refresh();
             } catch (err) {
@@ -219,7 +219,7 @@
 
             if (id) {
                 // id = uuid string (row.id from data endpoint = uuid)
-                axios.get(`/admin/users/${id}/edit`).then(res => {
+                axios.get(`{{ route('admin.users.index') }}/${id}/edit`).then(res => {
                     const d = res.data?.data ?? res.data;
                     document.getElementById('userId').value = d.uuid;  // store UUID for PUT
                     document.getElementById('uName').value = d.name;
@@ -247,8 +247,8 @@
             };
 
             try {
-                if (id) await axios.put(`/admin/users/${id}`, payload);
-                else await axios.post('/admin/users', payload);
+                if (id) await axios.put(`{{ route('admin.users.index') }}/${id}`, payload);
+                else await axios.post('{{ route('admin.users.store') }}', payload);
                 modal.close();
                 Toast.success(id ? 'User updated' : 'User created');
                 getTable('#usersTable').refresh();
@@ -259,3 +259,5 @@
     })();
 </script>
 {% endblock %}
+
+

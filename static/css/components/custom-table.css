@@ -12,13 +12,11 @@
         background: var(--color-surface);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        overflow: hidden;
+        overflow: visible;
         width: 100%;
         min-width: 0;
         container-type: inline-size;
         container-name: data-table;
-        /* Skip rendering off-screen tables */
-        content-visibility: auto;
     }
 
     /* ---- Toolbar ---- */
@@ -145,6 +143,7 @@
         list-style: none;
         z-index: var(--z-raised);
         display: none;
+        color: var(--color-text);
     }
 
     .ct-select-menu.is-floating {
@@ -161,7 +160,7 @@
         width: 100%;
         border: none;
         border-radius: var(--radius-sm);
-        background: transparent;
+        background: var(--color-surface);
         color: var(--color-text);
         font-size: var(--text-sm);
         font-weight: 500;

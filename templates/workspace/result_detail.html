@@ -11,11 +11,15 @@
             <p class="text-soft">Full analysis report with all sections, charts, metrics, and raw payload.</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="/results" class="btn btn-secondary">
-                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-arrow-left"></use></svg> Back
+            <a href="{{ route('results') }}" class="btn btn-secondary">
+                <svg class="icon mr-2" aria-hidden="true">
+                    <use href="#icon-arrow-left"></use>
+                </svg> Back
             </a>
             <button type="button" class="btn btn-primary" onclick="downloadResult()">
-                <svg class="icon mr-2" aria-hidden="true"><use href="#icon-download"></use></svg> Export JSON
+                <svg class="icon mr-2" aria-hidden="true">
+                    <use href="#icon-download"></use>
+                </svg> Export JSON
             </button>
         </div>
     </div>
@@ -23,7 +27,9 @@
 
 <div id="reportContainer" class="d-flex flex-col gap-6">
     <div class="card p-12 text-center">
-        <svg class="icon fa-spin text-3xl text-muted mb-4" aria-hidden="true"><use href="#icon-circle-notch"></use></svg>
+        <svg class="icon fa-spin text-3xl text-muted mb-4" aria-hidden="true">
+            <use href="#icon-circle-notch"></use>
+        </svg>
         <p class="text-soft font-medium">Loading complete report...</p>
     </div>
 </div>
@@ -36,6 +42,7 @@
         word-break: break-word;
         line-break: anywhere;
     }
+
     .report-value {
         white-space: pre-wrap;
         overflow-wrap: anywhere;
@@ -44,26 +51,31 @@
         line-height: 1.5;
         min-width: 0;
     }
+
     .report-scroll {
         max-height: 420px;
         overflow: auto;
     }
+
     .report-table-wrap {
         overflow: auto;
         border: 1px solid var(--color-border);
         border-radius: 0.75rem;
     }
+
     .report-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 0.875rem;
     }
+
     .report-table th,
     .report-table td {
         border-bottom: 1px solid var(--color-border);
         padding: 0.55rem 0.7rem;
         vertical-align: top;
     }
+
     .report-table th {
         text-align: left;
         font-weight: 700;
@@ -73,6 +85,7 @@
         font-size: 0.7rem;
         white-space: nowrap;
     }
+
     .report-chip {
         display: inline-flex;
         align-items: center;
@@ -84,14 +97,17 @@
         color: var(--color-text);
         background: var(--color-subtle);
     }
+
     .report-node-grid {
         display: grid;
         gap: 0.85rem;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     }
-    .report-node-grid > * {
+
+    .report-node-grid>* {
         min-width: 0;
     }
+
     .report-node-card {
         border: 1px solid var(--color-border);
         border-radius: 0.75rem;
@@ -99,6 +115,7 @@
         overflow: visible;
         min-width: 0;
     }
+
     .report-node-head {
         font-size: 0.7rem;
         font-weight: 700;
@@ -109,25 +126,30 @@
         border-bottom: 1px solid var(--color-border);
         background: color-mix(in srgb, var(--color-subtle) 70%, transparent);
     }
+
     .report-node-body {
         padding: 0.75rem 0.8rem;
         min-width: 0;
         overflow-x: auto;
     }
+
     .report-node-list {
         display: grid;
         gap: 0.55rem;
     }
+
     .report-node-list-item {
         border: 1px solid var(--color-border);
         border-radius: 0.65rem;
         padding: 0.65rem;
         background: color-mix(in srgb, var(--color-subtle) 45%, transparent);
     }
+
     .report-kv {
         display: grid;
         gap: 0.2rem;
     }
+
     .report-kv-label {
         font-size: 0.72rem;
         font-weight: 700;
@@ -135,6 +157,7 @@
         letter-spacing: 0.08em;
         color: var(--color-text-muted);
     }
+
     .report-metric-meta {
         margin-top: 0.45rem;
         font-size: 0.72rem;
@@ -145,6 +168,10 @@
 <script>
     const RESULT_ID = '{{ result_id }}';
     let currentResult = null;
+    function cssVar(name, fallback = '') {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+    }
     const INTERNAL_FIELD_KEYS = new Set([
         'error',
         'errors',
@@ -194,6 +221,19 @@
         return String(key || '')
             .replace(/_/g, ' ')
             .replace(/\b\w/g, (m) => m.toUpperCase());
+    }
+
+    function normalizeDisplayText(input) {
+        let text = String(input ?? '').trim();
+        if (!text) return '';
+        // Remove markdown emphasis/backticks leaking from backend prose.
+        text = text
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/__(.*?)__/g, '$1')
+            .replace(/`([^`]*)`/g, '$1');
+        // Convert snake_case fragments to readable text.
+        text = text.replace(/\b([a-zA-Z]+(?:_[a-zA-Z0-9]+)+)\b/g, (m) => m.replace(/_/g, ' '));
+        return text.replace(/\s+/g, ' ').trim();
     }
 
     function isPrimitive(v) {
@@ -286,7 +326,7 @@
         if (v === null || v === undefined) return '';
         if (typeof v === 'number') return Number.isFinite(v) ? escapeHtml(formatNumeric(v)) : '';
         if (typeof v === 'boolean') return v ? 'Yes' : 'No';
-        const text = String(v).trim();
+        const text = normalizeDisplayText(v);
         if (!text || text === '-') return '';
         return escapeHtml(text);
     }
@@ -296,6 +336,12 @@
         const chips = arr
             .filter((item) => hasMeaningfulData(item))
             .map((item) => {
+                if (typeof item === 'string') {
+                    const raw = normalizeDisplayText(item);
+                    if (!raw) return '';
+                    const label = /^[a-z0-9]+(?: [a-z0-9]+)+$/.test(raw) ? toTitle(raw) : raw;
+                    return `<span class="report-chip">${escapeHtml(label)}</span>`;
+                }
                 const value = formatPrimitive(item);
                 return value ? `<span class="report-chip">${value}</span>` : '';
             })
@@ -370,11 +416,11 @@
         return `
             <div class="report-node-grid">
                 ${entries.map(([k, v]) => {
-                    const nextPath = path ? `${path}.${k}` : k;
-                    const content = isPrimitive(v) ? renderPrimitiveBlock(v, nextPath) : renderNode(v, depth + 1, nextPath);
-                    if (!content || !content.trim()) return '';
-                    return renderNodeCard(toTitle(k), content);
-                }).filter(Boolean).join('')}
+            const nextPath = path ? `${path}.${k}` : k;
+            const content = isPrimitive(v) ? renderPrimitiveBlock(v, nextPath) : renderNode(v, depth + 1, nextPath);
+            if (!content || !content.trim()) return '';
+            return renderNodeCard(toTitle(k), content);
+        }).filter(Boolean).join('')}
             </div>
         `;
     }
@@ -476,7 +522,7 @@
 
     function renderCharts(result) {
         const ratings = {
-            overall: Number(result.overall_score || 0),
+            overall: Number(result.overall_score || result.evaluation?.ratings?.overall_quality || 0),
             technical: Number(result.technical_craft_score || result.evaluation?.ratings?.technical_craft || 0),
             language: Number(result.language_diction_score || result.evaluation?.ratings?.language_diction || 0),
             imagery: Number(result.imagery_voice_score || result.evaluation?.ratings?.imagery_voice || 0),
@@ -486,6 +532,8 @@
         };
 
         if (typeof ApexCharts !== 'undefined') {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+                (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
             const radarEl = document.querySelector('#ratingsRadar');
             if (radarEl) {
                 radarEl.innerHTML = '';
@@ -493,12 +541,12 @@
                     chart: { type: 'radar', height: 320, toolbar: { show: false }, background: 'transparent' },
                     series: [{ name: 'Score', data: [ratings.technical, ratings.language, ratings.imagery, ratings.emotional, ratings.cultural, ratings.originality, ratings.overall] }],
                     labels: ['Technical', 'Language', 'Imagery', 'Emotional', 'Cultural', 'Originality', 'Overall'],
-                    stroke: { width: 2, colors: ['#C6A14A'] },
-                    fill: { opacity: 0.22, colors: ['#C6A14A'] },
-                    markers: { size: 4, colors: ['#0EA5E9'] },
+                    stroke: { width: 2, colors: [cssVar('--color-primary', '#A83CAE')] },
+                    fill: { opacity: 0.22, colors: [cssVar('--color-primary', '#A83CAE')] },
+                    markers: { size: 4, colors: [cssVar('--color-accent', '#007D8B')] },
                     yaxis: { min: 0, max: 10, tickAmount: 5 },
-                    xaxis: { labels: { style: { colors: '#94A3B8' } } },
-                    theme: { mode: 'dark' }
+                    xaxis: { labels: { style: { colors: cssVar('--color-text-muted', '#94A3B8') } } },
+                    theme: { mode: isDark ? 'dark' : 'light' }
                 });
                 chart.render();
             }
@@ -528,24 +576,32 @@
                 }, { displayModeBar: false, responsive: true });
             };
 
-            mkBar('emotionBar', emotions, '#0EA5E9');
-            mkBar('rasaBar', rasa, '#C6A14A');
+            mkBar('emotionBar', emotions, cssVar('--color-accent', '#007D8B'));
+            mkBar('rasaBar', rasa, cssVar('--color-primary', '#A83CAE'));
             mkBar('lexicalBar', {
                 lexical_density: Number(lex.lexical_density || 0),
                 type_token_ratio: Number(lex.type_token_ratio || 0),
                 avg_word_length: Number(lex.average_word_length || 0)
-            }, '#22C55E');
+            }, cssVar('--color-success', '#0F835B'));
         }
     }
 
     function buildReport(result) {
-        const displayResult = sanitizeForDisplay(result);
-        const qm = displayResult.quantitative_metrics || displayResult.quantitative || {};
-        const prosody = displayResult.prosody_analysis || displayResult.prosody || {};
-        const ling = displayResult.linguistic_analysis || displayResult.linguistic || {};
-        const lit = displayResult.literary_devices || {};
-        const sentiment = displayResult.sentiment_analysis || {};
-        const evaluation = displayResult.evaluation || {};
+        const theory = result.theory_analysis || {};
+        const structural = result.structural_analysis || {};
+        const stylometry = result.stylometry_data || {};
+        const competition = result.competition_rubrics_data || {};
+        const evolutionary = result.evolutionary_data || {};
+        const education = result.educational_insight || "No insight available.";
+
+        const qm = result.quantitative || {};
+        const prosody = result.prosody || {};
+        const ling = result.linguistic || {};
+        const lit = result.literary_devices || {};
+        const sentiment = result.sentiment || {};
+        const evaluation = result.evaluation || {};
+        const displayResult = { ...result };
+        delete displayResult.text;
 
         const container = document.getElementById('reportContainer');
         container.innerHTML = `
@@ -560,7 +616,7 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="text-5xl font-black mb-2" style="color:${scoreColor(result.overall_score)}">${result.overall_score ? Number(result.overall_score).toFixed(2) : '-'}</div>
+                        <div class="text-5xl font-black mb-2" style="color:${scoreColor(result.overall_score || evaluation?.ratings?.overall_quality)}">${(result.overall_score || evaluation?.ratings?.overall_quality) ? Number(result.overall_score || evaluation?.ratings?.overall_quality).toFixed(2) : '-'}</div>
                         <div class="text-sm font-bold text-muted uppercase tracking-widest">Overall Score</div>
                     </div>
                 </div>
@@ -586,7 +642,7 @@
                     <svg class="icon text-warning mr-2" aria-hidden="true"><use href="#icon-star"></use></svg> Quality Scores
                 </h3>
                 <div class="d-grid gap-4 grid-auto-md">
-                    ${scoreCard('Overall', result.overall_score)}
+                    ${scoreCard('Overall', result.overall_score || evaluation?.ratings?.overall_quality)}
                     ${scoreCard('Technical', result.technical_craft_score || evaluation?.ratings?.technical_craft)}
                     ${scoreCard('Language', result.language_diction_score || evaluation?.ratings?.language_diction)}
                     ${scoreCard('Imagery', result.imagery_voice_score || evaluation?.ratings?.imagery_voice)}
@@ -596,14 +652,30 @@
                 </div>
             </div>
 
-            <div class="d-grid gap-4 grid-auto-md">
-                <div class="stat-card text-center p-4"><div class="text-3xl font-black text-primary mb-1">${result.word_count || 0}</div><div class="text-sm font-bold text-muted uppercase tracking-widest">Words</div></div>
-                <div class="stat-card text-center p-4"><div class="text-3xl font-black text-secondary mb-1">${result.line_count || 0}</div><div class="text-sm font-bold text-muted uppercase tracking-widest">Lines</div></div>
-                <div class="stat-card text-center p-4"><div class="text-3xl font-black text-accent mb-1">${result.strictness_level || 7}</div><div class="text-sm font-bold text-muted uppercase tracking-widest">Strictness</div></div>
-                <div class="stat-card text-center p-4"><div class="text-xl font-bold text-text mb-1 mt-2">${escapeHtml(formatDate(result.created_at))}</div><div class="text-sm font-bold text-muted uppercase tracking-widest mt-2">Analyzed</div></div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="stat-card text-center p-4">
+                    <div class="text-3xl font-black text-primary mb-1">${result.word_count || 0}</div>
+                    <div class="text-sm font-bold text-muted uppercase tracking-widest">Words</div>
+                </div>
+                <div class="stat-card text-center p-4">
+                    <div class="text-3xl font-black text-secondary mb-1">${result.line_count || 0}</div>
+                    <div class="text-sm font-bold text-muted uppercase tracking-widest">Lines</div>
+                </div>
+                <div class="stat-card text-center p-4">
+                    <div class="text-3xl font-black text-accent mb-1">${result.strictness_level || 7}</div>
+                    <div class="text-sm font-bold text-muted uppercase tracking-widest">Strictness</div>
+                </div>
             </div>
 
-            <div class="d-grid gap-6 grid-cols-1 lg:grid-cols-2">
+            <div class="card mb-8 bg-gradient-to-br from-primary-50 to-secondary-50 border-l-4 border-primary-500">
+                <h3 class="text-xl font-bold text-primary-900 mb-3 flex items-center gap-2">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-lightbulb"></use></svg>
+                    Educational Insight
+                </h3>
+                <p class="text-text leading-relaxed font-serif text-lg">${escapeHtml(education)}</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div class="card">
                     <h3 class="text-lg font-bold text-text mb-4">Ratings Radar</h3>
                     <div id="ratingsRadar" class="w-full min-h-320"></div>
@@ -612,15 +684,13 @@
                     <h3 class="text-lg font-bold text-text mb-4">Transformer Emotions</h3>
                     <div id="emotionBar" class="w-full min-h-320"></div>
                 </div>
-                <div class="card">
-                    <h3 class="text-lg font-bold text-text mb-4">Rasa Distribution</h3>
-                    <div id="rasaBar" class="w-full min-h-320"></div>
-                </div>
-                <div class="card">
-                    <h3 class="text-lg font-bold text-text mb-4">Lexical Snapshot</h3>
-                    <div id="lexicalBar" class="w-full min-h-320"></div>
-                </div>
             </div>
+
+            ${sectionCard('Stylometric Fingerprint', stylometry)}
+            ${sectionCard('Competition & Rubrics Analysis', competition)}
+            ${sectionCard('Critical Theory Perspectives', theory)}
+            ${sectionCard('Evolutionary Fitness', evolutionary)}
+            ${sectionCard('Structural Archetypes', structural)}
 
             ${sectionCard('Quantitative Metrics', qm)}
             ${sectionCard('Prosody Analysis', prosody)}
@@ -636,7 +706,7 @@
 
     async function loadReport() {
         try {
-            const response = await axios.get(`/result/${RESULT_ID}`);
+            const response = await axios.get(`{{ route('data.result.get', result_id='') }}${RESULT_ID}`);
             currentResult = response.data.success ? response.data.data : response.data;
             buildReport(currentResult);
         } catch (error) {
@@ -646,7 +716,7 @@
                     <div class="text-danger text-3xl mb-4"><svg class="icon" aria-hidden="true"><use href="#icon-exclamation-triangle"></use></svg></div>
                     <h3 class="text-xl font-bold text-text mb-2">Failed to load report</h3>
                     <p class="text-soft mb-4">The requested result could not be loaded.</p>
-                    <a href="/results" class="btn btn-primary">Back to Results</a>
+                    <a href="{{ route('results') }}" class="btn btn-primary">Back to Results</a>
                 </div>
             `;
         }
@@ -668,3 +738,4 @@
     document.addEventListener('DOMContentLoaded', loadReport);
 </script>
 {% endblock %}
+

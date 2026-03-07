@@ -2,12 +2,19 @@
   "haiku": {
     "min_lines": 3,
     "max_lines": 3,
-    "syllable_pattern": [5, 7, 5],
+    "syllable_pattern": [
+      5,
+      7,
+      5
+    ],
     "syllable_tolerance": 1
   },
   "sonnet": {
     "lines": 14,
-    "rhyme_contains": ["ABAB", "ABBA"]
+    "rhyme_contains": [
+      "ABAB",
+      "ABBA"
+    ]
   },
   "villanelle": {
     "lines": 19
@@ -16,5 +23,52 @@
     "min_lines": 10,
     "even_lines_only": true,
     "requires_matla": true
+  },
+  "rhyme_forms": {
+    "sonnet_shakespearean": {
+      "lines": 14,
+      "exact_schemes": [
+        "ABAB CDCD EFEF GG",
+        "ABABCDCDEFEFGG"
+      ]
+    },
+    "sonnet_petrarchan": {
+      "lines": 14,
+      "exact_schemes": [
+        "ABBAABBA CDECDE",
+        "ABBAABBA CDCDCD"
+      ]
+    },
+    "haiku": {
+      "lines": 3,
+      "exact_schemes": [
+        "ABA"
+      ]
+    },
+    "limerick": {
+      "lines": 5,
+      "exact_schemes": [
+        "AABBA"
+      ]
+    },
+    "villanelle": {
+      "lines": 19,
+      "scheme_starts_with": "A",
+      "scheme_min_count_A": 6
+    },
+    "couplets": {
+      "type": "repeating",
+      "pattern": "AABB",
+      "even_lines_only": true
+    },
+    "alternate_rhyme": {
+      "type": "repeating",
+      "pattern": "ABAB",
+      "even_lines_only": true
+    },
+    "monorhyme": {
+      "type": "monorhyme",
+      "scheme_starts_with": "A"
+    }
   }
 }

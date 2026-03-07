@@ -12,7 +12,7 @@ import uuid
 
 from app.services.quantitative import QuantitativeMetricsCalculator
 from app.services.prosody import ProsodyAnalyzer, detect_poem_form
-from app.services.linguistic import LinguisticAnalyzer, analyze_idioms
+from app.services.linguistic import LinguisticAnalyzer
 from app.services.literary_devices import LiteraryDevicesAnalyzer
 from app.services.advanced_analysis import AdvancedAnalysisEngine
 from app.services.evaluation import (
@@ -29,12 +29,12 @@ from app.services.structural_analysis import (
 from app.services.ghazal_verifier import GhazalVerifier, verify_ghazal
 from app.services.additional_analysis import run_additional_analyses
 from app.services.rule_loader import get_performance_rules, get_output_limits
-from app.services.style_tone_analysis import (
-    StyleToneAnalyzer,
-    PragmaticsAnalyzer,
-    CulturalHistoricalAnalyzer,
-    OrthographyAnalyzer,
-)
+from app.services.style_tone_analysis import StyleToneAnalyzer
+from app.services.cultural_analysis import CulturalAnalyzer
+from app.services.orthography_analysis import OrthographyAnalyzer
+from app.services.stylometry import StylometryAnalyzer
+from app.services.competition_rubrics import CompetitionRubricsAnalyzer
+from app.services.evolutionary import EvolutionaryFitnessAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +60,11 @@ class CompleteAnalysisService:
         self.structural_analyzer = StructuralAnalyzer()
         self.ghazal_verifier = GhazalVerifier()
         self.style_tone_analyzer = StyleToneAnalyzer(language)
-        self.pragmatics_analyzer = PragmaticsAnalyzer(language)
-        self.cultural_analyzer = CulturalHistoricalAnalyzer(language)
+        self.cultural_analyzer = CulturalAnalyzer(language)
         self.orthography_analyzer = OrthographyAnalyzer(language)
+        self.stylometry_analyzer = StylometryAnalyzer()
+        self.competition_rubrics = CompetitionRubricsAnalyzer()
+        self.evolutionary_fitness = EvolutionaryFitnessAnalyzer()
 
         self._analysis_cache = {}
 
@@ -120,22 +122,17 @@ class CompleteAnalysisService:
             logger.info("[analysis] literary_devices %.2fs", time.perf_counter() - t0)
             _progress(46, "Literary devices analysis complete")
 
-            # Form Detection (Safely)
+            # Form Detection — use the real detect_poem_form() detector
+            t0 = time.perf_counter()
             try:
-                # Use simple heuristics first to avoid nested full analysis
-                lines = [l.strip() for l in text.split('\n') if l.strip()]
-                if len(lines) == 14:
-                    prosody["detected_form"] = "sonnet"
-                elif len(lines) == 3:
-                    prosody["detected_form"] = "haiku"
-                elif len(lines) == 19:
-                    prosody["detected_form"] = "villanelle"
-                else:
-                    prosody["detected_form"] = "free_verse"
-                prosody["form_confidence"] = 0.7
-            except:
+                form_detected = detect_poem_form(text)
+                prosody["detected_form"] = form_detected.get("form", "unknown")
+                prosody["form_confidence"] = form_detected.get("confidence", 0.0)
+            except Exception:
+                form_detected = {"form": "unknown", "confidence": 0.0}
                 prosody["detected_form"] = "unknown"
                 prosody["form_confidence"] = 0.0
+            logger.info("[analysis] form_detection %.2fs", time.perf_counter() - t0)
 
             # Advanced Analysis - Selective for speed
             advanced = None
@@ -236,6 +233,31 @@ class CompleteAnalysisService:
             _progress(60, "Evaluation complete")
             ratings = evaluation["ratings"]
 
+            # Stylometry
+            t0 = time.perf_counter()
+            stylometry = self.stylometry_analyzer.analyze(text)
+            logger.info("[analysis] stylometry %.2fs", time.perf_counter() - t0)
+            _progress(62, "Stylometry complete")
+
+            # Competition Rubrics + Evolutionary Fitness
+            # Both depend on pre-computed metrics — build the shared aggregated dict here
+            t0 = time.perf_counter()
+            aggregated_metrics = {
+                "rhyme_density": (prosody.get("rhyme", {}) or {}).get("rhyme_density", 0.0),
+                "readability": (quantitative.get("readability_metrics", {}) or {}).get("flesch_reading_ease", 50.0),
+                "imagery_score": ratings.get("imagery_voice", 0.0) / 10.0,
+                "sentiment_intensity": abs(
+                    (linguistic.get("sentiment", {}) or {}).get("compound", 0.0)
+                ),
+                "lexical_diversity": stylometry.get("ttr", 0.0),
+                "metrical_regularity": (prosody.get("meter", {}) or {}).get("metrical_regularity", 0.0),
+                "thematic_depth": ratings.get("originality", 0.0) / 10.0,
+            }
+            competition_rubrics = self.competition_rubrics.analyze(text, aggregated_metrics)
+            evolutionary = self.evolutionary_fitness.analyze(text, aggregated_metrics)
+            logger.info("[analysis] competition+evolutionary %.2fs", time.perf_counter() - t0)
+            _progress(65, "Competition rubrics & evolutionary fitness complete")
+
             # Generate Summaries
             executive_summary = generate_executive_summary(metrics, ratings)
             educational_insight = generate_educational_insight(metrics)
@@ -253,6 +275,7 @@ class CompleteAnalysisService:
                 "title": title,
                 "language": self.language,
                 "form": form or prosody.get("detected_form", "unknown"),
+                "form_detected": form_detected,
                 "timestamp": timestamp,
                 "text_preview": preview_text,
                 # Core Analysis
@@ -268,6 +291,10 @@ class CompleteAnalysisService:
                 "ghazal_verification": ghazal_verification,
                 "additional": additional,
                 "sentiment_analysis": sentiment_analysis,
+                # Competition & Evolutionary
+                "stylometry": stylometry,
+                "competition_rubrics": competition_rubrics,
+                "evolutionary": evolutionary,
                 # Evaluation
                 "evaluation": evaluation,
                 # Summaries
@@ -287,6 +314,9 @@ class CompleteAnalysisService:
                         "theory",
                         "ghazal",
                         "additional",
+                        "stylometry",
+                        "competition_rubrics",
+                        "evolutionary",
                     ],
                     "feature_completeness": "100%",
                 },
@@ -299,7 +329,7 @@ class CompleteAnalysisService:
             return result
 
         except Exception as e:
-            logger.error(f"Analysis failed: {str(e)}")
+            logger.error(f"Analysis terminated with error: {str(e)}")
             raise
 
     def apply_constraint(
@@ -329,7 +359,7 @@ class CompleteAnalysisService:
 
         if self.language not in ["en", "hi", "gu", "mr", "bn"]:
             limitations.append(
-                f"Limited support for {self.language} - some features may be unavailable"
+                f"Limited support for {self.language} - some optional features may not run"
             )
 
         return limitations

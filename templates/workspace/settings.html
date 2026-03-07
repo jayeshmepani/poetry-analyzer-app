@@ -359,7 +359,7 @@
         showLoading('Loading settings from database...');
 
         try {
-            const response = await axios.get('/settings-data');
+            const response = await axios.get('{{ route('data.settings.get') }}');
             const settings = response.data.data?.settings || response.data.settings || {};
 
             // Apply settings to form
@@ -406,7 +406,7 @@
         };
 
         try {
-            const response = await axios.post('/settings-data', { settings });
+            const response = await axios.post('{{ route('data.settings.save') }}', { settings });
             hideLoading();
 
             document.getElementById('settingsStatus').innerHTML = '<span class="text-success"><svg class="icon mr-1" aria-hidden="true"><use href="#icon-check-circle"></use></svg>Saved</span>';
@@ -448,3 +448,5 @@
     }
 </script>
 {% endblock %}
+
+

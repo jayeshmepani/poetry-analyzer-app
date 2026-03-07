@@ -423,7 +423,7 @@
         showLoading(`Analyzing ${items.length} text${items.length > 1 ? 's' : ''}... This may take ${items.length * 30} seconds.`);
 
         try {
-            const response = await axios.post('/batch-run', { items });
+            const response = await axios.post('{{ route('data.analyze.batch') }}', { items });
 
             const responseData = response.data.data || response.data;
             if (response.data && response.data.success !== false) {
@@ -431,7 +431,7 @@
 
                 // Redirect to results page
                 setTimeout(() => {
-                    window.location.href = '/results';
+                    window.location.href = '{{ route('results') }}';
                 }, 1500);
             }
         } catch (error) {
@@ -455,3 +455,5 @@
     updateStats();
 </script>
 {% endblock %}
+
+

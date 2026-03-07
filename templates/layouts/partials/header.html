@@ -67,7 +67,7 @@
                 <small>{{ user.email }}</small>
             </div>
             <div class="header-dropdown-divider"></div>
-            <a href="/settings" class="header-dropdown-item">
+            <a href="{{ route('settings') }}" class="header-dropdown-item">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3" />
                     <path
@@ -76,7 +76,7 @@
                 Settings
             </a>
             <div class="header-dropdown-divider"></div>
-            <a href="/logout" class="header-dropdown-item header-dropdown-item-danger">
+            <a href="{{ route('logout') }}" class="header-dropdown-item header-dropdown-item-danger">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                     <polyline points="16 17 21 12 16 7" />
@@ -89,3 +89,5 @@
 
     </div>
 </header>
+
+

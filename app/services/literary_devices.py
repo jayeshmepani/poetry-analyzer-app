@@ -14,6 +14,11 @@ from nltk.corpus import wordnet as wn
 from app.config import Settings
 from app.services.label_loader import get_labels
 from app.services.rule_loader import get_thresholds, get_literary_device_rules
+from app.services.iwn_resources import (
+    iwn_runtime_supported,
+    get_iwn_language_enum,
+    silence_pyiwn_info_logs,
+)
 
 
 class LiteraryDevicesAnalyzer:
@@ -63,7 +68,7 @@ class LiteraryDevicesAnalyzer:
             else:
                 self._nlp = spacy.load(self._settings.spacy.multilingual_model)
         except Exception as e:
-            self._logger.warning(f"spaCy unavailable for literary devices: {e}")
+            self._logger.info(f"spaCy pipeline not initialized for literary devices: {e}")
             self._nlp = None
         return self._nlp
 
@@ -74,7 +79,7 @@ class LiteraryDevicesAnalyzer:
             model_name = self._settings.transformer.generalist_zero_shot_model
             self._zero_shot = pipeline("zero-shot-classification", model=model_name, device=-1)
         except Exception as e:
-            self._logger.warning(f"Zero-shot pipeline unavailable: {e}")
+            self._logger.info(f"Zero-shot pipeline not initialized for literary devices: {e}")
             self._zero_shot = None
         return self._zero_shot
 
@@ -808,16 +813,14 @@ class LiteraryDevicesAnalyzer:
                 except Exception:
                     return 0
             try:
-                from pyiwn import IndoWordNet, Language
-                lang_map = {
-                    "hi": Language.HINDI,
-                    "gu": Language.GUJARATI,
-                    "ur": Language.URDU,
-                    "mr": Language.MARATHI,
-                    "bn": Language.BENGALI,
-                    "sa": Language.SANSKRIT,
-                }
-                iwn = IndoWordNet(lang=lang_map.get(self.language, Language.HINDI))
+                if not iwn_runtime_supported(self.language):
+                    return 0
+                from pyiwn import IndoWordNet
+                silence_pyiwn_info_logs()
+                lang_enum = get_iwn_language_enum(self.language)
+                if lang_enum is None:
+                    return 0
+                iwn = IndoWordNet(lang=lang_enum)
                 return len(iwn.synsets(word))
             except Exception:
                 return 0
@@ -870,16 +873,16 @@ class LiteraryDevicesAnalyzer:
             return shleshas[: int(top_k)] if top_k is not None else shleshas
 
         try:
-            from pyiwn import IndoWordNet, Language
-            lang_map = {
-                "hi": Language.HINDI,
-                "gu": Language.GUJARATI,
-                "ur": Language.URDU,
-                "mr": Language.MARATHI,
-                "bn": Language.BENGALI,
-                "sa": Language.SANSKRIT,
-            }
-            iwn = IndoWordNet(lang=lang_map.get(self.language, Language.HINDI))
+            if not iwn_runtime_supported(self.language):
+                top_k = self._rules.get("shlesha_top_k")
+                return shleshas[: int(top_k)] if top_k is not None else shleshas
+            from pyiwn import IndoWordNet
+            silence_pyiwn_info_logs()
+            lang_enum = get_iwn_language_enum(self.language)
+            if lang_enum is None:
+                top_k = self._rules.get("shlesha_top_k")
+                return shleshas[: int(top_k)] if top_k is not None else shleshas
+            iwn = IndoWordNet(lang=lang_enum)
             for i, line in enumerate(self.lines):
                 tokens = re.findall(r"[\w\u0900-\u097F\u0600-\u06FF]+", line)
                 for word in tokens:

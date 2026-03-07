@@ -20,6 +20,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 .huggingface_cache
 .stanza_cache
+.urdu_g2p_cache
 # =============================================================================
 # IDE & EDITOR FILES
 # =============================================================================

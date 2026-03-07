@@ -80,8 +80,12 @@ class AdminController(BaseController):
     async def data(self, request: Request, admin: User = Depends(get_superadmin_user)):
         db = SessionLocal()
         try:
-            limit  = max(1, min(int(request.query_params.get("limit",  10)), 200))
-            offset = max(0, int(request.query_params.get("offset", 0)))
+            raw_limit = request.query_params.get("limit")
+            raw_offset = request.query_params.get("offset", "0")
+            limit = None
+            if raw_limit not in (None, "", "all", "ALL"):
+                limit = max(1, min(int(raw_limit), 200))
+            offset = max(0, int(raw_offset)) if limit is not None else 0
             search = request.query_params.get("search", "").strip()
             sort   = request.query_params.get("sort",   "created_at")
             order  = request.query_params.get("order",  "desc")
@@ -103,7 +107,9 @@ class AdminController(BaseController):
 
             col = getattr(User, sort)
             query = query.order_by(col.desc() if order == "desc" else col.asc())
-            users = query.offset(offset).limit(limit).all()
+            if limit is not None:
+                query = query.offset(offset).limit(limit)
+            users = query.all()
 
             rows = [
                 {

@@ -9,7 +9,10 @@ import json
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
 from collections import Counter
-import pronouncing
+try:
+    import pronouncing
+except Exception:
+    pronouncing = None
 import syllables  # Use library for English syllable counting
 from app.services.phonology_resources import (
     get_phonology,
@@ -96,7 +99,9 @@ class ProsodyAnalyzer:
             pattern = []
             for word in words:
                 stress = self._get_stress(word)
-                pattern.append(stress)
+                # Expand per-word stress into per-syllable stress tokens for strict
+                # metrical matching against canonical foot patterns.
+                pattern.extend([t for t in stress.split("-") if t])
             line_patterns.append(pattern)
 
         detected_meter = self._detect_meter_type(line_patterns)
@@ -132,18 +137,19 @@ class ProsodyAnalyzer:
         """Get stress pattern for a word"""
         word_lower = word.lower().strip(".,!?;:'\"")
 
-        try:
-            stresses_list = pronouncing.stresses_for_word(word_lower)
-            if stresses_list:
-                stress_pattern = stresses_list[0]
-                return (
-                    stress_pattern.replace("0", "da-")
-                    .replace("1", "DUM-")
-                    .replace("2", "DUM-")
-                    .strip("-")
-                )
-        except:
-            pass
+        if pronouncing is not None:
+            try:
+                stresses_list = pronouncing.stresses_for_word(word_lower)
+                if stresses_list:
+                    stress_pattern = stresses_list[0]
+                    return (
+                        stress_pattern.replace("0", "da-")
+                        .replace("1", "DUM-")
+                        .replace("2", "DUM-")
+                        .strip("-")
+                    )
+            except Exception:
+                pass
 
         # Estimate based on syllable count
         syllable_count = self._count_syllables(word)
@@ -244,25 +250,22 @@ class ProsodyAnalyzer:
         if not patterns or meter_type in ["free_verse", "unknown"]:
             return 0.0
 
-        expected = METER_PATTERNS.get(meter_type.replace("_pentameter", ""), {}).get(
-            "pattern", []
-        )
+        base_meter = meter_type.split("_")[0] if meter_type else meter_type
+        expected = METER_PATTERNS.get(base_meter, {}).get("pattern", [])
         if not expected:
             return 0.0
         matches = 0
         total = len(patterns)
 
         for pattern in patterns:
-            if len(pattern) % len(expected) != 0:
+            if not pattern:
                 continue
-            repeated = expected * (len(pattern) // len(expected))
-            if pattern == repeated:
+            # Repeat/truncate target pattern to line length for direct mismatch count.
+            repeats = (len(pattern) + len(expected) - 1) // len(expected)
+            repeated = (expected * repeats)[: len(pattern)]
+            mismatches = sum(1 for a, b in zip(pattern, repeated) if a != b)
+            if mismatches <= tolerance_subs:
                 matches += 1
-            else:
-                # allow tolerance_subs substitutions
-                mismatches = sum(1 for a, b in zip(pattern, repeated) if a != b)
-                if mismatches <= tolerance_subs:
-                    matches += 1
 
         return matches / total if total > 0 else 0.0
 
@@ -450,24 +453,31 @@ class ProsodyAnalyzer:
 
     def _detect_form_from_rhyme(self, scheme: str, line_count: int) -> Optional[str]:
         """Detect poetic form from rhyme scheme"""
-        if line_count == 14:
-            if scheme in ["ABAB CDCD EFEF GG", "ABABCDCDEFEFGG"]:
-                return "sonnet_shakespearean"
-            elif scheme in ["ABBAABBA CDECDE", "ABBAABBA CDCDCD"]:
-                return "sonnet_petrarchan"
-        elif line_count == 3 and scheme == "ABA":
-            return "haiku"
-        elif line_count == 5 and scheme == "AABBA":
-            return "limerick"
-        elif line_count == 19 and scheme.startswith("A") and scheme.count("A") >= 6:
-            return "villanelle"
-        elif len(set(scheme)) == 2 and line_count % 2 == 0:
-            if scheme == "AABB" * (line_count // 4):
-                return "couplets"
-            elif scheme == "ABAB" * (line_count // 4):
-                return "alternate_rhyme"
-        elif scheme.startswith("A") and all(s == scheme[0] for s in scheme):
-            return "monorhyme"
+        rules_dict = get_form_rules()
+        if not rules_dict or "rhyme_forms" not in rules_dict:
+            return None
+        rhyme_forms = rules_dict["rhyme_forms"]
+
+        for form_name, rule in rhyme_forms.items():
+            if rule.get("lines") and line_count != rule["lines"]:
+                continue
+            
+            if "exact_schemes" in rule:
+                if scheme in rule["exact_schemes"]:
+                    return form_name
+            elif "scheme_starts_with" in rule and "scheme_min_count_A" in rule:
+                if scheme.startswith(rule["scheme_starts_with"]) and scheme.count(rule["scheme_starts_with"]) >= rule["scheme_min_count_A"]:
+                    return form_name
+            elif rule.get("type") == "repeating" and "pattern" in rule:
+                if rule.get("even_lines_only") and line_count % 2 != 0:
+                    continue
+                pattern = rule["pattern"]
+                expected = pattern * (line_count // len(pattern))
+                if scheme == expected:
+                    return form_name
+            elif rule.get("type") == "monorhyme":
+                if scheme.startswith(rule.get("scheme_starts_with", "A")) and all(s == scheme[0] for s in scheme):
+                    return form_name
 
         return None
 

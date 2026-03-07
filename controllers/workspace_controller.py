@@ -95,6 +95,40 @@ class WorkspaceController(BaseController):
         }
         return alias_map.get(lang, "en")
 
+    @staticmethod
+    def _resolve_overall_score(evaluation: Dict[str, Any], ratings: Dict[str, Any]) -> float:
+        """
+        Evaluation engine outputs overall under ratings.overall_quality.
+        Keep compatibility with any legacy overall_score key.
+        """
+        raw = (
+            (evaluation or {}).get("overall_score")
+            if isinstance(evaluation, dict)
+            else None
+        )
+        if raw is None and isinstance(ratings, dict):
+            raw = ratings.get("overall_quality")
+        try:
+            if raw is None:
+                return 0.0
+            return float(raw)
+        except (TypeError, ValueError):
+            return 0.0
+
+    @classmethod
+    def _resolve_analysis_language(cls, selected_language: str, text: str) -> str:
+        """
+        Resolve backend analysis language from user selection + actual script evidence.
+        Prevents script/language mismatches (e.g., Devanagari poem analyzed as Urdu).
+        """
+        mapped = cls._analysis_language(selected_language)
+        inferred = cls._infer_language_from_text(text or "")
+
+        # Trust strong script evidence for Indic scripts.
+        if inferred in {"hi", "ur"} and mapped in {"hi", "ur"} and inferred != mapped:
+            return inferred
+        return mapped
+
     async def dashboard(self, request: Request):
         """
         Dashboard
@@ -217,7 +251,9 @@ class WorkspaceController(BaseController):
         try:
             data = await request.json()
             selected_language = (data.get("language", "en") or "en").strip().lower()
-            analysis_language = self._analysis_language(selected_language)
+            analysis_language = self._resolve_analysis_language(
+                selected_language, data.get("text", "")
+            )
             
             # Secure retrieve user from cookie
             from app.database import SessionLocal
@@ -253,6 +289,8 @@ class WorkspaceController(BaseController):
                 eval_obj = result.get("evaluation", {})
                 ratings_obj = eval_obj.get("ratings", {})
 
+                overall_score_value = self._resolve_overall_score(eval_obj, ratings_obj)
+
                 db_result = AnalysisResult(
                     title=data.get("title", "Untitled"),
                     text=data.get("text", ""),
@@ -264,7 +302,7 @@ class WorkspaceController(BaseController):
                     line_count=len(data.get("text", "").split("\n")),
                     user_id=user.id,
                     # Map scores from analysis result
-                    overall_score=eval_obj.get("overall_score", 0),
+                    overall_score=overall_score_value,
                     technical_craft_score=ratings_obj.get("technical_craft", 0),
                     language_diction_score=ratings_obj.get("language_diction", 0),
                     imagery_voice_score=ratings_obj.get("imagery_voice", 0),
@@ -278,9 +316,16 @@ class WorkspaceController(BaseController):
                     prosody_analysis=result.get("prosody", {}),
                     linguistic_analysis=result.get("linguistic", {}),
                     literary_devices=result.get("literary_devices", {}),
-                    sentiment_analysis=result.get("advanced", {}).get("sentiment", {}),
+                    sentiment_analysis=result.get("sentiment_analysis", {}),
                     evaluation=eval_obj,
                     executive_summary=result.get("executive_summary", ""),
+                    # Extended analysis fields
+                    theory_analysis=result.get("theory"),
+                    structural_analysis=result.get("structural"),
+                    stylometry_data=result.get("stylometry"),
+                    competition_rubrics_data=result.get("competition_rubrics"),
+                    evolutionary_data=result.get("evolutionary"),
+                    educational_insight=result.get("educational_insight", ""),
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
                 )
@@ -289,9 +334,19 @@ class WorkspaceController(BaseController):
                 db.commit()
                 db.refresh(db_result)
 
-                # Return full dictionary
+                # Return the full live analysis result merged with DB metadata
+                # (live result has all keys including stylometry/theory/etc)
                 payload = {
+                    **result,
                     **db_result.to_full_dict(),
+                    # Ensure live keys that to_full_dict() maps differently are present
+                    "theory": result.get("theory"),
+                    "structural": result.get("structural"),
+                    "stylometry": result.get("stylometry"),
+                    "competition_rubrics": result.get("competition_rubrics"),
+                    "evolutionary": result.get("evolutionary"),
+                    "educational_insight": result.get("educational_insight"),
+                    "form_detected": result.get("form_detected"),
                     "id": db_result.uuid,
                     "uuid": db_result.uuid,
                     "message": "Analysis completed and saved to database",
@@ -319,6 +374,19 @@ class WorkspaceController(BaseController):
             if not items:
                 return self.error("No items provided", 400)
 
+            # Authenticate user (required to set user_id on each result)
+            auth_uuid = request.cookies.get("auth_uuid")
+            if not auth_uuid:
+                return self.error("Not authenticated", 401)
+            db_auth = SessionLocal()
+            try:
+                user = db_auth.query(User).filter(User.uuid == auth_uuid).first()
+                if not user or user.status == 0:
+                    return self.error("Invalid or inactive session", 403)
+                user_id = user.id
+            finally:
+                db_auth.close()
+
             from app.services.analysis_service import create_analysis_service
 
             db = SessionLocal()
@@ -327,7 +395,9 @@ class WorkspaceController(BaseController):
             try:
                 for item in items:
                     selected_language = (item.get("language", "en") or "en").strip().lower()
-                    analysis_language = self._analysis_language(selected_language)
+                    analysis_language = self._resolve_analysis_language(
+                        selected_language, item.get("text", "")
+                    )
                     service = create_analysis_service(
                         language=analysis_language
                     )
@@ -338,11 +408,14 @@ class WorkspaceController(BaseController):
                     eval_obj = analysis_result.get("evaluation", {})
                     ratings_obj = eval_obj.get("ratings", {})
 
+                    overall_score_value = self._resolve_overall_score(eval_obj, ratings_obj)
+
                     db_result = AnalysisResult(
                         title=item.get("title", "Untitled"),
                         text=item.get("text", ""),
                         language=selected_language,
-                        overall_score=eval_obj.get("overall_score", 0),
+                        user_id=user_id,
+                        overall_score=overall_score_value,
                         technical_craft_score=ratings_obj.get("technical_craft", 0),
                         language_diction_score=ratings_obj.get("language_diction", 0),
                         imagery_voice_score=ratings_obj.get("imagery_voice", 0),
@@ -354,12 +427,18 @@ class WorkspaceController(BaseController):
                         ),
                         quantitative_metrics=analysis_result.get("quantitative", {}),
                         prosody_analysis=analysis_result.get("prosody", {}),
+                        linguistic_analysis=analysis_result.get("linguistic", {}),
                         literary_devices=analysis_result.get("literary_devices", {}),
-                        sentiment_analysis=analysis_result.get("advanced", {}).get(
-                            "sentiment", {}
-                        ),
+                        sentiment_analysis=analysis_result.get("sentiment_analysis", {}),
                         evaluation=eval_obj,
                         executive_summary=analysis_result.get("executive_summary", ""),
+                        # Extended fields
+                        theory_analysis=analysis_result.get("theory"),
+                        structural_analysis=analysis_result.get("structural"),
+                        stylometry_data=analysis_result.get("stylometry"),
+                        competition_rubrics_data=analysis_result.get("competition_rubrics"),
+                        evolutionary_data=analysis_result.get("evolutionary"),
+                        educational_insight=analysis_result.get("educational_insight", ""),
                         word_count=len(item.get("text", "").split()),
                         line_count=len(item.get("text", "").split("\n")),
                         created_at=datetime.utcnow(),
@@ -420,23 +499,87 @@ class WorkspaceController(BaseController):
         except Exception as e:
             return self.error(str(e), 500)
 
-    async def list_results(self, request: Request, user: User = Depends(get_current_user), limit: int = 50, offset: int = 0):
-        """List all analysis results strictly for the current user"""
+    async def list_results(self, request: Request, user: User = Depends(get_current_user)):
+        """List analysis results for the current user with server-side table controls"""
+        sortable_fields = {
+            "title": AnalysisResult.title,
+            "language": AnalysisResult.language,
+            "poetic_form": AnalysisResult.poetic_form,
+            "overall_score": AnalysisResult.overall_score,
+            "word_count": AnalysisResult.word_count,
+            "line_count": AnalysisResult.line_count,
+            "created_at": AnalysisResult.created_at,
+        }
         try:
             db = SessionLocal()
             try:
-                results = (
-                    db.query(AnalysisResult)
-                    .filter(AnalysisResult.user_id == user.id)
-                    .order_by(AnalysisResult.created_at.desc())
-                    .offset(offset)
-                    .limit(limit)
-                    .all()
+                raw_limit = request.query_params.get("limit")
+                raw_offset = request.query_params.get("offset", "0")
+                limit = None
+                if raw_limit not in (None, "", "all", "ALL"):
+                    limit = max(1, min(int(raw_limit), 200))
+                offset = max(0, int(raw_offset)) if limit is not None else 0
+                search = request.query_params.get("search", "").strip()
+                sort = request.query_params.get("sort", "created_at").strip()
+                order = request.query_params.get("order", "desc").strip().lower()
+
+                if sort not in sortable_fields:
+                    sort = "created_at"
+                if order not in {"asc", "desc"}:
+                    order = "desc"
+
+                query = db.query(AnalysisResult).filter(AnalysisResult.user_id == user.id)
+
+                if search:
+                    from sqlalchemy import or_
+
+                    query = query.filter(
+                        or_(
+                            AnalysisResult.title.ilike(f"%{search}%"),
+                            AnalysisResult.language.ilike(f"%{search}%"),
+                            AnalysisResult.poetic_form.ilike(f"%{search}%"),
+                            AnalysisResult.text.ilike(f"%{search}%"),
+                        )
+                    )
+
+                total = query.count()
+                sort_column = sortable_fields[sort]
+                query = query.order_by(
+                    sort_column.desc() if order == "desc" else sort_column.asc()
                 )
-                total = db.query(AnalysisResult).filter(AnalysisResult.user_id == user.id).count()
-                return self.success(
-                    {"results": [r.to_dict() for r in results], "total": total}
-                )
+                if limit is not None:
+                    query = query.offset(offset).limit(limit)
+                results = query.all()
+
+                rows = []
+                for result in results:
+                    eval_obj = result.evaluation or {}
+                    ratings_obj = eval_obj.get("ratings", {}) if isinstance(eval_obj, dict) else {}
+                    resolved_overall = (
+                        float(result.overall_score)
+                        if result.overall_score is not None and float(result.overall_score) > 0
+                        else self._resolve_overall_score(eval_obj, ratings_obj)
+                    )
+                    rows.append(
+                        {
+                            "id": result.uuid,
+                            "uuid": result.uuid,
+                            "title": result.title or "Untitled",
+                            "text_preview": (
+                                (result.text[:120] + "...")
+                                if result.text and len(result.text) > 120
+                                else (result.text or "")
+                            ),
+                            "language": result.language or "en",
+                            "poetic_form": result.poetic_form or "Free Verse",
+                            "overall_score": resolved_overall,
+                            "word_count": result.word_count or 0,
+                            "line_count": result.line_count or 0,
+                            "created_at": result.created_at.isoformat() if result.created_at else None,
+                        }
+                    )
+
+                return self.success({"total": total, "rows": rows, "results": rows})
             finally:
                 db.close()
         except Exception as e:
@@ -454,7 +597,12 @@ class WorkspaceController(BaseController):
                 )
                 if not result:
                     return self.error("Result not found", 404)
-                return self.success(result.to_full_dict())
+                payload = result.to_full_dict()
+                eval_obj = payload.get("evaluation", {}) or {}
+                ratings_obj = eval_obj.get("ratings", {}) if isinstance(eval_obj, dict) else {}
+                if payload.get("overall_score") in (None, 0, 0.0):
+                    payload["overall_score"] = self._resolve_overall_score(eval_obj, ratings_obj)
+                return self.success(payload)
             finally:
                 db.close()
         except Exception as e:
@@ -475,6 +623,33 @@ class WorkspaceController(BaseController):
                 db.delete(result)
                 db.commit()
                 return self.success({"message": "Deleted successfully"})
+            finally:
+                db.close()
+        except Exception as e:
+            return self.error(str(e), 500)
+
+    async def delete_results_multiple(self, request: Request, user: User = Depends(get_current_user)):
+        """Delete multiple selected analysis results for the current user"""
+        try:
+            data = await request.json()
+            ids = data.get("ids", [])
+            if not isinstance(ids, list) or not ids:
+                return self.error("No results selected", 422)
+
+            db = SessionLocal()
+            try:
+                deleted = (
+                    db.query(AnalysisResult)
+                    .filter(
+                        AnalysisResult.user_id == user.id,
+                        AnalysisResult.uuid.in_([str(item) for item in ids]),
+                    )
+                    .delete(synchronize_session=False)
+                )
+                db.commit()
+                return self.success(
+                    {"deleted": deleted, "message": f"Deleted {deleted} selected analyses"}
+                )
             finally:
                 db.close()
         except Exception as e:
@@ -559,21 +734,27 @@ class WorkspaceController(BaseController):
                 if progress_cb:
                     progress_cb(20, "Preparing analysis pipeline...")
                 # Build dynamic support signals from the full analysis pipeline.
-                support_signals: Dict[str, Any] = {"support_factor": 0.65}
+                support_signals: Dict[str, Any] = {}
                 try:
-                    language = self._analysis_language(payload.get("language", "")) if payload.get("language") else self._infer_language_from_text(poem)
+                    language = (
+                        self._resolve_analysis_language(payload.get("language", ""), poem)
+                        if payload.get("language")
+                        else self._infer_language_from_text(poem)
+                    )
                     if progress_cb:
                         progress_cb(30, "Running linguistic analysis...")
                     pipeline = create_analysis_service(language=language, strictness=int(payload.get("strictness", 7) or 7))
                     pipeline_start = time.perf_counter()
-                    full = pipeline.analyze(poem, title="Theory Probe", progress_cb=progress_cb)
+                    full = pipeline.analyze(
+                        poem,
+                        title="Theory Probe",
+                        enable_all=False,
+                        progress_cb=progress_cb,
+                    )
                     pipeline_time = time.perf_counter() - pipeline_start
                     logger.info("[theory] pipeline.analyze completed in %.2fs", pipeline_time)
                     if progress_cb:
                         progress_cb(60, f"Pipeline complete ({pipeline_time:.1f}s). Building theory synthesis...")
-
-                    tr = (full.get("additional", {}) or {}).get("transformer_analysis", {}) or {}
-                    tr_supported = tr.get("status") not in ("unsupported_or_failed", "failed", None)
 
                     lex = ((full.get("quantitative", {}) or {}).get("lexical_metrics", {}) or {})
                     rhyme = ((full.get("prosody", {}) or {}).get("rhyme", {}) or {})
@@ -582,23 +763,9 @@ class WorkspaceController(BaseController):
 
                     trope_count = sum(len(v) for v in tropes.values() if isinstance(v, list))
                     scheme_count = sum(len(v) for v in schemes.values() if isinstance(v, list))
-                    available_keys = [
-                        "quantitative",
-                        "prosody",
-                        "linguistic",
-                        "literary_devices",
-                        "advanced",
-                        "additional",
-                        "structural",
-                        "sentiment_analysis",
-                        "evaluation",
-                    ]
-                    available_count = sum(1 for k in available_keys if full.get(k))
-                    support_factor = (available_count / max(1, len(available_keys))) if tr_supported else (available_count / max(1, len(available_keys)))
 
                     support_signals.update(
                         {
-                            "support_factor": support_factor,
                             "lexical_density": float(lex.get("lexical_density", 0.0) or 0.0),
                             "ttr": float(lex.get("type_token_ratio", 0.0) or 0.0),
                             "rhyme_density": float(rhyme.get("rhyme_density", 0.0) or 0.0),
@@ -617,7 +784,7 @@ class WorkspaceController(BaseController):
                     )
                 except Exception:
                     # Keep endpoint responsive even if support pipeline partially fails.
-                    support_signals = {"support_factor": 0.65}
+                    support_signals = {}
 
                 if progress_cb:
                     progress_cb(75, "Synthesizing theory outputs...")
@@ -676,7 +843,7 @@ class WorkspaceController(BaseController):
                         if task is not None:
                             task["status"] = "error"
                             task["error"] = str(e)
-                            task["message"] = "Failed."
+                            task["message"] = "Not completed."
                             task["updated"] = time.time()
 
                 asyncio.create_task(runner())
@@ -807,13 +974,154 @@ class WorkspaceController(BaseController):
 
     async def get_meters(self, request: Request):
         """Meters data"""
+        data_root = Path(__file__).resolve().parent.parent / "data" / "prosody"
+
+        try:
+            with (data_root / "meter_patterns.json").open("r", encoding="utf-8") as f:
+                english_patterns = json.load(f)
+            with (data_root / "chhand_patterns.json").open("r", encoding="utf-8") as f:
+                hindi_chhands = json.load(f)
+            with (data_root / "bahr_patterns.json").open("r", encoding="utf-8") as f:
+                urdu_bahrs = json.load(f)
+            with (data_root / "gujarati_chhands.json").open("r", encoding="utf-8") as f:
+                gujarati_chhands = json.load(f)
+        except Exception as e:
+            return self.error(f"Could not load prosody references: {e}", 500)
+
+        english = [
+            {
+                "id": key,
+                "name": value.get("name", key.replace("_", " ").title()),
+                "pattern": " ".join(value.get("pattern", [])),
+                "description": value.get("description", ""),
+                "feet_name": value.get("feet_name", ""),
+            }
+            for key, value in english_patterns.items()
+        ]
+        hindi = [
+            {
+                "id": key,
+                "name": key.replace("_", " ").title(),
+                "matra": value.get("matra", []),
+                "charan": value.get("charan"),
+                "description": value.get("description", ""),
+            }
+            for key, value in hindi_chhands.items()
+        ]
+        urdu = [
+            {
+                "id": key,
+                "name": key.replace("_", " ").title(),
+                "pattern": value.get("pattern", ""),
+                "feet": value.get("feet", []),
+                "description": value.get("description", ""),
+            }
+            for key, value in urdu_bahrs.items()
+        ]
+        gujarati = [
+            {
+                "id": key,
+                "name": key.replace("_", " ").title(),
+                "matra": value.get("matra", []),
+                "description": value.get("description", ""),
+            }
+            for key, value in gujarati_chhands.items()
+        ]
+
         return self.success(
-            {"meters": {"english": [{"id": "iambic", "name": "Iambic"}]}}
+            {
+                "meters": {
+                    "english": english,
+                    "hindi": hindi,
+                    "urdu": urdu,
+                    "gujarati": gujarati,
+                },
+                "source_of_truth": "data/prosody/*.json",
+            }
         )
 
     async def get_rasas(self, request: Request):
         """Rasas data"""
-        return self.success({"rasas": [{"id": "shringara", "name": "Shringara"}]})
+        rasas = [
+            {
+                "id": "shringara",
+                "name": "Shringara",
+                "sanskrit": "श्रृंगार",
+                "emotion": "Love / Beauty / Romance",
+                "color": "Light Green",
+                "deity": "Vishnu",
+            },
+            {
+                "id": "hasya",
+                "name": "Hasya",
+                "sanskrit": "हास्य",
+                "emotion": "Laughter / Comedy / Humor",
+                "color": "White",
+                "deity": "Shiva",
+            },
+            {
+                "id": "karuna",
+                "name": "Karuna",
+                "sanskrit": "करुण",
+                "emotion": "Compassion / Sorrow / Pathos",
+                "color": "Grey",
+                "deity": "Yama",
+            },
+            {
+                "id": "raudra",
+                "name": "Raudra",
+                "sanskrit": "रौद्र",
+                "emotion": "Fury / Anger / Rage",
+                "color": "Red",
+                "deity": "Kali / Rudra",
+            },
+            {
+                "id": "veera",
+                "name": "Veera",
+                "sanskrit": "वीर",
+                "emotion": "Heroism / Courage / Valor",
+                "color": "Orange",
+                "deity": "Rama / Indra",
+            },
+            {
+                "id": "bhayanaka",
+                "name": "Bhayanaka",
+                "sanskrit": "भयानक",
+                "emotion": "Terror / Fear / Horror",
+                "color": "Black",
+                "deity": "Kala",
+            },
+            {
+                "id": "bibhatsa",
+                "name": "Bibhatsa",
+                "sanskrit": "बीभत्स",
+                "emotion": "Disgust / Revulsion",
+                "color": "Blue",
+                "deity": "Brahma",
+            },
+            {
+                "id": "adbhuta",
+                "name": "Adbhuta",
+                "sanskrit": "अद्भुत",
+                "emotion": "Wonder / Awe / Marvelous",
+                "color": "Yellow",
+                "deity": "Vishnu",
+            },
+            {
+                "id": "shanta",
+                "name": "Shanta",
+                "sanskrit": "शांत",
+                "emotion": "Peace / Serenity / Tranquility",
+                "color": "White-Blue",
+                "deity": "Shiva",
+            },
+        ]
+        return self.success(
+            {
+                "rasas": rasas,
+                "source_of_truth": "Bharata Natyashastra navarasa canon",
+            }
+        )
 
     async def database_status_api(self, request: Request):
         """DB status"""
@@ -828,6 +1136,15 @@ class WorkspaceController(BaseController):
 
             init_db()
             return self.success({"message": "Database initialized successfully"})
+        except Exception as e:
+            return self.error(str(e), 500)
+
+    async def backend_symbols_api(self, request: Request):
+        """Backend symbol coverage summary"""
+        try:
+            from app.symbol_registry import summarize_symbol_registry
+
+            return self.success(summarize_symbol_registry())
         except Exception as e:
             return self.error(str(e), 500)
 

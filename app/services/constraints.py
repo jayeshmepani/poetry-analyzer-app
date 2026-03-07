@@ -13,6 +13,11 @@ import syllables
 from typing import Dict, List, Optional, Any, Tuple
 from collections import Counter
 from app.services.prosody import ProsodyAnalyzer
+from app.services.iwn_resources import (
+    iwn_runtime_supported,
+    get_iwn_language_enum,
+    silence_pyiwn_info_logs,
+)
 from app.services.rule_loader import get_constraints_rules
 
 
@@ -59,30 +64,22 @@ class OulipoConstraintEngine:
                 pass
         else:
             try:
-                from pyiwn import IndoWordNet, Language
-                lang_map = {
-                    "hi": Language.HINDI,
-                    "gu": Language.GUJARATI,
-                    "ur": Language.URDU,
-                    "mr": Language.MARATHI,
-                    "bn": Language.BENGALI,
-                    "sa": Language.SANSKRIT,
-                    "ta": Language.TAMIL,
-                    "te": Language.TELUGU,
-                    "kn": Language.KANNADA,
-                    "ml": Language.MALAYALAM,
-                    "pa": Language.PUNJABI,
-                }
-                iwn = IndoWordNet(lang=lang_map.get(self.language, Language.HINDI))
-                for syn in iwn.all_synsets():
-                    pos = syn.pos()
-                    lemmas = syn.lemma_names()
-                    if pos == "noun":
-                        nouns.extend(lemmas)
-                    elif pos == "verb":
-                        verbs.extend(lemmas)
-                    elif pos == "adj":
-                        adjectives.extend(lemmas)
+                if iwn_runtime_supported(self.language):
+                    from pyiwn import IndoWordNet
+
+                    lang_enum = get_iwn_language_enum(self.language)
+                    if lang_enum is not None:
+                        silence_pyiwn_info_logs()
+                        iwn = IndoWordNet(lang=lang_enum)
+                        for syn in iwn.all_synsets():
+                            pos = syn.pos()
+                            lemmas = syn.lemma_names()
+                            if pos == "noun":
+                                nouns.extend(lemmas)
+                            elif pos == "verb":
+                                verbs.extend(lemmas)
+                            elif pos == "adj":
+                                adjectives.extend(lemmas)
             except Exception:
                 pass
 
@@ -146,7 +143,15 @@ class OulipoConstraintEngine:
 
     def _with_css(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """Attach Constraint Satisfaction Score (CSS) if possible."""
-        if "compliance_score" in result:
+        if "violations" in result and "total_constraints" in result:
+            total_constraints = int(result.get("total_constraints", 0) or 0)
+            violations = int(result.get("violations", 0) or 0)
+            if total_constraints > 0:
+                css = 1.0 - (violations / total_constraints)
+                result["constraint_satisfaction_score"] = round(
+                    css, self._rules["rounding"]["css"]
+                )
+        elif "compliance_score" in result:
             result["constraint_satisfaction_score"] = result["compliance_score"]
         # Combinatorial Difficulty = log2(valid arrangements / total arrangements)
         if "original_text" in result:

@@ -48,7 +48,34 @@
     "dependency_node_scale": 200.0,
     "imagery_total_scale": 8.0,
     "readability_scale": 100.0,
-    "quality_rounding": 2
+    "quality_rounding": 2,
+    "unity_lexical_weight": 0.55,
+    "unity_refrain_weight": 0.45,
+    "imagery_focus_weight": 0.6,
+    "imagery_richness_weight": 0.4,
+    "imagery_richness_scale": 10.0,
+    "catharsis_count_scale": 5.0,
+    "catharsis_emotion_multiplier": 15.0,
+    "mimesis_count_scale": 5.0,
+    "decorum_threshold": 0.45,
+    "unity_horatian_threshold": 0.5,
+    "aristotelian_unity_threshold": 0.55,
+    "instruction_delight_emotion_multiplier": 10.0
+  },
+  "blend_weights": {
+    "psycho_emotion": 0.5,
+    "psycho_zsc": 0.5,
+    "ecocrit_imagery": 0.5,
+    "ecocrit_zsc": 0.5,
+    "human_nature_positive": 0.7,
+    "human_nature_sentiment": 0.3,
+    "gender_default_ratio": 0.5,
+    "human_nature_sentiment_default": 0.0
+  },
+  "horatian_weights": {
+    "decorum": 0.4,
+    "unity": 0.3,
+    "instruction_delight": 0.3
   },
   "quality_weights": {
     "lex": 0.35,
@@ -109,5 +136,164 @@
     },
     "narrative_present": "Present",
     "narrative_absent": "Absent"
+  },
+  "deconstruction": {
+    "framework": "Deconstruction",
+    "analysis": "Deconstructive reading revealing contradictions, suppressed meanings, and language instability",
+    "key_findings": {
+      "contradictions": "Found {count} textual contradictions",
+      "suppressed": "Identified {count} suppressed meanings",
+      "instability": "Language instability score: {score:.2f}"
+    },
+    "derridean_concepts": [
+      "Diff\u00e9rance (meaning deferred through language)",
+      "Logocentrism (critique of presence metaphysics)",
+      "Supplementarity (what is added reveals lack)"
+    ],
+    "score_weights": {
+      "contradictions": 0.4,
+      "suppressed": 0.3,
+      "instability": 0.3,
+      "scale": 10.0
+    }
+  },
+  "reader_response": {
+    "framework": "Reader-Response Criticism",
+    "value_formula": "Value = Text \u00d7 Reader \u00d7 Context",
+    "analysis": "Reader-response analysis focusing on how meaning emerges from reader-text transaction",
+    "key_findings": {
+      "gaps": "Interpretive gaps: {count} (spaces for reader meaning-making)",
+      "triggers": "Emotional triggers: {count}",
+      "context": "Context dependence: {score:.2f}"
+    },
+    "score_weights": {
+      "text_potential_base": 1.0,
+      "reader_engagement_base": 0.6,
+      "reader_engagement_mul": 0.7,
+      "context_relevance_base": 0.6,
+      "context_relevance_mul": 0.7,
+      "scale": 10.0
+    },
+    "engagement_blend": {
+      "emotional_divisor": 5.0,
+      "intrinsic_divisor": 4.0,
+      "gap_divisor": 3.0,
+      "emotional_weight": 0.45,
+      "intrinsic_weight": 0.35,
+      "gap_weight": 0.20,
+      "emotion_confidence_min": 0.1
+    }
+  },
+  "feminist": {
+    "framework": "Feminist Literary Criticism",
+    "analysis": "Feminist analysis interrogating gender roles, power dynamics, and patriarchal language structures",
+    "key_findings": {
+      "gender": "Gender representation: {summary}",
+      "power": "Power dynamics: {summary}",
+      "language": "Language analysis: {summary}"
+    },
+    "feminist_concepts": [
+      "Male gaze in representation",
+      "Patriarchal language structures",
+      "Gender performativity",
+      "Intersectionality"
+    ],
+    "score_weights": {
+      "gender": 0.4,
+      "power": 0.3,
+      "language": 0.3,
+      "scale": 10.0
+    }
+  },
+  "marxist": {
+    "framework": "Marxist Literary Criticism",
+    "analysis": "Marxist analysis focusing on class struggle, power dynamics, and ideological content",
+    "key_findings": {
+      "class": "Class representation: {summary}",
+      "ideology": "Ideological content: {summary}",
+      "economic": "Economic themes: {summary}"
+    },
+    "marxist_concepts": [
+      "Base and superstructure",
+      "Class consciousness",
+      "Ideological state apparatuses",
+      "Commodification",
+      "Alienation"
+    ],
+    "score_weights": {
+      "class": 0.4,
+      "ideology": 0.3,
+      "economic": 0.3,
+      "scale": 10.0
+    }
+  },
+  "psychoanalytic": {
+    "framework": "Psychoanalytic Criticism",
+    "analysis": "Psychoanalytic analysis exploring unconscious desires, defense mechanisms, and latent content",
+    "key_findings": {
+      "unconscious": "Unconscious content: {summary}",
+      "defense": "Defense mechanisms: {summary}",
+      "psychosexual": "Psychosexual themes: {summary}"
+    },
+    "freudian_concepts": [
+      "Id (instinctual drives)",
+      "Ego (reality principle)",
+      "Superego (moral conscience)",
+      "Oedipus complex",
+      "Death drive (Thanatos)",
+      "Life drive (Eros)"
+    ],
+    "score_weights": {
+      "unconscious": 0.4,
+      "defense": 0.3,
+      "psychosexual": 0.3,
+      "scale": 10.0
+    }
+  },
+  "ecocriticism": {
+    "framework": "Ecocriticism",
+    "analysis": "Ecocritical analysis examining nature representation, environmental themes, and human-nature relationships",
+    "key_findings": {
+      "nature": "Nature representation: {summary}",
+      "environmental": "Environmental themes: {summary}",
+      "human_nature": "Human-nature relationship: {summary}"
+    },
+    "ecocritical_concepts": [
+      "Deep Ecology (intrinsic value of nature)",
+      "Ecofeminism (environment + gender)",
+      "Environmental justice",
+      "Anthropocentrism critique",
+      "Biocentrism"
+    ],
+    "score_weights": {
+      "nature": 0.4,
+      "environmental": 0.3,
+      "human_nature": 0.3,
+      "scale": 10.0
+    }
+  },
+  "aristotelian": {
+    "framework": "Aristotelian Poetics",
+    "analysis": "Aristotelian analysis based on genre classification, unity, mimesis, and catharsis",
+    "key_findings": {
+      "genre": "Genre: {genre}",
+      "unity": "Unity of action: {summary}",
+      "mimesis": "Mimesis: {summary}",
+      "catharsis": "Catharsis potential: {summary}"
+    },
+    "aristotelian_concepts": [
+      "Mimesis (imitation)",
+      "Catharsis (purification)",
+      "Hamartia (tragic flaw)",
+      "Peripeteia (reversal)",
+      "Anagnorisis (recognition)",
+      "Unity of action"
+    ],
+    "score_weights": {
+      "unity": 0.4,
+      "mimesis": 0.3,
+      "catharsis": 0.3,
+      "scale": 10.0
+    }
   }
 }

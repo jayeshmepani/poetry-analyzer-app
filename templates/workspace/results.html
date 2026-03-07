@@ -3,329 +3,272 @@
 {% block title %}Analysis Results - PoetryMaster{% endblock %}
 
 {% block content %}
-<!-- Page Hero -->
-<section class="card mb-8 scroll-reveal fade-in">
-    <div class="d-flex items-start gap-4">
-        <div
-            class="d-flex items-center justify-center rounded-xl bg-primary-subtle text-3xl text-primary size-64 flex-shrink-0">
+<div class="mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8">
+    <div class="page-header">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h10l6 6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path>
+            <path d="M14 4v6h6"></path>
+        </svg>
+        <h1>Analysis Results</h1>
+    </div>
+
+    <div id="resultsToolbar" class="d-flex items-center gap-2">
+        <button type="button" class="btn btn-secondary" id="btnRefreshResults">
             <svg class="icon" aria-hidden="true">
-                <use href="#icon-file-alt"></use>
+                <use href="#icon-sync-alt"></use>
             </svg>
-        </div>
-        <div class="flex-1">
-            <p class="text-2xs font-bold uppercase tracking-widest text-muted mb-2">Analysis History</p>
-            <h1 class="text-3xl font-black mb-3 text-text">Analysis Results</h1>
-            <p class="max-w-3xl text-sm leading-relaxed text-soft">
-                View, compare, and manage all your poetry analyses with detailed metrics and insights.
-            </p>
-        </div>
-    </div>
-</section>
-
-<!-- Results Container -->
-<div class="card p-0 overflow-hidden scroll-reveal">
-    <!-- Header Actions -->
-    <div
-        class="p-6 border-b rounded-t-xl d-flex flex-col sm-flex-row justify-between items-start sm-items-center gap-4 bg-subtle">
-        <div class="d-flex items-center gap-3">
-            <div class="d-flex items-center justify-center rounded-lg bg-primary text-white size-40 text-lg">
-                <svg class="icon" aria-hidden="true">
-                    <use href="#icon-database"></use>
-                </svg>
-            </div>
-            <div>
-                <h2 class="text-xl font-bold text-text mb-0">Saved Analyses</h2>
-                <p class="text-sm text-soft mb-0"><span id="totalCount" class="font-black text-primary">0</span>
-                    analyses in database</p>
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <button type="button" onclick="loadResults()" class="btn btn-secondary">
-                <svg class="icon mr-2" aria-hidden="true">
-                    <use href="#icon-sync-alt"></use>
-                </svg> Refresh
-            </button>
-            <button type="button" onclick="clearAllResults()" class="btn btn-danger">
-                <svg class="icon mr-2" aria-hidden="true">
-                    <use href="#icon-trash"></use>
-                </svg> Clear All
-            </button>
-        </div>
-    </div>
-
-    <!-- Results Table -->
-    <div class="table-wrapper">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th class="text-left">Title</th>
-                    <th class="text-left">Language</th>
-                    <th class="text-left">Form</th>
-                    <th class="text-left">Score</th>
-                    <th class="text-left">Stats</th>
-                    <th class="text-left">Date</th>
-                    <th class="text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="resultsTable">
-                <tr>
-                    <td colspan="7" class="p-12 text-center">
-                        <svg class="icon fa-spin text-3xl text-muted mb-4" aria-hidden="true">
-                            <use href="#icon-circle-notch"></use>
-                        </svg>
-                        <p class="text-soft font-medium">Loading results from database...</p>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Empty State (hidden by default) -->
-    <div id="emptyState" class="d-none text-center p-12">
-        <div class="d-flex items-center justify-center rounded-full bg-subtle text-muted mx-auto mb-6 size-80 text-3xl">
+            Refresh
+        </button>
+        <button type="button" class="btn btn-danger" id="btnDeleteSelectedResults" disabled>
             <svg class="icon" aria-hidden="true">
-                <use href="#icon-inbox"></use>
+                <use href="#icon-trash"></use>
             </svg>
-        </div>
-        <h3 class="text-2xl font-bold text-text mb-2">No analyses yet</h3>
-        <p class="text-soft mb-6 max-w-sm mx-auto">Start by analyzing your first poem or literary text. Get
-            comprehensive insights with 70+ metrics.</p>
-        <a href="{{ route('analyze') }}" class="btn btn-primary btn-lg">
-            <svg class="icon mr-2" aria-hidden="true">
-                <use href="#icon-search"></use>
-            </svg> Start Your First Analysis
-        </a>
+            Delete Selected
+        </button>
+        <button type="button" class="btn btn-danger" id="btnClearAllResults">
+            <svg class="icon" aria-hidden="true">
+                <use href="#icon-trash"></use>
+            </svg>
+            Clear All
+        </button>
     </div>
+
+    <table data-table data-url="{{ route('data.results.list') }}" data-sort="created_at" data-order="desc"
+        data-page-size="10" data-page-list="[5,10,25,50,100,&quot;all&quot;]" data-search="true" data-click-to-select="true"
+        data-toolbar="#resultsToolbar" id="resultsTable">
+        <thead>
+            <tr>
+                <th data-field="state" data-checkbox="true"></th>
+                <th data-field="title" data-formatter="resultTitleFormatter" data-sortable="true">Title</th>
+                <th data-field="language" data-sortable="true" data-formatter="resultLanguageFormatter">Language</th>
+                <th data-field="poetic_form" data-sortable="true">Form</th>
+                <th data-field="overall_score" data-sortable="true" data-formatter="resultScoreFormatter">Score</th>
+                <th data-field="word_count" data-sortable="true" data-formatter="resultStatsFormatter">Stats</th>
+                <th data-field="created_at" data-sortable="true" data-formatter="resultDateFormatter">Created</th>
+                <th data-field="actions" data-formatter="resultActionsFormatter" data-events="resultActionEvents">Actions</th>
+            </tr>
+        </thead>
+    </table>
 </div>
-
 {% endblock %}
 
 {% block page_js %}
 <script>
-    // Load results on page load
-    document.addEventListener('DOMContentLoaded', loadResults);
+    (function () {
+        const RESULTS_TABLE_SELECTOR = '#resultsTable';
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewId = urlParams.get('view');
 
-    async function loadResults() {
-        showLoading('Loading results from database...');
-
-        try {
-            const response = await axios.get('/results-data?limit=50');
-            const data = response.data;
-
-            const tbody = document.getElementById('resultsTable');
-            const totalCount = document.getElementById('totalCount');
-            const emptyState = document.getElementById('emptyState');
-
-            // Handle different API response formats
-            let results = [];
-            let total = 0;
-
-            if (data && data.success && data.data) {
-                results = data.data.results || [];
-                total = data.data.total || 0;
-            } else if (data && data.results) {
-                results = data.results;
-                total = data.total || results.length;
+        function notifySuccess(message) {
+            if (window.Toast?.success) {
+                window.Toast.success(message);
+                return;
             }
-
-            totalCount.textContent = total;
-
-            if (!results || results.length === 0) {
-                tbody.closest('table').parentElement.classList.add('d-none');
-                emptyState.classList.remove('d-none');
-            } else {
-                tbody.closest('table').parentElement.classList.remove('d-none');
-                emptyState.classList.add('d-none');
-
-                tbody.innerHTML = results.map(r => `
-                <tr class="table-row-hover">
-                    <td>
-                        <div class="font-extrabold text-text mb-1">${r.title || 'Untitled'}</div>
-                        <div class="text-xs text-soft truncate max-w-250">${r.text ? r.text.substring(0, 60) + '...' : ''}</div>
-                    </td>
-                    <td>
-                        <span class="badge badge-primary">${getLanguageName(r.language || 'en')}</span>
-                    </td>
-                    <td>
-                        <span class="text-sm font-medium text-text">${r.poetic_form || 'Free Verse'}</span>
-                    </td>
-                    <td>
-                        <div class="d-flex items-center gap-2">
-                            <div class="rounded-full bg-subtle overflow-hidden w-16 h-2">
-                                <div class="h-full rounded-full" style="width: ${r.overall_score || 0}%; background: ${getScoreColorHex(r.overall_score)}"></div>
-                            </div>
-                            <span class="font-black" style="color: ${getScoreColorHex(r.overall_score)}">${r.overall_score ? r.overall_score.toFixed(1) : '-'}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="text-sm text-soft">
-                            <strong class="text-text">${r.word_count || 0}</strong> w / 
-                            <strong class="text-text">${r.line_count || 0}</strong> L
-                        </div>
-                    </td>
-                    <td class="text-sm text-soft font-medium">
-                        ${formatDate(r.created_at)}
-                    </td>
-                    <td class="text-right pr-4">
-                        <div class="d-flex justify-end gap-2">
-                            <button type="button" onclick="window.location.href='/results/${r.uuid}'" class="btn btn-secondary p-2" title="View Details">
-                                <svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>
-                            </button>
-                            <button type="button" onclick="deleteResult('${r.uuid}')" class="btn btn-danger p-2" title="Delete">
-                                <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+            if (typeof window.showToast === 'function') {
+                window.showToast(message, 'success');
             }
-
-            hideLoading();
-
-            // Handle auto-open if view param is in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const viewId = urlParams.get('view');
-            if (viewId) {
-                const matched = results.find((r) => String(r.uuid) === String(viewId) || String(r.id) === String(viewId));
-                const resolvedUuid = matched?.uuid || viewId;
-                window.location.href = `/results/${resolvedUuid}`;
-            }
-
-        } catch (error) {
-            console.error('Error loading results:', error);
-            hideLoading();
-            showToast('Failed to load results. Please try again.', 'error');
-
-            const tbody = document.getElementById('resultsTable');
-            tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="p-12 text-center">
-                    <div class="d-flex items-center justify-center rounded-full bg-danger-subtle text-danger mx-auto mb-4 size-64 text-3xl">
-                        <svg class="icon" aria-hidden="true"><use href="#icon-exclamation-triangle"></use></svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-text mb-2">Failed to Load Results</h3>
-                    <p class="text-soft mb-4">Unable to connect to the database. Please ensure the backend is running.</p>
-                    <button type="button" onclick="loadResults()" class="btn btn-primary">
-                        <svg class="icon mr-2" aria-hidden="true"><use href="#icon-sync-alt"></use></svg> Try Again
-                    </button>
-                </td>
-            </tr>
-        `;
         }
-    }
 
-    function renderScoreCard(name, score) {
-        const colorHex = getScoreColorHex(score);
-        return `
-        <div class="stat-card text-center p-5 card-hover transition">
-            <div class="text-sm font-bold text-muted uppercase tracking-widest mb-3">${name}</div>
-            <div class="text-4xl font-black mb-1" style="color: ${colorHex};">${score ? score.toFixed(1) : '-'}</div>
-            <div class="w-full rounded-full mt-4 overflow-hidden bg-subtle h-2">
-                <div class="h-full rounded-full" style="width: ${score || 0}%; background: ${colorHex}"></div>
-            </div>
-        </div>
-    `;
-    }
+        function extractErrorMessage(err, fallback) {
+            return (
+                err?.response?.data?.error ||
+                err?.response?.data?.detail ||
+                err?.message ||
+                fallback
+            );
+        }
 
-    function getScoreColorHex(score) {
-        if (!score) return 'var(--color-text-muted)';
-        if (score >= 8) return 'var(--color-success)';
-        if (score >= 6) return 'var(--color-warning)';
-        return 'var(--color-danger)';
-    }
+        function notifyError(message) {
+            if (window.Toast?.error) {
+                window.Toast.error(message);
+                return;
+            }
+            if (typeof window.showToast === 'function') {
+                window.showToast(message, 'error');
+            }
+        }
 
-    function getLanguageName(code) {
-        const languages = {
-            en_old: 'Old English (Anglo-Saxon)',
-            en_middle: 'Middle English (Chaucerian)',
-            en_modern: 'Modern English',
-            en_british: 'British English',
-            en_american: 'American English',
-            en_australian: 'Australian English',
-            en_indian: 'Indian English',
-            en_south_african: 'South African English',
-            en_caribbean: 'Caribbean English(es)',
-            en_scots: 'Scots (Lowland Scots)',
-            en_aave: 'African American Vernacular English (AAVE)',
-            en_cockney: 'Cockney',
-            en_southern_us: 'Southern American English',
-            en_geordie: 'Geordie',
-            hi_braj: 'Braj Bhasha',
-            hi_awadhi: 'Awadhi',
-            hi_maithili: 'Maithili',
-            hi_sadhukkari: 'Sadhukkari (Panchmel Khichdi)',
-            hi_khariboli: 'Khari Boli',
-            gu_kathiawadi: 'Kathiawadi (Saurashtri)',
-            gu_charotari: 'Charotari',
-            gu_surati: 'Surati',
-            gu_old: 'Old Gujarati (Maru-Gurjar)',
-            ur_standard: 'Modern Standard Urdu',
-            ur_dakhni: 'Dakhni (Deccani)',
-            ur_rekhta: 'Rekhta',
-            ur_dhakaiya: 'Dhakaiya Urdu',
-            en_creole: 'Creole Forms',
-            hinglish: 'Hinglish',
-            // Legacy values
-            en: 'Modern English',
-            hi: 'Hindi (Modern Standard)',
-            gu: 'Gujarati (Standard)',
-            ur: 'Modern Standard Urdu',
-            ur_deva: 'Modern Standard Urdu',
-            brj_deva: 'Braj Bhasha',
-            mr: 'Khari Boli',
-            bn: 'Khari Boli',
-            sa: 'Khari Boli'
+        function scoreColor(score) {
+            const numeric = Number(score);
+            if (!Number.isFinite(numeric)) return 'var(--color-text-muted)';
+            if (numeric >= 8) return 'var(--color-success)';
+            if (numeric >= 6) return 'var(--color-warning)';
+            return 'var(--color-danger)';
+        }
+
+        function getLanguageName(code) {
+            const languages = {
+                en_old: 'Old English (Anglo-Saxon)',
+                en_middle: 'Middle English (Chaucerian)',
+                en_modern: 'Modern English',
+                en_british: 'British English',
+                en_american: 'American English',
+                en_australian: 'Australian English',
+                en_indian: 'Indian English',
+                en_south_african: 'South African English',
+                en_caribbean: 'Caribbean English(es)',
+                en_scots: 'Scots (Lowland Scots)',
+                en_aave: 'African American Vernacular English (AAVE)',
+                en_cockney: 'Cockney',
+                en_southern_us: 'Southern American English',
+                en_geordie: 'Geordie',
+                hi_braj: 'Braj Bhasha',
+                hi_awadhi: 'Awadhi',
+                hi_maithili: 'Maithili',
+                hi_sadhukkari: 'Sadhukkari',
+                hi_khariboli: 'Khari Boli',
+                gu_kathiawadi: 'Kathiawadi',
+                gu_charotari: 'Charotari',
+                gu_surati: 'Surati',
+                gu_old: 'Old Gujarati',
+                ur_standard: 'Modern Standard Urdu',
+                ur_dakhni: 'Dakhni',
+                ur_rekhta: 'Rekhta',
+                ur_dhakaiya: 'Dhakaiya Urdu',
+                en_creole: 'Creole Forms',
+                hinglish: 'Hinglish',
+                en: 'Modern English',
+                hi: 'Hindi (Modern Standard)',
+                gu: 'Gujarati (Standard)',
+                ur: 'Modern Standard Urdu',
+                ur_deva: 'Modern Standard Urdu',
+                brj_deva: 'Braj Bhasha',
+                mr: 'Khari Boli',
+                bn: 'Khari Boli',
+                sa: 'Khari Boli'
+            };
+            return languages[code] || code || '-';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            if (Number.isNaN(date.getTime())) return '-';
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        window.resultTitleFormatter = function (value, row) {
+            const safeTitle = value || 'Untitled';
+            const preview = row.text_preview || '';
+            return `
+                <div class="font-extrabold text-text mb-1">${safeTitle}</div>
+                <div class="text-xs text-soft truncate max-w-250">${preview}</div>
+            `;
         };
-        return languages[code] || code;
-    }
 
-    function formatDate(dateString, short = false) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        if (short) {
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        window.resultLanguageFormatter = function (value) {
+            return `<span class="badge badge-primary">${getLanguageName(value)}</span>`;
+        };
+
+        window.resultScoreFormatter = function (value) {
+            const numeric = Number(value);
+            const color = scoreColor(numeric);
+            const display = Number.isFinite(numeric) ? numeric.toFixed(1) : '-';
+            const width = Number.isFinite(numeric) ? Math.max(0, Math.min(numeric, 10)) * 10 : 0;
+            return `
+                <div class="d-flex items-center gap-2">
+                    <div class="rounded-full bg-subtle overflow-hidden w-16 h-2">
+                        <div class="h-full rounded-full" style="width:${width}%;background:${color};"></div>
+                    </div>
+                    <span class="font-black" style="color:${color};">${display}</span>
+                </div>
+            `;
+        };
+
+        window.resultStatsFormatter = function (value, row) {
+            const words = Number.isFinite(Number(row.word_count)) ? Number(row.word_count) : 0;
+            const lines = Number.isFinite(Number(row.line_count)) ? Number(row.line_count) : 0;
+            return `<span><strong class="text-text">${words}</strong> w / <strong class="text-text">${lines}</strong> L</span>`;
+        };
+
+        window.resultDateFormatter = function (value) {
+            return formatDate(value);
+        };
+
+        window.resultActionsFormatter = function (value, row) {
+            return `
+                <span class="d-inline-flex gap-2">
+                    <button type="button" class="btn-icon view-btn" data-id="${row.id}" title="View">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>
+                    </button>
+                    <button type="button" class="btn-icon btn-icon-danger delete-btn" data-id="${row.id}" title="Delete">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-trash"></use></svg>
+                    </button>
+                </span>
+            `;
+        };
+
+        async function deleteOne(resultId) {
+            await axios.delete(`{{ route('data.result.delete', result_id='') }}${resultId}`);
         }
-        return date.toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+
+        async function deleteMany(ids) {
+            await axios.post('{{ route('data.results.destroy_multiple') }}', { ids });
+        }
+
+        async function clearAll() {
+            await axios.post('{{ route('data.results.clear') }}');
+        }
+
+        window.resultActionEvents = {
+            'click .view-btn': function (e, row) {
+                window.location.href = `{{ route('results.detail', result_id='') }}${row.id}`;
+            },
+            'click .delete-btn': async function (e, row) {
+                if (!confirm('Delete this analysis permanently?')) return;
+                try {
+                    await deleteOne(row.id);
+                    notifySuccess('Analysis deleted');
+                    getTable(RESULTS_TABLE_SELECTOR).refreshCurrent();
+                } catch (err) {
+                    notifyError(extractErrorMessage(err, 'Delete failed'));
+                }
+            }
+        };
+
+        const tableElement = document.getElementById('resultsTable');
+        tableElement.addEventListener('ct:selectionChange', (e) => {
+            const selected = e.detail || [];
+            document.getElementById('btnDeleteSelectedResults').disabled = selected.length === 0;
         });
-    }
 
-    async function deleteResult(uuid) {
-        if (!confirm('Are you sure you want to delete this analysis? This cannot be undone.')) return;
+        document.getElementById('btnRefreshResults').addEventListener('click', () => {
+            getTable(RESULTS_TABLE_SELECTOR).refreshCurrent();
+        });
 
-        showLoading('Deleting analysis...');
+        document.getElementById('btnDeleteSelectedResults').addEventListener('click', async () => {
+            const ids = getTable(RESULTS_TABLE_SELECTOR).getSelections();
+            if (!ids.length) return;
+            if (!confirm(`Delete ${ids.length} selected analyses permanently?`)) return;
+            try {
+                await deleteMany(ids);
+                notifySuccess(`${ids.length} analyses deleted`);
+                getTable(RESULTS_TABLE_SELECTOR).refresh();
+            } catch (err) {
+                notifyError(extractErrorMessage(err, 'Bulk delete failed'));
+            }
+        });
 
-        try {
-            await axios.delete(`/result/${uuid}`);
-            hideLoading();
-            showToast('Analysis deleted successfully', 'success');
-            loadResults();
-        } catch (error) {
-            hideLoading();
-            showToast('Failed to delete analysis', 'error');
+        document.getElementById('btnClearAllResults').addEventListener('click', async () => {
+            if (!confirm('This will permanently delete your full analysis history. Continue?')) return;
+            try {
+                await clearAll();
+                notifySuccess('All analyses cleared');
+                getTable(RESULTS_TABLE_SELECTOR).refresh();
+            } catch (err) {
+                notifyError(extractErrorMessage(err, 'Clear all failed'));
+            }
+        });
+
+        if (viewId) {
+            window.location.href = `{{ route('results.detail', result_id='') }}${viewId}`;
         }
-    }
-
-    async function clearAllResults() {
-        if (!confirm('⚠️ WARNING: This will delete ALL analyses permanently. Are you absolutely sure?')) return;
-        if (!confirm('This action CANNOT be undone. All data will be lost forever. Confirm?')) return;
-
-        showLoading('Clearing all analyses...');
-
-        try {
-            const response = await axios.post('/results-clear');
-            hideLoading();
-            showToast(`Successfully cleared ${response.data.data?.count || response.data.data?.deleted || 0} analyses`, 'success');
-            loadResults();
-        } catch (error) {
-            hideLoading();
-            showToast('Failed to clear analyses', 'error');
-        }
-    }
-
+    })();
 </script>
 {% endblock %}

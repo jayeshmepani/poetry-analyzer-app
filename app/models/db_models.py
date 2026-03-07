@@ -81,6 +81,13 @@ class AnalysisResult(Base):
     sentiment_analysis = Column(JSON, nullable=True)
     evaluation = Column(JSON, nullable=True)
     executive_summary = Column(Text, nullable=True)
+    # Extended analysis fields (added in migration v3)
+    theory_analysis = Column(JSON, nullable=True)
+    structural_analysis = Column(JSON, nullable=True)
+    stylometry_data = Column(JSON, nullable=True)
+    competition_rubrics_data = Column(JSON, nullable=True)
+    evolutionary_data = Column(JSON, nullable=True)
+    educational_insight = Column(Text, nullable=True)
 
     # Metadata
     strictness_level = Column(Integer, default=8)
@@ -140,6 +147,13 @@ class AnalysisResult(Base):
                 "evaluation": self.evaluation,
                 "executive_summary": self.executive_summary,
                 "strictness_level": self.strictness_level,
+                # Extended fields
+                "theory": self.theory_analysis,
+                "structural": self.structural_analysis,
+                "stylometry": self.stylometry_data,
+                "competition_rubrics": self.competition_rubrics_data,
+                "evolutionary": self.evolutionary_data,
+                "educational_insight": self.educational_insight,
             }
         )
         return res

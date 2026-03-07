@@ -10,6 +10,7 @@ from enum import Enum
 import re
 
 from app.services.rule_loader import get_literary_theory_rules
+from app.config import Settings
 
 
 class CriticismType(Enum):
@@ -53,6 +54,34 @@ class LiteraryTheoryAnalyzer:
         self.model_signals: Dict[str, Any] = {}
         self._rules = get_literary_theory_rules()
         self._summary_rules = self._rules["summary"]
+        self._settings = Settings()
+        self._zero_shot = None
+
+    def _ensure_zero_shot(self):
+        """Lazily load and cache the zero-shot classification pipeline."""
+        if self._zero_shot is not None:
+            return self._zero_shot
+        try:
+            from transformers import pipeline
+            model_name = self._settings.transformer.generalist_zero_shot_model
+            self._zero_shot = pipeline("zero-shot-classification", model=model_name, device=-1)
+        except Exception:
+            self._zero_shot = None
+        return self._zero_shot
+
+    def _zsc(self, labels: List[str]) -> Optional[Dict[str, Any]]:
+        """Run zero-shot classification on self.text with the given label list.
+        Returns sorted (label, score) pairs or None on failure."""
+        zs = self._ensure_zero_shot()
+        if zs is None:
+            return None
+        try:
+            # ZSC models have a token limit; clip to 512 words to be safe
+            clipped = " ".join(self.text.split()[:512])
+            out = zs(clipped, labels, multi_label=True)
+            return dict(zip(out["labels"], out["scores"]))
+        except Exception:
+            return None
 
     def analyze(self, text: str, frameworks: List[str] = None, signals: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -98,8 +127,6 @@ class LiteraryTheoryAnalyzer:
             elif framework == "horatian":
                 results["horatian"] = self._analyze_horatian()
 
-        for payload in results.values():
-            self._recalibrate_framework_score(payload)
         for framework, payload in results.items():
             self._enrich_framework_result(framework, payload)
 
@@ -108,72 +135,6 @@ class LiteraryTheoryAnalyzer:
             "results": results,
             "synthesis": self._synthesize_results(results)
         }
-
-    def _recalibrate_framework_score(self, payload: Dict[str, Any]) -> None:
-        """
-        Calibrate raw heuristic score with model support/signal strength.
-        Prevents unfair near-zero outputs when language coverage is weak.
-        """
-        raw = float(payload.get("score", 0.0) or 0.0)
-        strength = self._framework_signal_strength(payload)
-        support = self.model_signals.get("support_factor")
-        if support is None:
-            support = strength / self._framework_signal_capacity(payload)
-        support = max(0.0, min(1.0, float(support)))
-        adjusted = raw * support if support > 0 else raw
-
-        payload["raw_score"] = round(raw, 2)
-        payload["score"] = round(max(0.0, min(10.0, adjusted)), 1)
-
-    def _framework_signal_strength(self, payload: Dict[str, Any]) -> int:
-        strength = 0
-        ignored_keys = {
-            "framework", "analysis", "recommendations", "derridean_concepts",
-            "feminist_concepts", "marxist_concepts", "freudian_concepts",
-            "ecocritical_concepts", "fallacies_avoided", "value_formula",
-            "form_elements", "raw_score", "descriptive_summary", "evidence_points",
-            "diagnostics"
-        }
-        for k, v in payload.items():
-            if k in ignored_keys:
-                continue
-            if isinstance(v, list):
-                strength += len([x for x in v if x])
-            elif isinstance(v, dict):
-                for sv in v.values():
-                    if isinstance(sv, (int, float)) and sv > 0:
-                        strength += 1
-                    elif isinstance(sv, list) and sv:
-                        strength += len(sv)
-                    elif isinstance(sv, bool) and sv:
-                        strength += 1
-                    elif isinstance(sv, str) and sv and "0 " not in sv:
-                        strength += 1
-            elif isinstance(v, (int, float)) and v > 0:
-                strength += 1
-            elif isinstance(v, bool) and v:
-                strength += 1
-        return strength
-
-    def _framework_signal_capacity(self, payload: Dict[str, Any]) -> float:
-        capacity = 0.0
-        ignored_keys = {
-            "framework", "analysis", "recommendations", "derridean_concepts",
-            "feminist_concepts", "marxist_concepts", "freudian_concepts",
-            "ecocritical_concepts", "fallacies_avoided", "value_formula",
-            "form_elements", "raw_score", "descriptive_summary", "evidence_points",
-            "diagnostics"
-        }
-        for k, v in payload.items():
-            if k in ignored_keys:
-                continue
-            if isinstance(v, list):
-                capacity += max(1.0, float(len(v)))
-            elif isinstance(v, dict):
-                capacity += max(1.0, float(len(v)))
-            else:
-                capacity += 1.0
-        return max(1.0, capacity)
 
     def _enrich_framework_result(self, framework: str, payload: Dict[str, Any]) -> None:
         """Add descriptive narrative, evidence excerpts, and confidence metadata."""
@@ -482,29 +443,28 @@ class LiteraryTheoryAnalyzer:
         # Analyze language instability
         instability = self._analyze_language_instability()
 
+        rules = self._rules["deconstruction"]
+        weights = rules["score_weights"]
+
         score = (
-            (len(contradictions) > 0) * 0.4 +
-            (len(suppressed) > 0) * 0.3 +
-            instability * 0.3
-        ) * 10
+            (len(contradictions) > 0) * weights["contradictions"] +
+            (len(suppressed) > 0) * weights["suppressed"] +
+            instability * weights["instability"]
+        ) * weights["scale"]
 
         return {
-            "framework": "Deconstruction",
+            "framework": rules["framework"],
             "score": round(min(10, score), 1),
-            "analysis": "Deconstructive reading revealing contradictions, suppressed meanings, and language instability",
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Found {len(contradictions)} textual contradictions",
-                f"Identified {len(suppressed)} suppressed meanings",
-                f"Language instability score: {instability:.2f}"
+                rules["key_findings"]["contradictions"].format(count=len(contradictions)),
+                rules["key_findings"]["suppressed"].format(count=len(suppressed)),
+                rules["key_findings"]["instability"].format(score=instability),
             ],
             "contradictions": contradictions,
             "suppressed_meanings": suppressed,
             "language_instability": instability,
-            "derridean_concepts": [
-                "Différance (meaning deferred through language)",
-                "Logocentrism (critique of presence metaphysics)",
-                "Supplementarity (what is added reveals lack)"
-            ]
+            "derridean_concepts": rules.get("derridean_concepts", [])
         }
 
     # ==================== READER-RESPONSE ====================
@@ -523,26 +483,50 @@ class LiteraryTheoryAnalyzer:
 
         # Analyze emotional triggers
         emotional_triggers = self._analyze_emotional_triggers()
+        intrinsic_affect = self._intrinsic_affective_markers()
 
         # Analyze context dependence
         context_dependence = self._analyze_context_dependence()
 
+        rules = self._rules["reader_response"]
+        weights = rules["score_weights"]
+        blend = rules.get("engagement_blend", {})
+
         # Value formula: V = T × R × C (all derived from live signals)
         text_potential = self._text_quality_signal()
-        reader_engagement = min(1.0, len(emotional_triggers) / 5.0)
+        # Blend explicit emotion triggers with intrinsic affective markers and interpretive openness.
+        emotional_divisor = float(blend.get("emotional_divisor", 5.0))
+        intrinsic_divisor = float(blend.get("intrinsic_divisor", 4.0))
+        gap_divisor = float(blend.get("gap_divisor", 3.0))
+        emotional_weight = float(blend.get("emotional_weight", 0.45))
+        intrinsic_weight = float(blend.get("intrinsic_weight", 0.35))
+        gap_weight = float(blend.get("gap_weight", 0.20))
+        emotional_signal = min(1.0, len(emotional_triggers) / max(1.0, emotional_divisor))
+        intrinsic_signal = min(1.0, len(intrinsic_affect) / max(1.0, intrinsic_divisor))
+        gap_signal = min(1.0, len(gaps) / max(1.0, gap_divisor))
+        reader_engagement = min(
+            1.0,
+            emotional_weight * emotional_signal
+            + intrinsic_weight * intrinsic_signal
+            + gap_weight * gap_signal,
+        )
         context_relevance = max(0.0, min(1.0, context_dependence))
 
-        value = text_potential * (0.6 + 0.7 * reader_engagement) * (0.6 + 0.7 * context_relevance)
+        value = (
+            text_potential * weights["text_potential_base"] *
+            (weights["reader_engagement_base"] + weights["reader_engagement_mul"] * reader_engagement) *
+            (weights["context_relevance_base"] + weights["context_relevance_mul"] * context_relevance)
+        )
 
         return {
-            "framework": "Reader-Response Criticism",
-            "value_formula": "Value = Text × Reader × Context",
-            "score": round(min(10, value * 10), 1),
-            "analysis": "Reader-response analysis focusing on how meaning emerges from reader-text transaction",
+            "framework": rules["framework"],
+            "value_formula": rules["value_formula"],
+            "score": round(min(10, value * weights["scale"]), 1),
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Interpretive gaps: {len(gaps)} (spaces for reader meaning-making)",
-                f"Emotional triggers: {len(emotional_triggers)}",
-                f"Context dependence: {context_dependence:.2f}"
+                rules["key_findings"]["gaps"].format(count=len(gaps)),
+                rules["key_findings"]["triggers"].format(count=len(emotional_triggers)),
+                rules["key_findings"]["context"].format(score=context_dependence)
             ],
             "transaction_elements": {
                 "text_potential": text_potential,
@@ -550,7 +534,8 @@ class LiteraryTheoryAnalyzer:
                 "context_relevance": context_relevance
             },
             "interpretive_gaps": gaps,
-            "emotional_triggers": emotional_triggers
+            "emotional_triggers": emotional_triggers,
+            "intrinsic_affective_markers": intrinsic_affect,
         }
 
     # ==================== FEMINIST CRITICISM ====================
@@ -573,30 +558,28 @@ class LiteraryTheoryAnalyzer:
         # Analyze language patriarchy
         language_analysis = self._analyze_language_patriarchy()
 
+        rules = self._rules["feminist"]
+        weights = rules["score_weights"]
+
         score = (
-            gender_analysis["score"] * 0.4 +
-            power_dynamics["score"] * 0.3 +
-            language_analysis["score"] * 0.3
-        ) * 10
+            gender_analysis["score"] * weights["gender"] +
+            power_dynamics["score"] * weights["power"] +
+            language_analysis["score"] * weights["language"]
+        ) * weights["scale"]
 
         return {
-            "framework": "Feminist Literary Criticism",
+            "framework": rules["framework"],
             "score": round(min(10, score), 1),
-            "analysis": "Feminist analysis interrogating gender roles, power dynamics, and patriarchal language structures",
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Gender representation: {gender_analysis['summary']}",
-                f"Power dynamics: {power_dynamics['summary']}",
-                f"Language analysis: {language_analysis['summary']}"
+                rules["key_findings"]["gender"].format(summary=gender_analysis['summary']),
+                rules["key_findings"]["power"].format(summary=power_dynamics['summary']),
+                rules["key_findings"]["language"].format(summary=language_analysis['summary'])
             ],
             "gender_analysis": gender_analysis,
             "power_dynamics": power_dynamics,
             "language_critique": language_analysis,
-            "feminist_concepts": [
-                "Male gaze in representation",
-                "Patriarchal language structures",
-                "Gender performativity",
-                "Intersectionality"
-            ]
+            "feminist_concepts": rules.get("feminist_concepts", [])
         }
 
     # ==================== MARXIST CRITICISM ====================
@@ -620,31 +603,28 @@ class LiteraryTheoryAnalyzer:
         # Analyze economic themes
         economic_themes = self._analyze_economic_themes()
 
+        rules = self._rules["marxist"]
+        weights = rules["score_weights"]
+
         score = (
-            class_analysis["score"] * 0.4 +
-            ideology_analysis["score"] * 0.3 +
-            economic_themes["score"] * 0.3
-        ) * 10
+            class_analysis["score"] * weights["class"] +
+            ideology_analysis["score"] * weights["ideology"] +
+            economic_themes["score"] * weights["economic"]
+        ) * weights["scale"]
 
         return {
-            "framework": "Marxist Literary Criticism",
+            "framework": rules["framework"],
             "score": round(min(10, score), 1),
-            "analysis": "Marxist analysis focusing on class struggle, power dynamics, and ideological content",
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Class representation: {class_analysis['summary']}",
-                f"Ideological content: {ideology_analysis['summary']}",
-                f"Economic themes: {economic_themes['summary']}"
+                rules["key_findings"]["class"].format(summary=class_analysis['summary']),
+                rules["key_findings"]["ideology"].format(summary=ideology_analysis['summary']),
+                rules["key_findings"]["economic"].format(summary=economic_themes['summary'])
             ],
             "class_analysis": class_analysis,
             "ideology_analysis": ideology_analysis,
             "economic_themes": economic_themes,
-            "marxist_concepts": [
-                "Base and superstructure",
-                "Class consciousness",
-                "Ideological state apparatuses",
-                "Commodification",
-                "Alienation"
-            ]
+            "marxist_concepts": rules.get("marxist_concepts", [])
         }
 
     # ==================== PSYCHOANALYTIC CRITICISM ====================
@@ -668,32 +648,28 @@ class LiteraryTheoryAnalyzer:
         # Analyze psychosexual themes
         psychosexual = self._analyze_psychosexual_themes()
 
+        rules = self._rules["psychoanalytic"]
+        weights = rules["score_weights"]
+
         score = (
-            unconscious["score"] * 0.4 +
-            defense_mechanisms["score"] * 0.3 +
-            psychosexual["score"] * 0.3
-        ) * 10
+            unconscious["score"] * weights["unconscious"] +
+            defense_mechanisms["score"] * weights["defense"] +
+            psychosexual["score"] * weights["psychosexual"]
+        ) * weights["scale"]
 
         return {
-            "framework": "Psychoanalytic Criticism",
+            "framework": rules["framework"],
             "score": round(min(10, score), 1),
-            "analysis": "Psychoanalytic analysis exploring unconscious desires, defense mechanisms, and latent content",
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Unconscious content: {unconscious['summary']}",
-                f"Defense mechanisms: {defense_mechanisms['summary']}",
-                f"Psychosexual themes: {psychosexual['summary']}"
+                rules["key_findings"]["unconscious"].format(summary=unconscious['summary']),
+                rules["key_findings"]["defense"].format(summary=defense_mechanisms['summary']),
+                rules["key_findings"]["psychosexual"].format(summary=psychosexual['summary'])
             ],
             "unconscious_analysis": unconscious,
             "defense_mechanisms": defense_mechanisms,
             "psychosexual_themes": psychosexual,
-            "freudian_concepts": [
-                "Id (instinctual drives)",
-                "Ego (reality principle)",
-                "Superego (moral conscience)",
-                "Oedipus complex",
-                "Death drive (Thanatos)",
-                "Life drive (Eros)"
-            ]
+            "freudian_concepts": rules.get("freudian_concepts", [])
         }
 
     # ==================== ECOCRITICISM ====================
@@ -717,31 +693,28 @@ class LiteraryTheoryAnalyzer:
         # Analyze human-nature relationship
         human_nature = self._analyze_human_nature_relationship()
 
+        rules = self._rules["ecocriticism"]
+        weights = rules["score_weights"]
+
         score = (
-            nature_analysis["score"] * 0.4 +
-            environmental_themes["score"] * 0.3 +
-            human_nature["score"] * 0.3
-        ) * 10
+            nature_analysis["score"] * weights["nature"] +
+            environmental_themes["score"] * weights["environmental"] +
+            human_nature["score"] * weights["human_nature"]
+        ) * weights["scale"]
 
         return {
-            "framework": "Ecocriticism",
+            "framework": rules["framework"],
             "score": round(min(10, score), 1),
-            "analysis": "Ecocritical analysis examining nature representation, environmental themes, and human-nature relationships",
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Nature representation: {nature_analysis['summary']}",
-                f"Environmental themes: {environmental_themes['summary']}",
-                f"Human-nature relationship: {human_nature['summary']}"
+                rules["key_findings"]["nature"].format(summary=nature_analysis['summary']),
+                rules["key_findings"]["environmental"].format(summary=environmental_themes['summary']),
+                rules["key_findings"]["human_nature"].format(summary=human_nature['summary'])
             ],
             "nature_analysis": nature_analysis,
             "environmental_themes": environmental_themes,
             "human_nature_relationship": human_nature,
-            "ecocritical_concepts": [
-                "Deep Ecology (intrinsic value of nature)",
-                "Ecofeminism (environment + gender)",
-                "Environmental justice",
-                "Anthropocentrism critique",
-                "Biocentrism"
-            ]
+            "ecocritical_concepts": rules.get("ecocritical_concepts", [])
         }
 
     # ==================== ARISTOTELIAN ====================
@@ -768,34 +741,30 @@ class LiteraryTheoryAnalyzer:
         # Analyze catharsis potential
         catharsis = self._analyze_catharsis_potential()
 
+        rules = self._rules["aristotelian"]
+        weights = rules["score_weights"]
+
         score = (
-            unity["score"] * 0.4 +
-            mimesis["score"] * 0.3 +
-            catharsis["score"] * 0.3
-        ) * 10
+            unity["score"] * weights["unity"] +
+            mimesis["score"] * weights["mimesis"] +
+            catharsis["score"] * weights["catharsis"]
+        ) * weights["scale"]
 
         return {
-            "framework": "Aristotelian Poetics",
+            "framework": rules["framework"],
             "score": round(min(10, score), 1),
-            "analysis": "Aristotelian analysis based on genre classification, unity, mimesis, and catharsis",
+            "analysis": rules["analysis"],
             "key_findings": [
-                f"Genre: {genre}",
-                f"Unity of action: {unity['summary']}",
-                f"Mimesis: {mimesis['summary']}",
-                f"Catharsis potential: {catharsis['summary']}"
+                rules["key_findings"]["genre"].format(genre=genre),
+                rules["key_findings"]["unity"].format(summary=unity['summary']),
+                rules["key_findings"]["mimesis"].format(summary=mimesis['summary']),
+                rules["key_findings"]["catharsis"].format(summary=catharsis['summary'])
             ],
             "genre_classification": genre,
             "unity_analysis": unity,
             "mimesis_analysis": mimesis,
             "catharsis_analysis": catharsis,
-            "aristotelian_concepts": [
-                "Mimesis (imitation)",
-                "Catharsis (purification)",
-                "Hamartia (tragic flaw)",
-                "Peripeteia (reversal)",
-                "Anagnorisis (recognition)",
-                "Unity of action"
-            ]
+            "aristotelian_concepts": rules.get("aristotelian_concepts", [])
         }
 
     # ==================== HORATIAN ====================
@@ -818,10 +787,14 @@ class LiteraryTheoryAnalyzer:
         # Analyze instruction vs delight balance
         instruction_delight = self._analyze_instruction_delight()
 
+        h_weights = self._rules.get("horatian_weights", {})
+        w_decorum = float(h_weights.get("decorum", 0.4))
+        w_unity = float(h_weights.get("unity", 0.3))
+        w_instruction = float(h_weights.get("instruction_delight", 0.3))
         score = (
-            decorum["score"] * 0.4 +
-            unity["score"] * 0.3 +
-            instruction_delight["score"] * 0.3
+            decorum["score"] * w_decorum +
+            unity["score"] * w_unity +
+            instruction_delight["score"] * w_instruction
         ) * 10
 
         return {
@@ -886,7 +859,10 @@ class LiteraryTheoryAnalyzer:
             end_freq[e] = end_freq.get(e, 0) + 1
         refrain_density = sum(1 for c in end_freq.values() if c > 1) / max(1, len(end_freq))
 
-        score = min(1.0, 0.55 * lexical_recurrence + 0.45 * refrain_density)
+        scales = self._rules.get("scales", {})
+        lex_w = float(scales.get("unity_lexical_weight", 0.55))
+        ref_w = float(scales.get("unity_refrain_weight", 0.45))
+        score = min(1.0, lex_w * lexical_recurrence + ref_w * refrain_density)
         return round(score, 2)
 
     def _analyze_imagery_coherence(self) -> float:
@@ -902,9 +878,13 @@ class LiteraryTheoryAnalyzer:
         if total == 0:
             return 0.0
         dominant = max(counts.values())
-        richness = min(1.0, total / 10)
+        scales = self._rules.get("scales", {})
+        richness_scale = float(scales.get("imagery_richness_scale", 10.0))
+        focus_w = float(scales.get("imagery_focus_weight", 0.6))
+        richness_w = float(scales.get("imagery_richness_weight", 0.4))
+        richness = min(1.0, total / max(1.0, richness_scale))
         focus = dominant / max(1, total)
-        return round(min(1.0, 0.6 * focus + 0.4 * richness), 2)
+        return round(min(1.0, focus_w * focus + richness_w * richness), 2)
 
     def _detect_binary_oppositions(self) -> List[Dict[str, str]]:
         """Detect binary oppositions in text"""
@@ -992,13 +972,62 @@ class LiteraryTheoryAnalyzer:
         """Analyze emotional triggers in text"""
         emotions = self._sig("additional", "transformer_analysis", "emotions", default={})
         if not isinstance(emotions, dict):
-            return []
+            emotions = {}
         ranked = sorted(
             [(k, float(v)) for k, v in emotions.items() if isinstance(v, (int, float))],
             key=lambda x: x[1],
             reverse=True,
         )
-        return [f"{k}:{v:.2f}" for k, v in ranked[:5] if v > 0.05]
+        detected = [f"{k}:{v:.2f}" for k, v in ranked[:5] if v > 0.05]
+        for marker in self._intrinsic_affective_markers():
+            if marker not in detected:
+                detected.append(marker)
+        return detected[:6]
+
+    def _intrinsic_affective_markers(self) -> List[str]:
+        """
+        Dynamic affective cues from the poem itself (no fixed lexicon).
+        Uses repetition, punctuation pressure, and emotionally weighted model outputs.
+        """
+        cues: List[str] = []
+
+        # High-salience repeated tokens are strong reader-affect anchors.
+        freq: Dict[str, int] = {}
+        for tok in self.tokens:
+            t = str(tok).strip()
+            if len(t) < 2:
+                continue
+            freq[t] = freq.get(t, 0) + 1
+        repeated = [t for t, c in sorted(freq.items(), key=lambda x: (-x[1], x[0])) if c >= 2]
+        cues.extend(repeated[:4])
+
+        # Pull strongest emotion labels from model outputs when present.
+        emotions = self._sig("additional", "transformer_analysis", "emotions", default={})
+        if isinstance(emotions, dict):
+            min_conf = float(self._rules.get("reader_response", {}).get("engagement_blend", {}).get("emotion_confidence_min", 0.1))
+            ranked = sorted(
+                [(str(k), float(v)) for k, v in emotions.items() if isinstance(v, (int, float))],
+                key=lambda x: x[1],
+                reverse=True,
+            )
+            cues.extend([f"emotion:{k}" for k, v in ranked[:3] if v > min_conf])
+
+        # Punctuation pressure can signal affective intensity.
+        qn = self.text.count("?")
+        ex = self.text.count("!")
+        if qn > 0:
+            cues.append(f"question_density:{qn}")
+        if ex > 0:
+            cues.append(f"exclamation_density:{ex}")
+
+        # Deduplicate while preserving order.
+        deduped: List[str] = []
+        seen = set()
+        for c in cues:
+            if c and c not in seen:
+                seen.add(c)
+                deduped.append(c)
+        return deduped[:6]
 
     def _analyze_context_dependence(self) -> float:
         """Analyze how much meaning depends on context"""
@@ -1031,6 +1060,31 @@ class LiteraryTheoryAnalyzer:
             imagery_total = sum(float(v) for v in imagery.values() if isinstance(v, (int, float)))
         imagery_score = min(1.0, imagery_total / self._rules["scales"]["imagery_total_scale"]) if imagery_total else 0.0
 
+        # If upstream metrics are sparse, derive signal directly from text.
+        if lex == 0.0 and ttr == 0.0:
+            alpha_tokens = [t for t in self.tokens if re.search(r"\w", t)]
+            if alpha_tokens:
+                unique_ratio = len(set(alpha_tokens)) / max(1, len(alpha_tokens))
+                avg_len = sum(len(t) for t in alpha_tokens) / max(1, len(alpha_tokens))
+                lex = max(0.0, min(1.0, 0.6 * unique_ratio + 0.4 * min(1.0, avg_len / 8.0)))
+                ttr = unique_ratio
+        if rhyme == 0.0 and len(self.lines) >= 2:
+            endings = []
+            for line in self.lines:
+                toks = [tok for tok in re.findall(r"[\w\u0900-\u097F\u0600-\u06FF]+", line) if tok]
+                if toks:
+                    endings.append(toks[-1][-2:].lower())
+            if endings:
+                rhyme = len(endings) - len(set(endings))
+                rhyme = max(0.0, min(1.0, rhyme / max(1.0, len(endings) - 1)))
+        if imagery_score == 0.0 and self.lines:
+            metaphor_like = sum(
+                1
+                for ln in self.lines
+                if any(sym in ln for sym in (",", ":", "—", "-", " जैसे ", " सा ", " सी "))
+            )
+            imagery_score = max(0.0, min(1.0, metaphor_like / max(1.0, len(self.lines))))
+
         readability_score = max(0.0, min(1.0, readability / self._rules["scales"]["readability_scale"]))
         quality = (
             self._rules["quality_weights"]["lex"] * max(0.0, min(1.0, lex)) +
@@ -1042,164 +1096,384 @@ class LiteraryTheoryAnalyzer:
         return round(max(0.0, min(1.0, quality)), self._rules["scales"]["quality_rounding"])
 
     def _analyze_gender_representation(self) -> Dict[str, Any]:
-        """Analyze gender representation"""
+        """Analyze gender representation using NER and zero-shot thematic classification."""
+        # NER-based pronoun and entity gender signals
         ner = self._sig("linguistic", "named_entities", default=[])
         male_count = sum(1 for n in ner if isinstance(n, dict) and "male" in str(n.get("label", "")).lower())
         female_count = sum(1 for n in ner if isinstance(n, dict) and "female" in str(n.get("label", "")).lower())
-        total = male_count + female_count
-        ratio = female_count / total if total > 0 else 0
+
+        # Augment with ZSC: detect whether the poem foregrounds feminine or masculine experience
+        scores = self._zsc(["feminine perspective", "masculine perspective", "gender-neutral perspective"]) or {}
+        fem_zsc = scores.get("feminine perspective", 0.0)
+        masc_zsc = scores.get("masculine perspective", 0.0)
+        neutral_zsc = scores.get("gender-neutral perspective", 0.0)
+
+        total_ner = male_count + female_count
+        ratio = female_count / total_ner if total_ner > 0 else float(self._rules.get("blend_weights", {}).get("gender_default_ratio", 0.5))
+        # Blend NER ratio with ZSC signal for final score
+        zsc_fem_ratio = fem_zsc / max(fem_zsc + masc_zsc, 1e-6)
+        blended_ratio = 0.4 * ratio + 0.6 * zsc_fem_ratio
+
         return {
             "male_count": male_count,
             "female_count": female_count,
-            "ratio": ratio,
-            "score": min(1.0, ratio * 2) if ratio < 0.5 else min(1.0, (1 - ratio) * 2),
-            "summary": f"Male: {male_count}, Female: {female_count}"
+            "ner_ratio": round(ratio, 3),
+            "zsc_feminine": round(fem_zsc, 3),
+            "zsc_masculine": round(masc_zsc, 3),
+            "zsc_neutral": round(neutral_zsc, 3),
+            "score": round(min(1.0, blended_ratio), 3),
+            "summary": f"Feminine ZSC: {fem_zsc:.2f}, Masculine ZSC: {masc_zsc:.2f}, NER Male: {male_count}, Female: {female_count}"
         }
 
     def _analyze_power_dynamics(self) -> Dict[str, Any]:
-        """Analyze power dynamics"""
+        """Analyze power dynamics using speech act data and zero-shot classification."""
         speech_acts = self._sig("additional", "pragmatics", "speech_acts", "counts", default={})
-        count = self._to_int(speech_acts.get("directive", 0)) + self._to_int(speech_acts.get("declarative", 0))
-        
+        directive = self._to_int(speech_acts.get("directive", 0))
+        declarative = self._to_int(speech_acts.get("declarative", 0))
+
+        # ZSC for ideological power signals
+        scores = self._zsc([
+            "poem about power and control",
+            "poem about submission and powerlessness",
+            "poem about equality and liberation"
+        ]) or {}
+        power_score = scores.get("poem about power and control", 0.0)
+        submission_score = scores.get("poem about submission and powerlessness", 0.0)
+        liberation_score = scores.get("poem about equality and liberation", 0.0)
+        # Combined score: high power OR high submission = power imbalance present
+        authority_signal = max(power_score, submission_score)
+
         return {
-            "power_word_count": count,
-            "score": min(1.0, count / 10),
-            "summary": f"Power dynamics present: {count > 0}"
+            "directive_acts": directive,
+            "declarative_acts": declarative,
+            "zsc_power": round(power_score, 3),
+            "zsc_submission": round(submission_score, 3),
+            "zsc_liberation": round(liberation_score, 3),
+            "score": round(min(1.0, 0.4 * min(1.0, (directive + declarative) / 10.0) + 0.6 * authority_signal), 3),
+            "summary": f"Directive speech acts: {directive}, ZSC power: {power_score:.2f}, liberation: {liberation_score:.2f}"
         }
 
     def _analyze_language_patriarchy(self) -> Dict[str, Any]:
-        """Analyze patriarchal language structures"""
-        try:
-            from transformers import pipeline
-            from app.config import Settings
-            zs = pipeline(
-                "zero-shot-classification",
-                model=Settings().transformer.generalist_zero_shot_model,
-                device=-1,
-            )
-            out = zs(self.text, ["patriarchal language", "gender-neutral language"])
-            score = float(out["scores"][0]) if out["labels"][0] == "patriarchal language" else 1 - float(out["scores"][0])
-        except Exception:
-            score = 0.0
+        """Analyze patriarchal language structures via zero-shot classification."""
+        scores = self._zsc([
+            "patriarchal language and male dominance",
+            "feminist and gender-equal language",
+            "objectification of women"
+        ]) or {}
+        patriarchal_score = scores.get("patriarchal language and male dominance", 0.0)
+        feminist_score = scores.get("feminist and gender-equal language", 0.0)
+        objectification_score = scores.get("objectification of women", 0.0)
+        composite = max(patriarchal_score, objectification_score)
+
         return {
-            "patriarchal_markers": [],
-            "score": score,
-            "summary": f"Patriarchal language score: {round(score, 3)}"
+            "zsc_patriarchal": round(patriarchal_score, 3),
+            "zsc_feminist": round(feminist_score, 3),
+            "zsc_objectification": round(objectification_score, 3),
+            "score": round(composite, 3),
+            "summary": f"Patriarchal ZSC: {patriarchal_score:.2f}, Feminist ZSC: {feminist_score:.2f}"
         }
 
     def _analyze_class_representation(self) -> Dict[str, Any]:
-        """Analyze class representation"""
-        wc_count = int(self._to_float(self._sig("additional", "dialect_detection", "marker_count", default=0), 0.0) / 5)
-        uc_count = int(self._to_float(self._sig("evaluation", "ratings", "language_diction", default=0), 0.0) / 3)
-        
+        """Analyze class representation via ZSC and dialect/lexical signals."""
+        # Dialect markers as working-class proxy
+        dialect_count = self._to_int(self._sig("additional", "dialect_detection", "marker_count", default=0))
+        # Diction score as educated/upper-class proxy (0-10 scale from evaluation)
+        diction_score = self._to_float(self._sig("evaluation", "ratings", "language_diction", default=5.0), 5.0)
+
+        # ZSC for class themes
+        scores = self._zsc([
+            "class struggle and economic inequality",
+            "working class experience and labor",
+            "bourgeois values and privilege",
+            "revolutionary and socialist themes"
+        ]) or {}
+        working_class_zsc = max(
+            scores.get("class struggle and economic inequality", 0.0),
+            scores.get("working class experience and labor", 0.0),
+        )
+        upper_class_zsc = scores.get("bourgeois values and privilege", 0.0)
+        revolutionary_zsc = scores.get("revolutionary and socialist themes", 0.0)
+
+        # Aggregate score: presence of any class-conscious themes
+        composite = max(working_class_zsc, upper_class_zsc, revolutionary_zsc)
+
         return {
-            "working_class_count": wc_count,
-            "upper_class_count": uc_count,
-            "score": min(1.0, (wc_count + uc_count) / 8),
-            "summary": f"Working: {wc_count}, Upper: {uc_count}"
+            "dialect_markers": dialect_count,
+            "diction_score": round(diction_score, 2),
+            "zsc_working_class": round(working_class_zsc, 3),
+            "zsc_upper_class": round(upper_class_zsc, 3),
+            "zsc_revolutionary": round(revolutionary_zsc, 3),
+            "score": round(composite, 3),
+            "summary": f"Working class ZSC: {working_class_zsc:.2f}, Upper class ZSC: {upper_class_zsc:.2f}, Revolutionary ZSC: {revolutionary_zsc:.2f}"
         }
 
     def _analyze_ideology(self) -> Dict[str, Any]:
-        """Analyze ideological content"""
+        """Analyze ideological content via ZSC."""
+        # Structural signal: proliferation of rhetorical schemes indicates polemic intent
         schemes = self._sig("literary_devices", "schemes", default={})
-        count = sum(len(v) for v in schemes.values() if isinstance(v, list))
-        
+        scheme_count = sum(len(v) for v in schemes.values() if isinstance(v, list))
+
+        scores = self._zsc([
+            "political ideology and manifesto",
+            "religious or spiritual ideology",
+            "hegemonic values and conformity",
+            "counter-hegemonic resistance",
+            "nationalistic or patriotic themes"
+        ]) or {}
+        political = scores.get("political ideology and manifesto", 0.0)
+        religious = scores.get("religious or spiritual ideology", 0.0)
+        hegemonic = scores.get("hegemonic values and conformity", 0.0)
+        counter = scores.get("counter-hegemonic resistance", 0.0)
+        nationalist = scores.get("nationalistic or patriotic themes", 0.0)
+
+        # Composite: any strong ideological signal
+        composite = max(political, religious, hegemonic, counter, nationalist)
+        # Blend with structural signal (heavy scheme use ↑ rhetorical/ideological density)
+        blended = 0.6 * composite + 0.4 * min(1.0, scheme_count / 10.0)
+
         return {
-            "ideology_word_count": count,
-            "score": min(1.0, count / 5),
-            "summary": f"Ideological content: {count} markers"
+            "rhetorical_scheme_count": scheme_count,
+            "zsc_political": round(political, 3),
+            "zsc_religious": round(religious, 3),
+            "zsc_hegemonic": round(hegemonic, 3),
+            "zsc_counter_hegemonic": round(counter, 3),
+            "zsc_nationalist": round(nationalist, 3),
+            "score": round(min(1.0, blended), 3),
+            "summary": f"Ideology ZSC dominant: {max(scores, key=scores.get, default='none')} ({composite:.2f}), schemes: {scheme_count}"
         }
 
     def _analyze_economic_themes(self) -> Dict[str, Any]:
-        """Analyze economic themes"""
-        lex = self._to_float(self._sig("quantitative", "lexical_metrics", "lexical_density", default=0), 0.0)
-        count = int((lex * 100) // 20)
-        
+        """Analyze economic themes using ZSC."""
+        scores = self._zsc([
+            "poverty and economic hardship",
+            "wealth and capitalism",
+            "labor and exploitation",
+            "commodity and materialism"
+        ]) or {}
+        poverty = scores.get("poverty and economic hardship", 0.0)
+        wealth = scores.get("wealth and capitalism", 0.0)
+        labor = scores.get("labor and exploitation", 0.0)
+        material = scores.get("commodity and materialism", 0.0)
+
+        composite = max(poverty, wealth, labor, material)
+        dominant = max(scores, key=scores.get, default="none") if scores else "none"
+
         return {
-            "economic_word_count": count,
-            "score": min(1.0, count / 5),
-            "summary": f"Economic themes: {count} markers"
+            "zsc_poverty": round(poverty, 3),
+            "zsc_wealth": round(wealth, 3),
+            "zsc_labor": round(labor, 3),
+            "zsc_material": round(material, 3),
+            "dominant_theme": dominant,
+            "score": round(composite, 3),
+            "summary": f"Economic theme ZSC: {dominant} ({composite:.2f})"
         }
 
     def _analyze_unconscious_content(self) -> Dict[str, Any]:
-        """Analyze unconscious content"""
+        """Analyze unconscious / repressed content via emotion signals + ZSC."""
         emotions = self._sig("additional", "transformer_analysis", "emotions", default={})
-        fear = self._to_float(emotions.get("fear", 0.0), 0.0)
-        sadness = self._to_float(emotions.get("sadness", 0.0), 0.0)
-        count = int((fear + sadness) * 20)
-        
+        fear = self._to_float(emotions.get("fear", 0.0), 0.0) if isinstance(emotions, dict) else 0.0
+        sadness = self._to_float(emotions.get("sadness", 0.0), 0.0) if isinstance(emotions, dict) else 0.0
+        disgust = self._to_float(emotions.get("disgust", 0.0), 0.0) if isinstance(emotions, dict) else 0.0
+        emotion_signal = min(1.0, (fear + sadness + disgust))
+
+        scores = self._zsc([
+            "repressed desires and unconscious mind",
+            "anxieties and psychological tension",
+            "dream imagery and surrealism",
+            "trauma and suppressed memory"
+        ]) or {}
+        repression = scores.get("repressed desires and unconscious mind", 0.0)
+        anxiety = scores.get("anxieties and psychological tension", 0.0)
+        dream = scores.get("dream imagery and surrealism", 0.0)
+        trauma = scores.get("trauma and suppressed memory", 0.0)
+
+        max_zsc = max(repression, anxiety, dream, trauma)
+        blend = self._rules.get("blend_weights", {})
+        blended = (
+            float(blend.get("psycho_emotion", 0.5)) * emotion_signal
+            + float(blend.get("psycho_zsc", 0.5)) * max_zsc
+        )
+        dominant = max(scores, key=scores.get, default="none") if scores else "none"
+
         return {
-            "unconscious_marker_count": count,
-            "score": min(1.0, count / 5),
-            "summary": f"Unconscious content: {count} markers"
+            "emotion_fear": round(fear, 3),
+            "emotion_sadness": round(sadness, 3),
+            "emotion_disgust": round(disgust, 3),
+            "zsc_repression": round(repression, 3),
+            "zsc_anxiety": round(anxiety, 3),
+            "zsc_dream": round(dream, 3),
+            "zsc_trauma": round(trauma, 3),
+            "dominant_mode": dominant,
+            "score": round(min(1.0, blended), 3),
+            "summary": f"Unconscious ZSC dominant: {dominant} ({max_zsc:.2f}), emotion signal: {emotion_signal:.2f}"
         }
 
     def _analyze_defense_mechanisms(self) -> Dict[str, Any]:
-        """Analyze defense mechanisms in text"""
-        neg = self._to_float(self._sig("additional", "transformer_analysis", "sentiment", "score", default=0.0), 0.0)
-        count = int(neg * 10)
-        
+        """Analyze psychological defense mechanisms via ZSC."""
+        scores = self._zsc([
+            "denial and psychological repression",
+            "displacement of emotions",
+            "rationalization and intellectualization",
+            "sublimation of urges into art",
+            "projection of inner conflict"
+        ]) or {}
+        denial = scores.get("denial and psychological repression", 0.0)
+        displacement = scores.get("displacement of emotions", 0.0)
+        rationalization = scores.get("rationalization and intellectualization", 0.0)
+        sublimation = scores.get("sublimation of urges into art", 0.0)
+        projection = scores.get("projection of inner conflict", 0.0)
+
+        # The dominant mechanism signals the defensive mode
+        dominant = max(scores, key=scores.get, default="none") if scores else "none"
+        composite = max(denial, displacement, rationalization, sublimation, projection)
+
         return {
-            "defense_marker_count": count,
-            "score": min(1.0, count / 5),
-            "summary": f"Defense mechanisms: {count} markers"
+            "zsc_denial": round(denial, 3),
+            "zsc_displacement": round(displacement, 3),
+            "zsc_rationalization": round(rationalization, 3),
+            "zsc_sublimation": round(sublimation, 3),
+            "zsc_projection": round(projection, 3),
+            "dominant_mechanism": dominant,
+            "score": round(composite, 3),
+            "summary": f"Defense mechanism ZSC: {dominant} ({composite:.2f})"
         }
 
     def _analyze_psychosexual_themes(self) -> Dict[str, Any]:
-        """Analyze psychosexual themes"""
+        """Analyze psychosexual themes via ZSC and emotion signals."""
         emotions = self._sig("additional", "transformer_analysis", "emotions", default={})
-        count = int(self._to_float(emotions.get("love", 0.0), 0.0) * 20)
-        
+        love = self._to_float(emotions.get("love", 0.0), 0.0) if isinstance(emotions, dict) else 0.0
+
+        scores = self._zsc([
+            "erotic desire and sensuality",
+            "romantic love and longing",
+            "taboo and transgression",
+            "body and physicality"
+        ]) or {}
+        erotic = scores.get("erotic desire and sensuality", 0.0)
+        romantic = scores.get("romantic love and longing", 0.0)
+        taboo = scores.get("taboo and transgression", 0.0)
+        body = scores.get("body and physicality", 0.0)
+
+        composite = max(erotic, romantic, taboo, body, love)
+        dominant = max(scores, key=scores.get, default="none") if scores else "none"
+
         return {
-            "psychosexual_marker_count": count,
-            "score": min(1.0, count / 5),
-            "summary": f"Psychosexual themes: {count} markers"
+            "emotion_love": round(love, 3),
+            "zsc_erotic": round(erotic, 3),
+            "zsc_romantic": round(romantic, 3),
+            "zsc_taboo": round(taboo, 3),
+            "zsc_body": round(body, 3),
+            "dominant_mode": dominant,
+            "score": round(min(1.0, composite), 3),
+            "summary": f"Psychosexual ZSC: {dominant} ({max(erotic, taboo):.2f}), love emotion: {love:.2f}"
         }
 
     def _analyze_nature_representation(self) -> Dict[str, Any]:
-        """Analyze nature representation"""
+        """Analyze nature representation via imagery signals + ZSC."""
         imagery = self._sig("literary_devices", "imagery", default={})
-        count = int(sum(v for v in imagery.values() if isinstance(v, (int, float))))
-        
+        organic_count = self._to_int(imagery.get("organic", 0)) if isinstance(imagery, dict) else 0
+        nature_imagery_total = organic_count
+
+        scores = self._zsc([
+            "nature and landscape imagery",
+            "animals and wildlife",
+            "plants and vegetation",
+            "seasons and weather"
+        ]) or {}
+        landscape = scores.get("nature and landscape imagery", 0.0)
+        animals = scores.get("animals and wildlife", 0.0)
+        plants = scores.get("plants and vegetation", 0.0)
+        seasons = scores.get("seasons and weather", 0.0)
+
+        composite = max(landscape, animals, plants, seasons)
+        imagery_signal = min(1.0, nature_imagery_total / 5.0)
+        blend = self._rules.get("blend_weights", {})
+        blended = (
+            float(blend.get("ecocrit_imagery", 0.5)) * imagery_signal
+            + float(blend.get("ecocrit_zsc", 0.5)) * composite
+        )
+
         return {
-            "nature_word_count": count,
-            "score": min(1.0, count / 10),
-            "summary": f"Nature representation: {count} instances"
+            "organic_imagery_count": organic_count,
+            "zsc_landscape": round(landscape, 3),
+            "zsc_animals": round(animals, 3),
+            "zsc_plants": round(plants, 3),
+            "zsc_seasons": round(seasons, 3),
+            "score": round(min(1.0, blended), 3),
+            "summary": f"Nature ZSC: {composite:.2f}, imagery organic count: {organic_count}"
         }
 
     def _analyze_environmental_themes(self) -> Dict[str, Any]:
-        """Analyze environmental themes"""
-        count = self._to_int(self._sig("literary_devices", "imagery", "organic", default=0))
-        
+        """Analyze environmental themes and eco-consciousness via ZSC."""
+        scores = self._zsc([
+            "ecological crisis and environmental destruction",
+            "harmony with nature and sustainability",
+            "climate change and global warming",
+            "human impact on environment"
+        ]) or {}
+        crisis = scores.get("ecological crisis and environmental destruction", 0.0)
+        harmony = scores.get("harmony with nature and sustainability", 0.0)
+        climate = scores.get("climate change and global warming", 0.0)
+        impact = scores.get("human impact on environment", 0.0)
+
+        composite = max(crisis, harmony, climate, impact)
+        dominant = max(scores, key=scores.get, default="none") if scores else "none"
+
         return {
-            "env_word_count": count,
-            "score": min(1.0, count / 5),
-            "summary": f"Environmental themes: {count} markers"
+            "zsc_crisis": round(crisis, 3),
+            "zsc_harmony": round(harmony, 3),
+            "zsc_climate": round(climate, 3),
+            "zsc_human_impact": round(impact, 3),
+            "dominant_theme": dominant,
+            "score": round(composite, 3),
+            "summary": f"Environmental ZSC: {dominant} ({composite:.2f})"
         }
 
     def _analyze_human_nature_relationship(self) -> Dict[str, Any]:
-        """Analyze human-nature relationship"""
+        """Analyze the human-nature relationship via sentiment + ZSC."""
+        # Primary: ZSC
+        scores = self._zsc([
+            "reverence and awe for nature",
+            "alienation from nature",
+            "domination and exploitation of nature",
+            "symbiosis and coexistence with nature"
+        ]) or {}
+        reverence = scores.get("reverence and awe for nature", 0.0)
+        alienation = scores.get("alienation from nature", 0.0)
+        domination = scores.get("domination and exploitation of nature", 0.0)
+        symbiosis = scores.get("symbiosis and coexistence with nature", 0.0)
+
+        # Secondary fallback: existing sentiment signal
         sentiment = self._sig("additional", "transformer_analysis", "sentiment", default={})
-        score = None
-        if isinstance(sentiment, dict):
-            score = self._to_float(sentiment.get("score", None), None)
-        if score is None:
-            emotions = self._sig("additional", "transformer_analysis", "emotions", default={})
-            if isinstance(emotions, dict) and emotions:
-                pos = self._to_float(emotions.get("joy", 0.0), 0.0) + self._to_float(emotions.get("love", 0.0), 0.0)
-                neg = self._to_float(emotions.get("sadness", 0.0), 0.0) + self._to_float(emotions.get("fear", 0.0), 0.0)
-                total = max(0.0001, pos + neg)
-                score = max(0.0, min(1.0, pos / total))
-            else:
-                score = 0.0
-        pos_count = int(score * 10)
-        neg_count = int((1 - score) * 10)
-        
+        if isinstance(sentiment, dict) and sentiment:
+            sent_default = float(self._rules.get("blend_weights", {}).get("human_nature_sentiment_default", 0.0))
+            sent_score = self._to_float(sentiment.get("score", sent_default), sent_default)
+        else:
+            emotions = self._sig("additional", "transformer_analysis", "emotions", default={}) or {}
+            pos = self._to_float(emotions.get("joy", 0.0), 0.0) + self._to_float(emotions.get("love", 0.0), 0.0)
+            neg = self._to_float(emotions.get("sadness", 0.0), 0.0) + self._to_float(emotions.get("fear", 0.0), 0.0)
+            sent_score = pos / max(1e-6, pos + neg)
+
+        positive_relationship = max(reverence, symbiosis)
+        negative_relationship = max(alienation, domination)
+        dominant = max(scores, key=scores.get, default="none") if scores else "none"
+
+        # Blend ZSC + sentiment
+        blend = self._rules.get("blend_weights", {})
+        blended_score = (
+            float(blend.get("human_nature_positive", 0.7)) * positive_relationship
+            + float(blend.get("human_nature_sentiment", 0.3)) * sent_score
+        )
+
         return {
-            "positive_markers": pos_count,
-            "negative_markers": neg_count,
-            "score": score,
-            "summary": f"Nature relationship: {'Positive' if score > 0.5 else 'Negative'}"
+            "zsc_reverence": round(reverence, 3),
+            "zsc_alienation": round(alienation, 3),
+            "zsc_domination": round(domination, 3),
+            "zsc_symbiosis": round(symbiosis, 3),
+            "sentiment_positivity": round(sent_score, 3),
+            "dominant_mode": dominant,
+            "score": round(min(1.0, blended_score), 3),
+            "summary": f"Human-nature ZSC: {dominant} ({max(positive_relationship, negative_relationship):.2f})"
         }
 
     def _sig(self, *path, default=None):
@@ -1286,7 +1560,7 @@ class LiteraryTheoryAnalyzer:
         """Analyze unity of action (Aristotelian)"""
         unity = self._analyze_unity()
         return {
-            "has_unity": unity >= 0.55,
+            "has_unity": unity >= float(self._rules.get("scales", {}).get("aristotelian_unity_threshold", 0.55)),
             "score": round(unity, 2),
             "summary": f"Unity of action score: {unity:.2f}"
         }
@@ -1298,25 +1572,29 @@ class LiteraryTheoryAnalyzer:
         
         return {
             "realism_marker_count": count,
-            "score": min(1.0, count / 5),
+            "score": min(1.0, count / max(1.0, float(self._rules.get("scales", {}).get("mimesis_count_scale", 5.0)))),
             "summary": f"Mimesis: {count} realism markers"
         }
 
     def _analyze_catharsis_potential(self) -> Dict[str, Any]:
         """Analyze catharsis potential"""
         emotions = self._sig("additional", "transformer_analysis", "emotions", default={})
+        emotion_multiplier = float(self._rules.get("scales", {}).get("catharsis_emotion_multiplier", 15.0))
         count = int(
             (
                 self._to_float(emotions.get("sadness", 0.0), 0.0)
                 + self._to_float(emotions.get("fear", 0.0), 0.0)
                 + self._to_float(emotions.get("love", 0.0), 0.0)
             )
-            * 15
+            * emotion_multiplier
         ) if isinstance(emotions, dict) else 0
         
         return {
             "emotional_word_count": count,
-            "score": min(1.0, count / 5),
+            "score": min(
+                1.0,
+                count / max(1.0, float(self._rules.get("scales", {}).get("catharsis_count_scale", 5.0))),
+            ),
             "summary": f"Catharsis potential: {count} emotional markers"
         }
 
@@ -1325,7 +1603,7 @@ class LiteraryTheoryAnalyzer:
         readability = self._to_float(self._sig("quantitative", "readability_metrics", "flesch_reading_ease", default=60.0), 60.0)
         score = max(0.0, min(1.0, readability / 100.0))
         return {
-            "appropriate": score >= 0.45,
+            "appropriate": score >= float(self._rules.get("scales", {}).get("decorum_threshold", 0.45)),
             "score": round(score, 2),
             "summary": f"Decorum score from readability alignment: {score:.2f}"
         }
@@ -1335,7 +1613,7 @@ class LiteraryTheoryAnalyzer:
         coherence = self._to_float(self._sig("linguistic", "text_metrics", "readability", "flesch_reading_ease", default=60.0), 60.0)
         score = max(0.0, min(1.0, coherence / 100.0))
         return {
-            "has_unity": score >= 0.5,
+            "has_unity": score >= float(self._rules.get("scales", {}).get("unity_horatian_threshold", 0.5)),
             "score": round(score, 2),
             "summary": f"Unity/coherence score: {score:.2f}"
         }
@@ -1345,7 +1623,8 @@ class LiteraryTheoryAnalyzer:
         speech_acts = self._sig("additional", "pragmatics", "speech_acts", "counts", default={})
         emotions = self._sig("additional", "transformer_analysis", "emotions", default={})
         inst_count = self._to_int(speech_acts.get("assertive", 0)) + self._to_int(speech_acts.get("directive", 0))
-        del_count = int(self._to_float(emotions.get("joy", 0.0), 0.0) * 10) + int(self._to_float(emotions.get("love", 0.0), 0.0) * 10)
+        delight_mul = float(self._rules.get("scales", {}).get("instruction_delight_emotion_multiplier", 10.0))
+        del_count = int(self._to_float(emotions.get("joy", 0.0), 0.0) * delight_mul) + int(self._to_float(emotions.get("love", 0.0), 0.0) * delight_mul)
         
         balance = min(inst_count, del_count) / max(1, max(inst_count, del_count))
         

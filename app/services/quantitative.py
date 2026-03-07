@@ -106,7 +106,14 @@ class QuantitativeMetricsCalculator:
         avg_word_length = total_akshars / len(self.words)
 
         # JUK: conjunct consonants per 100 words
-        jukta_count = sum(word.count("्") for word in self.words)
+        virama_map = {
+            "hi": "्",
+            "mr": "्",
+            "bn": "্",
+            "gu": "્",
+        }
+        virama = virama_map.get(self.language, "")
+        jukta_count = sum(word.count(virama) for word in self.words) if virama else 0
         jukta_density = (jukta_count / len(self.words)) * 100
 
         # PSW: percentage of polysyllabic words (>=3 akshars)
@@ -184,9 +191,6 @@ class QuantitativeMetricsCalculator:
 
     def _calculate_computational_greatness(self, metrics: Dict[str, Any]) -> float:
         """Calculate composite 'Computational Greatness' score"""
-        # Compute R_d using exact formula on end-word rhymes
-        rhyme_density = self._calculate_rhyme_density_pairwise(self.original_text)
-
         # Normalize metrics across comparison set: poem + canonical touchstones
         candidates = [self.original_text] + self._touchstone_passages()
 
@@ -291,24 +295,72 @@ class QuantitativeMetricsCalculator:
             return 0.0
 
     def _count_akshars(self, word: str) -> int:
-        """Count akshars (approx syllable count) in Devanagari word."""
+        """Count akshars/syllable nuclei in Indic/Urdu scripts."""
         if not word:
             return 0
-        independent_vowels = set("अआइईउऊऋएऐओऔ")
-        vowel_signs = set("ािीुूृेैोौंः")
-        count = 0
-        for ch in word:
-            if ch in independent_vowels or ch in vowel_signs:
-                count += 1
-        return count
+        script_vowels = {
+            "hi": (set("अआइईउऊऋएऐओऔ"), set("ािीुूृेैोौंः")),
+            "mr": (set("अआइईउऊऋएऐओऔ"), set("ािीुूृेैोौंः")),
+            "bn": (set("অআইঈউঊঋএঐওঔ"), set("ািীুূৃেৈোৌংঃ")),
+            "gu": (set("અઆઇઈઉઊઋએઐઓઔ"), set("ાિીુૂૃેૈોૌંઃ")),
+        }
+        if self.language in script_vowels:
+            independent_vowels, vowel_signs = script_vowels[self.language]
+            count = sum(1 for ch in word if ch in independent_vowels or ch in vowel_signs)
+            return count if count > 0 else 1
+
+        # Urdu/Arabic and other scripts: fall back to multilingual syllable estimator.
+        return self._get_syllables_per_word(word)
 
     def _count_guru_syllables(self, words: List[str]) -> Tuple[int, int]:
         """Count guru syllables and total syllables for MCI."""
-        guru_vowels = set("आईऊएऐओऔ")
-        guru_signs = set("ाीूेैोौ")
-        short_vowels = set("अइउऋ")
-        short_signs = set("िुृ")
-        anusvara_visarga = set("ंः")
+        script_sets = {
+            "hi": {
+                "guru_vowels": set("आईऊएऐओऔ"),
+                "guru_signs": set("ाीूेैोौ"),
+                "short_vowels": set("अइउऋ"),
+                "short_signs": set("िुृ"),
+                "anusvara_visarga": set("ंः"),
+                "virama": "्",
+            },
+            "mr": {
+                "guru_vowels": set("आईऊएऐओऔ"),
+                "guru_signs": set("ाीूेैोौ"),
+                "short_vowels": set("अइउऋ"),
+                "short_signs": set("िुृ"),
+                "anusvara_visarga": set("ंः"),
+                "virama": "्",
+            },
+            "bn": {
+                "guru_vowels": set("আঈঊএঐওঔ"),
+                "guru_signs": set("াীূেৈোৌ"),
+                "short_vowels": set("অইউঋ"),
+                "short_signs": set("িুৃ"),
+                "anusvara_visarga": set("ংঃ"),
+                "virama": "্",
+            },
+            "gu": {
+                "guru_vowels": set("આઈઊએઐઓઔ"),
+                "guru_signs": set("ાીૂેૈોૌ"),
+                "short_vowels": set("અઇઉઋ"),
+                "short_signs": set("િુૃ"),
+                "anusvara_visarga": set("ંઃ"),
+                "virama": "્",
+            },
+        }
+        sets = script_sets.get(self.language)
+        if not sets:
+            # For scripts without laghu/guru marks (e.g., Urdu), return total
+            # syllables with guru=0 to keep MCI mathematically defined.
+            total = sum(self._get_syllables_per_word(w) for w in words)
+            return 0, total
+
+        guru_vowels = sets["guru_vowels"]
+        guru_signs = sets["guru_signs"]
+        short_vowels = sets["short_vowels"]
+        short_signs = sets["short_signs"]
+        anusvara_visarga = sets["anusvara_visarga"]
+        virama = sets["virama"]
         total = 0
         guru = 0
         for word in words:
@@ -320,7 +372,7 @@ class QuantitativeMetricsCalculator:
                 elif ch in short_vowels or ch in short_signs:
                     total += 1
                     next_char = chars[i + 1] if i + 1 < len(chars) else ""
-                    if next_char == "्" or next_char in anusvara_visarga:
+                    if next_char == virama or next_char in anusvara_visarga:
                         guru += 1
         return guru, total
 
@@ -333,7 +385,7 @@ class QuantitativeMetricsCalculator:
         """Extract words from text (multilingual support)"""
         # Support for Devanagari, Arabic, Latin scripts
         words = re.findall(r"[\w\u0900-\u097F\u0600-\u06FF]+", self.text)
-        return [w for w in words if len(w) > 1]
+        return words
 
     def _get_lines(self) -> List[str]:
         """Extract lines from text"""
@@ -817,8 +869,11 @@ class QuantitativeMetricsCalculator:
                     self._nlp = spacy.load("en_core_web_sm")
             doc = self._nlp(self.original_text)
             content_pos = {"NOUN", "VERB", "ADJ", "ADV"}
-            content_words = sum(1 for t in doc if t.pos_ in content_pos)
-            return round(content_words / self.total_words, 4)
+            lexical_tokens = [t for t in doc if t.is_alpha]
+            if not lexical_tokens:
+                return 0.0
+            content_words = sum(1 for t in lexical_tokens if t.pos_ in content_pos)
+            return round(content_words / len(lexical_tokens), 4)
         except Exception:
             return 0.0
 
@@ -856,9 +911,10 @@ class QuantitativeMetricsCalculator:
         if len(self.sentences) == 0 or self.total_words == 0:
             return 0.0
 
-        # Simplified Spache formula
+        # Use real difficult-word ratio from textstat instead of a static placeholder.
         avg_sentence_length = self.total_words / len(self.sentences)
-        percentage_difficult_words = 0  # Would need difficult word list
+        difficult_word_count = textstat.difficult_words(self.original_text)
+        percentage_difficult_words = (difficult_word_count / self.total_words) * 100
 
         score = (
             (0.121 * avg_sentence_length) + (0.082 * percentage_difficult_words) + 0.659
@@ -938,7 +994,20 @@ class QuantitativeMetricsCalculator:
             return 0.0
 
         avg_word_length = sum(len(w) for w in self.words) / self.total_words
-        percentage_prepositions = 0  # Would need POS tagging
+        percentage_prepositions = 0.0
+        try:
+            if not hasattr(self, "_nlp"):
+                try:
+                    self._nlp = spacy.load("en_core_web_trf")
+                except Exception:
+                    self._nlp = spacy.load("en_core_web_sm")
+            doc = self._nlp(self.original_text)
+            tokens = [t for t in doc if t.is_alpha]
+            if tokens:
+                prep_count = sum(1 for t in tokens if t.pos_ == "ADP")
+                percentage_prepositions = (prep_count / len(tokens)) * 100.0
+        except Exception:
+            percentage_prepositions = 0.0
 
         score = (2.5 * avg_word_length) - (1.5 * percentage_prepositions)
         return round(score, 2)

@@ -139,9 +139,9 @@ class TransformerAnalyzer:
                         if progress_cb:
                             progress_cb(75, "Transformer: sentiment model ready")
                     except Exception:
-                        logger.warning(
-                            "Indic sentiment model failed for sentiment-analysis. "
-                            "Falling back to generalist zero-shot."
+                        logger.info(
+                            "Indic sentiment model does not expose a sentiment-analysis head. "
+                            "Using generalist zero-shot sentiment route."
                         )
                         self._sentiment_task = "zero-shot-classification"
                         self._sentiment_pipe = self._get_cached_pipeline(
@@ -166,9 +166,9 @@ class TransformerAnalyzer:
                             )
                             self._emotion_task = "text-classification"
                         except Exception:
-                            logger.warning(
+                            logger.info(
                                 "Indic emotion model does not expose text-classification head. "
-                                "Falling back to generalist zero-shot."
+                                "Using generalist zero-shot emotion route."
                             )
                             self._emotion_task = "zero-shot-classification"
                             self._emotion_pipe = self._get_cached_pipeline(
@@ -194,7 +194,7 @@ class TransformerAnalyzer:
             except Exception as e:
                 import traceback
                 traceback.print_exc()
-                logger.warning(f"Transformer initialization failed: {e}")
+                logger.info(f"Transformer initialization was not completed in this run: {e}")
 
     def analyze(self, text: str, progress_cb=None) -> Dict[str, Any]:
         """Perform sentiment and emotion analysis"""
@@ -266,7 +266,7 @@ class TransformerAnalyzer:
         except Exception as e:
             import traceback
             traceback.print_exc()
-            logger.error(f"Transformer analysis failed: {e}")
+            logger.error(f"Transformer analysis raised an error: {e}")
             return {"status": "failed", "error": str(e)}
 
 class DialectDetector:

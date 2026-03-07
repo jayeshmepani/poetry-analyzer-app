@@ -41,7 +41,7 @@
 
     document.addEventListener('DOMContentLoaded', async function () {
         try {
-            const response = await axios.get('/forms-data');
+            const response = await axios.get('{{ route('data.forms') }}');
             const forms = response.data?.data?.forms || {};
             const groupKeys = Object.keys(forms);
             const totalForms = groupKeys.reduce((sum, key) => sum + (forms[key]?.length || 0), 0);
@@ -73,3 +73,5 @@
     });
 </script>
 {% endblock %}
+
+
